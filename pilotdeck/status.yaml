@@ -1,0 +1,34 @@
+# AgentScroll Project Status File
+# This file syncs with PilotDeck for project tracking
+
+project:
+  id: proj-8e8a2c00  # Resolved from PilotDeck API
+  name: AgentScroll
+  description: AgentScroll project repository
+  repository: E:\1-Projects\AgentScroll
+
+pilotdeck:
+  base_url: "http://182.92.109.59:8689/api"
+  agent_token_env: ""
+
+status:
+  lifecycle: active
+  priority: medium
+  progress: 0
+  tags:
+    - initialized
+    - setup
+
+sync_state:
+  last_sync: 2026-03-06T03:34:00Z
+  last_run_id: run-6f55c2e2
+  project_version: 1
+  sync_errors: []
+
+activity_log:
+  - timestamp: 2026-03-06T03:32:53Z
+    action: status_file_created
+    details: Project created in PilotDeck with ID proj-8e8a2c00
+  - timestamp: 2026-03-06T03:34:00Z
+    action: run_completed
+    details: Successfully synced project status with run-6f55c2e2 and event evt-4f08dc29
