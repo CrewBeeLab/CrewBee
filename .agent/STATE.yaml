@@ -1,0 +1,20 @@
+schema_version: 1
+
+execution:
+  run_status: "running" # running|success|failed|cancelled
+  active_step_id: "S2"
+  last_checkpoint: "CP-0002"
+  blockers: []
+  next_actions:
+    - "Decide whether to rename src/packs to src/teams in a future cleanup step"
+    - "Define a fuller TeamSpec and host adapter surface"
+
+sync:
+  mode: "local_only" # local_only|remote_preferred|remote_required
+  last_sync_result: "partial" # not_started|success|partial|failed
+  last_sync_checkpoint: "CP-0002"
+  remote_ids:
+    project_id: null
+    run_id: null
+    event_id: null
+  errors: []

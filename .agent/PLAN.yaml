@@ -1,0 +1,37 @@
+schema_version: 1
+
+plan:
+  current_cycle: 1
+  current_step_id: "S2"
+  objective: "Deliver the Team-first V1 scaffold baseline"
+  success_criteria:
+    - "Team-first contracts and baseline team library exist in src/"
+    - "Canonical docs and .agent docs reflect the V1 design"
+    - "Typecheck passes after scaffold updates"
+
+steps:
+  - id: "S1"
+    title: "Define architecture baseline"
+    status: "done" # todo|doing|done|blocked
+    depends_on: []
+    acceptance:
+      - "Architecture summary is explicit and current"
+      - "Critical invariants are listed"
+
+  - id: "S2"
+    title: "Implement Team-first scaffold contracts"
+    status: "doing"
+    depends_on: ["S1"]
+    acceptance:
+      - "Core contracts model Team, Mode, runtime snapshot, and host capabilities"
+      - "Baseline Teams exist for Coding, General, and Wukong"
+      - "Manager and Adapter scaffolds import the Team-first contracts"
+
+  - id: "S3"
+    title: "Stabilize naming and verification"
+    status: "todo"
+    depends_on: ["S2"]
+    acceptance:
+      - "Legacy pack naming is clearly marked as transitional"
+      - "Scaffold docs and metadata stay aligned with Team-first terminology"
+      - "Build or typecheck passes"

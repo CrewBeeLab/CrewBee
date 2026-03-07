@@ -4,10 +4,10 @@
 
 1. Create focused changes.
 2. Run type checks.
-3. Keep artifacts and contracts aligned.
+3. Keep docs, contracts, and scaffold terminology aligned.
 
 ## Conventions
 
-- Keep Pack specs explicit and versioned.
+- Keep Team-oriented specs explicit and versioned.
 - Prefer small, composable contracts over large monolith interfaces.
-- Avoid host-specific assumptions in `packages/core`.
+- Avoid host-specific assumptions in `src/core`.
