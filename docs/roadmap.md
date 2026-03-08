@@ -2,7 +2,7 @@
 
 ## 里程碑 1：框架基础完成
 
-- [x] 建立 `core / teams / adapters / manager` 四个基础模块
+- [x] 建立 `core / AgentTeams / adapters / manager` 四个基础模块
 - [x] 定义首版 Team-first 合同模型
 - [x] 定义 V1 所需的 manifest / policy / capabilities / profile 类型结构
 - [x] 建立 `AgentTeamTemplate` 模板目录
@@ -26,6 +26,7 @@
 - [x] 定义 Coding Team
 - [x] 定义 General Team
 - [x] 定义 Wukong Team
-- [x] 落实 delegate-first 的 Leader 行为规则
+- [x] 落实 Coding Team 以主执行 owner 为中心的 Leader 行为规则
 - [x] 暴露基础运行状态：Team、Mode、active executor、stage、recent actions
-- [ ] 完善从 `AgentTeams/` 静态文件加载公开 Team 的 loader / validator
+- [x] 将 `src/AgentTeams` 拆分为 parser / filesystem / validation / embedded / library 等内聚模块
+- [ ] 完善从 `AgentTeams/` 静态文件加载公开 Team 的 loader / validator / source merge 规则
