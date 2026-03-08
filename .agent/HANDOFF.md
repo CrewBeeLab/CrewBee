@@ -10,7 +10,8 @@
 
 - Expanded the TypeScript scaffold to model Team manifests, Team policy, shared capabilities, and agent profiles.
 - Rebuilt the baseline Coding, General, and Wukong teams on the aligned composed Team definition.
-- Added `scaffold/agent-team-starter/` with file-authored Team starter assets.
+- Added `AgentTeamTemplate/` as the reusable Team template directory.
+- Moved defined Team assets into `AgentTeams/`.
 - Added `.agent/prompts/FRAMEWORK_PROMPT.md` and `.agent/prompts/PLAN_PROMPT.md`.
 - Updated project docs and `.agent` docs so the next implementation cycle starts from the aligned model.
 
@@ -26,7 +27,7 @@
 
 ## Exact next actions
 
-1. Implement a loader that reads `scaffold/agent-team-starter/`-style assets into the typed `AgentTeamDefinition` model.
+1. Implement a loader that reads `AgentTeams/` and `AgentTeamTemplate/`-style assets into the typed `AgentTeamDefinition` model.
 2. Add adapter-facing tests for Team selection, runtime binding, and event generation.
 3. Start the OpenCode adapter using the aligned Team manifest/policy/profile model.
 

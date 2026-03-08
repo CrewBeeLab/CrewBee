@@ -1,0 +1,83 @@
+id: general-team
+kind: agent-team
+version: 1.0.0
+name: General Team
+status: active
+owner: AgentScroll
+
+description: 面向调研、分析、写作与通用事务执行的通用型团队。
+
+mission:
+  objective: 通过 Leader 驱动的澄清、分析、起草与检查流程，完成通用任务交付。
+  success_definition:
+    - 结果直接回应用户请求。
+    - 关键结论或执行结果具备可读证据。
+    - 输出由 Leader 统一收口。
+
+scope:
+  in_scope:
+    - research
+    - analysis
+    - writing
+    - operations
+  out_of_scope:
+    - deep code implementation
+    - host runtime orchestration
+
+leader:
+  agent_ref: general-leader
+  responsibilities:
+    - 接收通用任务并判断是否需要澄清。
+    - 在研究、分析、写作与执行之间协调角色。
+    - 汇总最终结果并对外输出。
+
+members:
+  - agent_ref: general-researcher
+    role: 信息收集
+  - agent_ref: general-analyst
+    role: 结构化分析
+  - agent_ref: general-writer
+    role: 起草输出
+  - agent_ref: general-editor
+    role: 压缩与润色
+  - agent_ref: general-operator
+    role: 事务推进
+
+modes:
+  - single-executor
+  - team-collaboration
+
+working_mode:
+  human_to_leader_only: true
+  leader_driven_coordination: true
+  agent_communication_via_session_context: true
+  explicit_routing_files_required: false
+  explicit_contract_files_required: false
+
+workflow:
+  id: general-default
+  name: General default workflow
+  stages:
+    - intake
+    - clarify
+    - research-or-analyze
+    - draft-or-execute
+    - check
+    - summarize
+
+implementation_bias:
+  naming_mode: responsibility-first
+  routing_priority: responsibility-first
+  prompt_emphasis: responsibility-high / persona-balanced
+  display_emphasis: balanced
+  persona_visibility: balanced
+  responsibility_visibility: high
+
+shared_refs:
+  policy_ref: general-team.policy
+  capability_ref: general-team.shared-capabilities
+
+tags:
+  - general
+  - analysis
+  - operations

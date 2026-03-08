@@ -45,11 +45,14 @@ responsibility_core:
 
 collaboration:
   default_consults:
-    - researcher
+    - agent_ref: researcher
+      description: Local or external context gathering support.
   default_handoffs:
-    - executor
+    - agent_ref: executor
+      description: Scoped execution owned by the leader.
   escalation_targets:
-    - user
+    - agent_ref: user
+      description: Escalate only when the task cannot move forward safely.
 
 capability_bindings:
   model_profile_ref: reasoning-high
@@ -73,6 +76,22 @@ output_contract:
   tone: concise-technical
   default_format: what-where-evidence
   update_policy: milestone-only
+
+templates:
+  exploration_checklist:
+    - 任务目标：
+    - 相关文件：
+  execution_plan:
+    - 主目标：
+    - 自执行部分：
+  final_report:
+    - 已完成：
+    - 证据：
+
+guardrails:
+  critical:
+    - Keep the leader as the primary context owner unless ownership is explicitly transferred.
+    - Do not claim completion without final verification.
 
 ops:
   eval_tags:

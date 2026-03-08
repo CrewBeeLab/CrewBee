@@ -154,10 +154,20 @@ export interface ResponsibilityCore {
   outputPreference?: string[];
 }
 
+export interface CollaborationBinding {
+  agentRef: string;
+  description: string;
+  capabilityBindings?: Partial<CapabilityBindings>;
+  workflowOverride?: WorkflowOverride;
+  outputContract?: OutputContract;
+}
+
+export type CollaborationBindingInput = string | CollaborationBinding;
+
 export interface CollaborationSpec {
-  defaultConsults: string[];
-  defaultHandoffs: string[];
-  escalationTargets: string[];
+  defaultConsults: CollaborationBindingInput[];
+  defaultHandoffs: CollaborationBindingInput[];
+  escalationTargets: CollaborationBindingInput[];
 }
 
 export interface CapabilityBindings {
@@ -195,6 +205,20 @@ export interface AgentExamples {
   badFit: string[];
 }
 
+export interface MinimalOperations {
+  coreOperationSkeleton?: string[];
+}
+
+export interface MinimalTemplates {
+  explorationChecklist?: string[];
+  executionPlan?: string[];
+  finalReport?: string[];
+}
+
+export interface AgentGuardrails {
+  critical?: string[];
+}
+
 export interface AgentMetadata {
   id: string;
   kind: "agent";
@@ -215,6 +239,9 @@ export interface AgentProfileSpec {
   workflowOverride?: WorkflowOverride;
   outputContract: OutputContract;
   ops?: AgentOps;
+  operations?: MinimalOperations;
+  templates?: MinimalTemplates;
+  guardrails?: AgentGuardrails;
   heuristics?: string[];
   antiPatterns?: string[];
   examples?: AgentExamples;
@@ -222,6 +249,7 @@ export interface AgentProfileSpec {
 
 export interface TeamDocumentationRefs {
   teamReadme: string;
+  agentProfiles?: string[];
 }
 
 export interface AgentTeamDefinition {

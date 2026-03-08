@@ -1,0 +1,40 @@
+id: wukong-team.policy
+kind: team-policy
+version: 1.0.0
+
+instruction_precedence:
+  - platform
+  - repository
+  - team
+  - agent
+  - task
+
+approval_policy:
+  required_for:
+    - destructive-actions
+    - external-side-effects
+    - commit
+  allow_assume_for:
+    - low-risk-implementation-details
+
+forbidden_actions:
+  - fabricate-evidence
+  - claim-done-without-verification
+  - ignore-hard-constraints
+  - pretend-to-have-read-unread-code
+
+quality_floor:
+  required_checks:
+    - diagnostics
+    - build
+    - tests
+  evidence_required: true
+
+working_rules:
+  - leader-is-primary-interface
+  - subordinate-agents-report-back-to-leader
+  - final-user-facing-summary-comes-from-leader
+
+notes:
+  - Wukong Team 可以保留人格化表达，但不能牺牲职责边界清晰度。
+  - 适用于高不确定性任务，不应用于简单直线型执行任务。

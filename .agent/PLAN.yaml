@@ -6,10 +6,10 @@ plan:
   objective: "Initialize an execution-ready AgentScroll Team framework"
   success_criteria:
     - "Team manifest/policy/shared-capabilities/agent-profile contracts exist in src/"
-    - "A file-based Team starter exists under scaffold/"
+    - "A file-based Team template exists under AgentTeamTemplate/ and defined Teams exist under AgentTeams/"
     - "Canonical docs and .agent docs reflect the aligned V1 model"
     - "Framework prompt and planning prompt exist for future sessions"
-    - "Typecheck passes after scaffold updates"
+    - "Typecheck passes after framework updates"
 
 steps:
   - id: "S1"
@@ -18,7 +18,7 @@ steps:
     depends_on: []
     acceptance:
       - "Internal docs are read and distilled into an actionable target model"
-      - "Current repo scaffold is inventoried"
+      - "Current repo framework is inventoried"
 
   - id: "S2"
     title: "Align typed framework contracts and Team library"
@@ -27,16 +27,16 @@ steps:
     acceptance:
       - "Core contracts model Team manifests, policies, shared capabilities, agent profiles, runtime snapshot, and host capabilities"
       - "Baseline Teams exist for Coding, General, and Wukong using the aligned model"
-      - "Manager and Adapter scaffolds import the aligned Team definitions"
+      - "Manager and Adapter code paths import the aligned Team definitions"
 
   - id: "S3"
-    title: "Add starter Team scaffold and update .agent prompts"
+    title: "Add Team template and update .agent prompts"
     status: "done"
     depends_on: ["S2"]
     acceptance:
-      - "Starter Team files exist for manifest, policy, shared capabilities, agents, and TEAM.md"
+      - "AgentTeamTemplate files exist for manifest, policy, shared capabilities, agents, and TEAM.md"
       - "Framework prompt and planning prompt guide future implementation cycles"
-      - ".agent docs point future sessions at the aligned scaffold"
+      - ".agent docs point future sessions at the aligned framework"
 
   - id: "S4"
     title: "Validate and hand off execution-ready baseline"

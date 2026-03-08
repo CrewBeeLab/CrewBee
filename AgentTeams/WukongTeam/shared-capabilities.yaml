@@ -1,0 +1,35 @@
+id: wukong-team.shared-capabilities
+kind: shared-capabilities
+version: 1.0.0
+
+models:
+  default: exploration-high
+  available:
+    - exploration-high
+    - reasoning-high
+    - balanced-default
+
+tools:
+  default_profile: repo-readwrite
+  available_profiles:
+    - repo-readonly
+    - repo-readwrite
+    - web-research
+
+skills:
+  shared: []
+
+instruction_packs:
+  shared:
+    - repo-core
+    - agentscroll-team-framework
+
+memory:
+  default_profile: project-memory
+
+hooks:
+  default_bundle: repo-guardrails
+
+mcp:
+  shared_servers:
+    - github

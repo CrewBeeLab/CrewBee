@@ -1,7 +1,7 @@
-# Starter Team
+# Agent Team Template
 
 ## Mission
-Provide a minimal, leader-driven Agent Team that works cleanly in OpenCode-style environments.
+Provide a reusable, leader-driven Agent Team template that works cleanly in OpenCode-style environments.
 
 ## Leader
 - `Leader`: receives the task, coordinates the Team, and reports the final result.
@@ -21,3 +21,7 @@ Provide a minimal, leader-driven Agent Team that works cleanly in OpenCode-style
 - Explicit routing files are not required.
 - Explicit contract files are not required.
 - Long-running external state is out of scope.
+
+## Usage
+- Copy this directory when defining a new Team.
+- Replace the placeholder identities, workflow, and capabilities with Team-specific content.

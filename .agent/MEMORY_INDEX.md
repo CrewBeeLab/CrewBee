@@ -21,11 +21,11 @@ Store only high-signal memory for cross-session continuity.
 - ID: `M-0002`
   - Type: `decision`
   - Summary: "V1 is Team-first: Agent Team + Manager + Adapter, with Team + Mode as the main user-facing choice"
-  - Affects: `docs`, `.agent`, `scaffold terminology`
+  - Affects: `docs`, `.agent`, `framework terminology`
   - References: `README.md`, `docs/architecture.md`, `.agent/PROJECT.md`, `.agent/ARCHITECTURE.md`, `.agent/DECISIONS.md`
 
 - ID: `M-0003`
   - Type: `decision`
-  - Summary: "The executable scaffold shape is composed Team assets: manifest, policy, shared capabilities, and agent profiles, mirrored by a file-based starter Team"
-  - Affects: `src/core`, `src/teams`, `scaffold`, `.agent`
-  - References: `src/core/index.ts`, `src/teams/index.ts`, `scaffold/agent-team-starter/team.manifest.yaml`, `.agent/prompts/FRAMEWORK_PROMPT.md`
+  - Summary: "The executable framework shape is composed Team assets: manifest, policy, shared capabilities, and agent profiles, mirrored by AgentTeams and AgentTeamTemplate directories"
+  - Affects: `src/core`, `src/AgentTeams`, `AgentTeams`, `AgentTeamTemplate`, `.agent`
+  - References: `src/core/index.ts`, `src/AgentTeams/index.ts`, `AgentTeamTemplate/team.manifest.yaml`, `.agent/prompts/FRAMEWORK_PROMPT.md`

@@ -1,0 +1,79 @@
+id: wukong-team
+kind: agent-team
+version: 1.0.0
+name: Wukong Team
+status: active
+owner: AgentScroll
+
+description: 面向高不确定性、探索性与长周期任务的突破型团队。
+
+mission:
+  objective: 通过 Leader 驱动的探索、借力、破局与复盘流程推进复杂任务。
+  success_definition:
+    - 团队打开一条可行推进路径。
+    - 风险、经验与下一步选项被明确记录。
+    - 最终结果仍然保持清晰职责边界与可复用性。
+
+scope:
+  in_scope:
+    - exploration
+    - uncertain planning
+    - multi-step investigation
+  out_of_scope:
+    - simple execution tasks that fit Coding or General Team better
+
+leader:
+  agent_ref: wukong-leader
+  responsibilities:
+    - 接收复杂探索型任务。
+    - 组织突破式的委派与借力。
+    - 汇总阶段性成果、风险与下一步建议。
+
+members:
+  - agent_ref: wukong-monk
+    role: 使命锚定
+  - agent_ref: wukong-bajie
+    role: 现实约束与权衡压力
+  - agent_ref: wukong-wujing
+    role: 稳定执行
+  - agent_ref: wukong-dragon
+    role: 上下文连续性
+
+modes:
+  - single-executor
+  - team-collaboration
+
+working_mode:
+  human_to_leader_only: true
+  leader_driven_coordination: true
+  agent_communication_via_session_context: true
+  explicit_routing_files_required: false
+  explicit_contract_files_required: false
+
+workflow:
+  id: wukong-default
+  name: Wukong default workflow
+  stages:
+    - make-vow
+    - explore
+    - borrow-strength
+    - break-through
+    - clear-gate
+    - review
+
+implementation_bias:
+  naming_mode: hybrid
+  routing_priority: balanced
+  prompt_emphasis: persona-high / responsibility-high
+  display_emphasis: balanced
+  persona_visibility: high
+  responsibility_visibility: high
+
+shared_refs:
+  policy_ref: wukong-team.policy
+  capability_ref: wukong-team.shared-capabilities
+
+tags:
+  - exploration
+  - uncertainty
+  - breakthrough

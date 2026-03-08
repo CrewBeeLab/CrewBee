@@ -1,13 +1,16 @@
-# Contributing
+# 开发约定
 
-## Development workflow
+## 基本流程
 
-1. Create focused changes.
-2. Run type checks.
-3. Keep docs, contracts, and scaffold terminology aligned.
+1. 先确认改动是否符合 Team-first 的总体方向。
+2. 尽量做聚焦、边界清晰的修改。
+3. 修改后运行类型检查或构建验证。
+4. 同步更新文档、合同模型与目录命名，避免框架认知漂移。
 
-## Conventions
+## 约定原则
 
-- Keep Team-oriented specs explicit and versioned.
-- Prefer small, composable contracts over large monolith interfaces.
-- Avoid host-specific assumptions in `src/core`.
+- Team 相关规范要尽量显式、可版本化。
+- 优先使用小而可组合的合同结构，而不是大而全的单体接口。
+- `src/core` 保持宿主无关，不提前写死 OpenCode 之外的实现细节。
+- 已定义 Team 放在 `AgentTeams/`，模板放在 `AgentTeamTemplate/`。
+- `docs/` 下文档以中文为主，面向人类理解与项目推进。

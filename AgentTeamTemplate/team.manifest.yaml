@@ -1,18 +1,18 @@
-id: starter-team
+id: agent-team-template
 kind: agent-team
 version: 1.0.0
-name: Starter Team
+name: Agent Team Template
 status: active
 owner: AgentScroll
 
-description: A minimal AgentScroll Team starter for OpenCode-style leader-driven execution.
+description: A reusable AgentScroll Agent Team template for OpenCode-style leader-driven execution.
 
 mission:
-  objective: Turn user requests into completed outcomes through a leader-first Team flow.
+  objective: Provide a reusable Team template that can be specialized into a concrete Team through a leader-first Team flow.
   success_definition:
-    - The Team can accept work through the Leader.
-    - The Team can run in single-executor or team-collaboration mode.
-    - The Team can report a result with evidence or status context.
+    - The template exposes the minimum required Team file structure.
+    - The template supports both single-executor and team-collaboration modes.
+    - The template can be copied and specialized into a concrete Team definition.
 
 scope:
   in_scope:
@@ -50,8 +50,8 @@ working_mode:
   explicit_contract_files_required: false
 
 workflow:
-  id: starter-default
-  name: Starter default workflow
+  id: template-default
+  name: Template default workflow
   stages:
     - intake
     - clarify-or-scout
@@ -72,6 +72,6 @@ shared_refs:
   capability_ref: shared-capabilities
 
 tags:
-  - starter
+  - template
   - leader-driven
   - session-context

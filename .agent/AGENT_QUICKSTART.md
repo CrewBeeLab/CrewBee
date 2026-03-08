@@ -2,7 +2,7 @@
 
 ## Goal
 
-Start from the compact `.agent` execution view, then jump into the Team-first V1 scaffold with minimal discovery cost.
+Start from the compact `.agent` execution view, then jump into the Team-first V1 framework with minimal discovery cost.
 
 ## Read order (strict)
 
@@ -33,7 +33,7 @@ Start from the compact `.agent` execution view, then jump into the Team-first V1
 - `.agent/` files are compact execution views
 - Link to canonical docs instead of duplicating long text
 - Current canonical design direction is Team-first V1, not Pack-first scaffolding
-- Use `scaffold/agent-team-starter/` as the default reference shape for file-authored Teams
+- Use `AgentTeamTemplate/` as the default reference shape for file-authored Teams
 
 ## Session done checklist
 

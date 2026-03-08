@@ -21,10 +21,10 @@ Evolve the repository without drifting from the V1 Team-first model:
 ## Preferred implementation shape
 
 - Put reusable typed contracts in `src/core/`.
-- Put baseline composed Team definitions in `src/teams/`.
+- Put baseline composed Team definitions in `src/AgentTeams/`.
 - Put host bridge logic in `src/adapters/`.
 - Put selection/control/visibility logic in `src/manager/`.
-- Mirror file-authored Team assets in `scaffold/agent-team-starter/`.
+- Mirror file-authored Team assets in `AgentTeams/` and `AgentTeamTemplate/`.
 
 ## Do
 
@@ -36,5 +36,5 @@ Evolve the repository without drifting from the V1 Team-first model:
 ## Do not
 
 - Reintroduce Pack-first naming as the primary mental model.
-- Add speculative long-running state systems to the static scaffold.
+- Add speculative long-running state systems to the static framework.
 - Mix runtime TODOs, session ids, or current error details into static Team or agent definitions.

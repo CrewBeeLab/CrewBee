@@ -11,13 +11,13 @@ Produce a compact execution plan that is immediately actionable for the current 
 2. Use 3-6 steps max for a single cycle.
 3. Each step must have acceptance criteria that can be verified from files, diagnostics, builds, or tests.
 4. Keep one active step at a time.
-5. Reflect the aligned Team-first framework and starter scaffold.
+5. Reflect the aligned Team-first framework, Team template, and defined Team directories.
 
 ## Preferred step sequence
 
 1. Understand or confirm target model.
 2. Align typed framework contracts.
-3. Update scaffold files and docs.
+3. Update framework files, Team directories, and docs.
 4. Validate with diagnostics/build/tests.
 5. Hand off next implementation entry points.
 
@@ -31,7 +31,7 @@ Produce a compact execution plan that is immediately actionable for the current 
 ## Example acceptance items
 
 - `Team manifest/policy/profile contracts exist in src/core/`
-- `Baseline Teams export aligned definitions from src/teams/`
-- `Starter Team files exist under scaffold/agent-team-starter/`
+- `Baseline Teams export aligned definitions from src/AgentTeams/`
+- `AgentTeamTemplate/ and AgentTeams/ directories reflect the current Team model`
 - `Typecheck passes`
 - `.agent prompts and handoff docs reference the current framework shape`
