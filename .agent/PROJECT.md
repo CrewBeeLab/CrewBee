@@ -8,7 +8,11 @@
 
 ## Objective
 
-Define and ship a V1-ready Agent Team scaffold that frames AgentScroll as a portable Team system rather than a pack catalog. The scaffold should make the V1 architecture, object model, and delivery direction explicit enough that implementation can proceed from `Agent Team + Manager + Adapter` with minimal ambiguity.
+Define and ship a V1-ready Agent Team scaffold that frames AgentScroll as a portable Team system rather than a pack catalog. The scaffold must now be specific enough to support the next implementation cycle across three layers:
+
+- typed framework contracts in `src/`
+- file-based Team starter assets in `scaffold/`
+- execution and planning guidance in `.agent/`
 
 ## Scope
 
@@ -16,6 +20,9 @@ Define and ship a V1-ready Agent Team scaffold that frames AgentScroll as a port
 
 - Document the V1 product positioning around Agent Teams.
 - Define the reduced V1 object model: Team, Adapter, Manager.
+- Align the code scaffold to Team manifest, Team policy, shared capabilities, and agent profile concepts.
+- Add a practical starter Team file tree that mirrors the intended authoring model.
+- Add compact framework and planning prompts for future agent sessions.
 - Clarify Team-internal concepts: Leader, members, built-in workflow, mode, tool boundaries.
 - Capture V1 behavior rules such as manual Team selection and delegate-first execution.
 - Keep scaffold docs aligned across `.agent` and top-level project docs.
@@ -41,6 +48,7 @@ Define and ship a V1-ready Agent Team scaffold that frames AgentScroll as a port
 - V1 design boundaries are explicit enough to guide scaffold evolution.
 - Legacy Pack-first wording is removed or clearly marked as transitional.
 - Behavior changes in code later must still meet typecheck and verification standards.
+- The starter scaffold must be concrete enough to begin implementing Team loaders, adapters, and manager flows.
 
 ## Glossary
 

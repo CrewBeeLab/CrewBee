@@ -1,37 +1,48 @@
 schema_version: 1
 
 plan:
-  current_cycle: 1
-  current_step_id: "S2"
-  objective: "Deliver the Team-first V1 scaffold baseline"
+  current_cycle: 2
+  current_step_id: "S4"
+  objective: "Initialize an execution-ready AgentScroll Team framework"
   success_criteria:
-    - "Team-first contracts and baseline team library exist in src/"
-    - "Canonical docs and .agent docs reflect the V1 design"
+    - "Team manifest/policy/shared-capabilities/agent-profile contracts exist in src/"
+    - "A file-based Team starter exists under scaffold/"
+    - "Canonical docs and .agent docs reflect the aligned V1 model"
+    - "Framework prompt and planning prompt exist for future sessions"
     - "Typecheck passes after scaffold updates"
 
 steps:
   - id: "S1"
-    title: "Define architecture baseline"
+    title: "Understand target AgentScroll model"
     status: "done" # todo|doing|done|blocked
     depends_on: []
     acceptance:
-      - "Architecture summary is explicit and current"
-      - "Critical invariants are listed"
+      - "Internal docs are read and distilled into an actionable target model"
+      - "Current repo scaffold is inventoried"
 
   - id: "S2"
-    title: "Implement Team-first scaffold contracts"
-    status: "doing"
+    title: "Align typed framework contracts and Team library"
+    status: "done"
     depends_on: ["S1"]
     acceptance:
-      - "Core contracts model Team, Mode, runtime snapshot, and host capabilities"
-      - "Baseline Teams exist for Coding, General, and Wukong"
-      - "Manager and Adapter scaffolds import the Team-first contracts"
+      - "Core contracts model Team manifests, policies, shared capabilities, agent profiles, runtime snapshot, and host capabilities"
+      - "Baseline Teams exist for Coding, General, and Wukong using the aligned model"
+      - "Manager and Adapter scaffolds import the aligned Team definitions"
 
   - id: "S3"
-    title: "Stabilize naming and verification"
-    status: "todo"
+    title: "Add starter Team scaffold and update .agent prompts"
+    status: "done"
     depends_on: ["S2"]
     acceptance:
-      - "Legacy pack naming is clearly marked as transitional"
-      - "Scaffold docs and metadata stay aligned with Team-first terminology"
-      - "Build or typecheck passes"
+      - "Starter Team files exist for manifest, policy, shared capabilities, agents, and TEAM.md"
+      - "Framework prompt and planning prompt guide future implementation cycles"
+      - ".agent docs point future sessions at the aligned scaffold"
+
+  - id: "S4"
+    title: "Validate and hand off execution-ready baseline"
+    status: "done"
+    depends_on: ["S3"]
+    acceptance:
+      - "Typecheck passes"
+      - "Top-level docs stay aligned with the framework shape"
+      - "The repo is ready for adapter, loader, and manager implementation work"

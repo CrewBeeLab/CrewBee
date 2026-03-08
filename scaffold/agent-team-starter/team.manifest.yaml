@@ -1,0 +1,77 @@
+id: starter-team
+kind: agent-team
+version: 1.0.0
+name: Starter Team
+status: active
+owner: AgentScroll
+
+description: A minimal AgentScroll Team starter for OpenCode-style leader-driven execution.
+
+mission:
+  objective: Turn user requests into completed outcomes through a leader-first Team flow.
+  success_definition:
+    - The Team can accept work through the Leader.
+    - The Team can run in single-executor or team-collaboration mode.
+    - The Team can report a result with evidence or status context.
+
+scope:
+  in_scope:
+    - leader-driven task intake
+    - specialist delegation
+    - session-context collaboration
+    - result convergence
+  out_of_scope:
+    - automatic Team routing
+    - long-running external state machines
+    - heavy handoff contract files
+
+leader:
+  agent_ref: leader
+  responsibilities:
+    - Receive the task from the human.
+    - Decide whether to consult, delegate, or execute.
+    - Converge the final result and report back.
+
+members:
+  - agent_ref: researcher
+    role: information gathering
+  - agent_ref: executor
+    role: delivery and verification
+
+modes:
+  - single-executor
+  - team-collaboration
+
+working_mode:
+  human_to_leader_only: true
+  leader_driven_coordination: true
+  agent_communication_via_session_context: true
+  explicit_routing_files_required: false
+  explicit_contract_files_required: false
+
+workflow:
+  id: starter-default
+  name: Starter default workflow
+  stages:
+    - intake
+    - clarify-or-scout
+    - delegate-or-execute
+    - verify
+    - summarize
+
+implementation_bias:
+  naming_mode: responsibility-first
+  routing_priority: responsibility-first
+  prompt_emphasis: responsibility-high / persona-balanced
+  display_emphasis: balanced
+  persona_visibility: balanced
+  responsibility_visibility: high
+
+shared_refs:
+  policy_ref: team.policy
+  capability_ref: shared-capabilities
+
+tags:
+  - starter
+  - leader-driven
+  - session-context

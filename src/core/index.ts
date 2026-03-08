@@ -1,13 +1,16 @@
 export type ExecutionMode = "single-executor" | "team-collaboration";
 
+export type AgentStatus = "active" | "draft" | "deprecated";
 export type TeamRoleKind = "leader" | "member";
-
-export interface TeamRoleSpec {
-  id: string;
-  name: string;
-  kind: TeamRoleKind;
-  responsibility: string;
-}
+export type AgentArchetype =
+  | "orchestrator"
+  | "planner"
+  | "executor"
+  | "researcher"
+  | "advisor"
+  | "reviewer"
+  | "interpreter"
+  | "operator";
 
 export interface TeamWorkflowSpec {
   id: string;
@@ -15,35 +18,226 @@ export interface TeamWorkflowSpec {
   stages: string[];
 }
 
-export interface ToolDomainPolicy {
-  id: string;
-  enabledByDefault: boolean;
-  description: string;
+export interface TeamMissionSpec {
+  objective: string;
+  successDefinition: string[];
 }
 
-export interface OutputRequirement {
-  id: string;
-  description: string;
+export interface TeamScopeSpec {
+  inScope: string[];
+  outOfScope: string[];
 }
 
-export interface TeamSpec {
+export interface TeamLeaderRef {
+  agentRef: string;
+  responsibilities: string[];
+}
+
+export interface TeamMemberRef {
+  agentRef: string;
+  role: string;
+}
+
+export interface WorkingModeSpec {
+  humanToLeaderOnly: boolean;
+  leaderDrivenCoordination: boolean;
+  agentCommunicationViaSessionContext: boolean;
+  explicitRoutingFilesRequired: boolean;
+  explicitContractFilesRequired: boolean;
+}
+
+export interface ImplementationBiasProfile {
+  namingMode: "responsibility-first" | "persona-first" | "hybrid";
+  routingPriority: "responsibility-first" | "persona-first" | "balanced";
+  promptEmphasis: string;
+  displayEmphasis: string;
+  personaVisibility: "high" | "balanced" | "low";
+  responsibilityVisibility: "high" | "balanced" | "low";
+}
+
+export interface SharedRefsSpec {
+  policyRef: string;
+  capabilityRef?: string;
+}
+
+export interface TeamManifest {
   id: string;
+  kind: "agent-team";
+  version: string;
   name: string;
+  status: AgentStatus;
+  owner: string;
   description: string;
-  scene: string;
-  leader: TeamRoleSpec;
-  members: TeamRoleSpec[];
+  mission: TeamMissionSpec;
+  scope: TeamScopeSpec;
+  leader: TeamLeaderRef;
+  members: TeamMemberRef[];
+  modes: ExecutionMode[];
+  workingMode: WorkingModeSpec;
   workflow: TeamWorkflowSpec;
-  toolDomains: ToolDomainPolicy[];
-  outputRequirements: OutputRequirement[];
-  delegateFirst: boolean;
-  collaborationStyle: string;
+  implementationBias: ImplementationBiasProfile;
+  sharedRefs: SharedRefsSpec;
+  tags: string[];
+}
+
+export interface ApprovalPolicy {
+  requiredFor: string[];
+  allowAssumeFor: string[];
+}
+
+export interface QualityFloor {
+  requiredChecks: string[];
+  evidenceRequired: boolean;
+}
+
+export interface TeamPolicy {
+  id: string;
+  kind: "team-policy";
+  version: string;
+  instructionPrecedence: string[];
+  approvalPolicy: ApprovalPolicy;
+  forbiddenActions: string[];
+  qualityFloor: QualityFloor;
+  workingRules: string[];
+  notes: string[];
+}
+
+export interface SharedCapabilities {
+  id: string;
+  kind: "shared-capabilities";
+  version: string;
+  models: {
+    default: string;
+    available: string[];
+  };
+  tools: {
+    defaultProfile: string;
+    availableProfiles: string[];
+  };
+  skills: {
+    shared: string[];
+  };
+  instructionPacks: {
+    shared: string[];
+  };
+  memory: {
+    defaultProfile: string;
+  };
+  hooks: {
+    defaultBundle: string;
+  };
+  mcp: {
+    sharedServers: string[];
+  };
+}
+
+export interface PersonaCore {
+  temperament: string;
+  cognitiveStyle: string;
+  riskPosture: string;
+  communicationStyle: string;
+  persistenceStyle: string;
+  conflictStyle?: string;
+  defaultValues: string[];
+}
+
+export interface ResponsibilityCore {
+  description: string;
+  useWhen: string[];
+  avoidWhen: string[];
+  objective: string;
+  successDefinition: string[];
+  nonGoals: string[];
+  inScope: string[];
+  outOfScope: string[];
+  authority?: string;
+  outputPreference?: string[];
+}
+
+export interface CollaborationSpec {
+  defaultConsults: string[];
+  defaultHandoffs: string[];
+  escalationTargets: string[];
+}
+
+export interface CapabilityBindings {
+  modelProfileRef: string;
+  toolProfileRef: string;
+  skillProfileRefs?: string[];
+  memoryProfileRef?: string;
+  hookBundleRef?: string;
+  instructionPackRefs?: string[];
+  mcpServerRefs?: string[];
+}
+
+export interface WorkflowOverride {
+  deviationsFromArchetypeOnly: {
+    autonomyLevel?: string;
+    ambiguityPolicy?: string;
+    stopConditions?: string[];
+  };
+}
+
+export interface OutputContract {
+  tone: string;
+  defaultFormat: string;
+  updatePolicy: string;
+}
+
+export interface AgentOps {
+  evalTags?: string[];
+  metrics?: string[];
+  changeLog?: string;
+}
+
+export interface AgentExamples {
+  goodFit: string[];
+  badFit: string[];
+}
+
+export interface AgentMetadata {
+  id: string;
+  kind: "agent";
+  version: string;
+  name: string;
+  status: AgentStatus;
+  archetype: AgentArchetype;
+  owner?: string;
+  tags?: string[];
+}
+
+export interface AgentProfileSpec {
+  metadata: AgentMetadata;
+  personaCore: PersonaCore;
+  responsibilityCore: ResponsibilityCore;
+  collaboration: CollaborationSpec;
+  capabilityBindings: CapabilityBindings;
+  workflowOverride?: WorkflowOverride;
+  outputContract: OutputContract;
+  ops?: AgentOps;
+  heuristics?: string[];
+  antiPatterns?: string[];
+  examples?: AgentExamples;
+}
+
+export interface TeamDocumentationRefs {
+  teamReadme: string;
+}
+
+export interface AgentTeamDefinition {
+  manifest: TeamManifest;
+  policy: TeamPolicy;
+  sharedCapabilities?: SharedCapabilities;
+  agents: AgentProfileSpec[];
+  documentation?: TeamDocumentationRefs;
 }
 
 export interface TeamLibrary {
   version: string;
-  teams: TeamSpec[];
+  teams: AgentTeamDefinition[];
 }
+
+export type TeamSpec = TeamManifest;
 
 export interface TeamSelection {
   teamId: string;
@@ -52,6 +246,7 @@ export interface TeamSelection {
 
 export interface TeamExecutionPlan {
   selection: TeamSelection;
+  teamName: string;
   activeExecutorId: string;
   stage: string;
   delegatedByLeader: boolean;

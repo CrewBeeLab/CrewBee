@@ -18,15 +18,22 @@ This repository is a scaffold for that V1 direction, not a finished runtime impl
 
 - `src/core`: shared contracts and Team-oriented spec definitions.
 - `src/teams`: baseline Team library assets and Team-first exports.
-- `src/packs`: legacy scaffold path retained for now; expected to evolve toward Team library assets.
 - `src/adapters`: host integration module directory.
 - `src/manager`: management and observability module directory.
+- `scaffold/agent-team-starter`: file-based Team starter aligned to the V1 manifest/policy/agent-profile model.
 - `docs`: architecture and planning notes.
 - `.agent`: compact execution and project context docs for agent sessions.
 
 ## Initial scope
 
-The scaffold now includes a draft `TeamSpec`, a baseline Team library, and manager/adapter helper contracts. It still stops short of full host adapters, runtime orchestration, automatic routing, and end-to-end execution behavior.
+The scaffold now includes:
+
+- typed Team manifests, policies, shared capabilities, and agent profiles in `src/`
+- a baseline Team library for Coding, General, and Wukong teams
+- a file-based starter scaffold under `scaffold/agent-team-starter`
+- `.agent` planning and prompt docs that are ready for the next implementation cycle
+
+It still stops short of full host adapters, runtime orchestration, automatic routing, and end-to-end execution behavior.
 
 ## Quick start
 

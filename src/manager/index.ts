@@ -1,14 +1,14 @@
 import type {
+  AgentTeamDefinition,
   ExecutionMode,
   RuntimeSnapshot,
   TeamExecutionPlan,
   TeamLibrary,
   TeamSelection,
-  TeamSpec,
 } from "../core";
 
 export interface TeamInstallRecord {
-  team: TeamSpec;
+  team: AgentTeamDefinition;
   enabled: boolean;
 }
 
@@ -41,7 +41,7 @@ export function enableTeam(state: ManagerState, teamId: string): ManagerState {
   return {
     ...state,
     availableTeams: state.availableTeams.map((record) =>
-      record.team.id === teamId ? { ...record, enabled: true } : record,
+      record.team.manifest.id === teamId ? { ...record, enabled: true } : record,
     ),
   };
 }
@@ -50,7 +50,7 @@ export function disableTeam(state: ManagerState, teamId: string): ManagerState {
   return {
     ...state,
     availableTeams: state.availableTeams.map((record) =>
-      record.team.id === teamId ? { ...record, enabled: false } : record,
+      record.team.manifest.id === teamId ? { ...record, enabled: false } : record,
     ),
   };
 }
@@ -63,8 +63,10 @@ export function selectTeam(state: ManagerState, selection: TeamSelection): Manag
   };
 }
 
-export function resolveSelectedTeam(state: ManagerState): TeamSpec | null {
-  const record = state.availableTeams.find((entry) => entry.team.id === state.selectedTeamId && entry.enabled);
+export function resolveSelectedTeam(state: ManagerState): AgentTeamDefinition | null {
+  const record = state.availableTeams.find(
+    (entry) => entry.team.manifest.id === state.selectedTeamId && entry.enabled,
+  );
   return record ? record.team : null;
 }
 
@@ -75,16 +77,17 @@ export function createExecutionPlan(state: ManagerState): TeamExecutionPlan | nu
     return null;
   }
 
-  const defaultExecutor = state.selectedMode === "single-executor" ? team.members[0]?.id ?? team.leader.id : team.leader.id;
+  const manifest = team.manifest;
 
   return {
     selection: {
-      teamId: team.id,
+      teamId: manifest.id,
       mode: state.selectedMode,
     },
-    activeExecutorId: defaultExecutor,
-    stage: team.workflow.stages[0] ?? "intake",
-    delegatedByLeader: state.selectedMode === "single-executor",
+    teamName: manifest.name,
+    activeExecutorId: manifest.leader.agentRef,
+    stage: manifest.workflow.stages[0] ?? "intake",
+    delegatedByLeader: false,
   };
 }
 

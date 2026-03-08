@@ -2,15 +2,17 @@
 
 ## Current snapshot
 
-- Active step: `S2`
-- Run status: `running`
-- Last checkpoint: `CP-0002`
+- Active step: `S4`
+- Run status: `success`
+- Last checkpoint: `CP-0004`
 
 ## What changed this session
 
-- Reframed the scaffold docs around the V1 Team-first model: `Agent Team + Manager + Adapter`.
-- Added baseline Team-first TypeScript contracts and a starter Team library under `src/teams`.
-- Marked `src/packs` as a transitional compatibility entrypoint instead of the primary model.
+- Expanded the TypeScript scaffold to model Team manifests, Team policy, shared capabilities, and agent profiles.
+- Rebuilt the baseline Coding, General, and Wukong teams on the aligned composed Team definition.
+- Added `scaffold/agent-team-starter/` with file-authored Team starter assets.
+- Added `.agent/prompts/FRAMEWORK_PROMPT.md` and `.agent/prompts/PLAN_PROMPT.md`.
+- Updated project docs and `.agent` docs so the next implementation cycle starts from the aligned model.
 
 ## Open blockers
 
@@ -24,9 +26,9 @@
 
 ## Exact next actions
 
-1. Decide whether to rename `src/packs` to `src/teams` in code, not just in docs.
-2. Expand `TeamSpec` into a fuller configuration model with role definitions and verification expectations.
-3. Add the first adapter-facing and manager-facing tests once runtime behavior is implemented.
+1. Implement a loader that reads `scaffold/agent-team-starter/`-style assets into the typed `AgentTeamDefinition` model.
+2. Add adapter-facing tests for Team selection, runtime binding, and event generation.
+3. Start the OpenCode adapter using the aligned Team manifest/policy/profile model.
 
 ## References
 

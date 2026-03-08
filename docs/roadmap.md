@@ -2,9 +2,10 @@
 
 ## Milestone 1: Foundation
 
-- [x] Scaffold core/packs/adapters/manager modules
+- [x] Scaffold core/teams/adapters/manager modules
 - [x] Define initial scaffold contracts
-- [x] Define V1 TeamSpec and Team library structure
+- [x] Define V1 Team manifest/policy/capability/profile contracts and Team library structure
+- [x] Add starter Team scaffold files aligned to the V1 authoring model
 - [ ] Add adapter contract tests
 
 ## Milestone 2: OpenCode adapter
@@ -23,6 +24,6 @@
 
 - [x] Add baseline Coding Team definition
 - [x] Add baseline General Team definition
-- [ ] Define Wukong Team positioning and role model
+- [x] Define Wukong Team positioning and role model
 - [x] Add delegate-first Leader behavior rules
 - [x] Expose basic runtime status: Team, mode, active executor, stage, recent actions
