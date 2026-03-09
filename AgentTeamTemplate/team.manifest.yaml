@@ -45,6 +45,7 @@ modes:
 working_mode:
   human_to_leader_only: true
   leader_driven_coordination: true
+  single_active_context_owner: true
   agent_communication_via_session_context: true
   explicit_routing_files_required: false
   explicit_contract_files_required: false
@@ -59,6 +60,63 @@ workflow:
     - verify
     - summarize
 
+default_workflow:
+  - intake
+  - clarify-or-scout
+  - delegate-or-execute
+  - verify
+  - summarize
+
+ownership_routing:
+  default_active_owner: leader
+  switch_to_management_leader_when:
+    - the task is still primarily about scope shaping or routing decisions
+    - there is not yet a single executable path with clear acceptance
+
+role_boundaries:
+  write_execution_roles:
+    - leader
+    - executor
+  read_only_support_roles:
+    - researcher
+
+structure_principles:
+  - keep one active owner on the main context chain
+  - delegate specialists on demand instead of fragmenting the main path
+  - keep research separate from execution when both are needed
+
+governance:
+  instruction_precedence:
+    - platform rules
+    - repository rules
+    - team rules
+    - agent rules
+    - task rules
+  approval_policy:
+    required_for:
+      - destructive actions
+      - external side effects
+      - commit
+    allow_assume_for:
+      - low-risk implementation details
+  forbidden_actions:
+    - fabricate evidence
+    - claim done without verification
+    - ignore hard constraints
+    - pretend to have read unread code
+  quality_floor:
+    required_checks:
+      - diagnostics
+      - build
+      - tests
+    evidence_required: true
+  working_rules:
+    - leader is the primary interface
+    - only one active owner should hold the main context at a time
+    - support agents report back to the leader or active owner
+    - delegation and consultation must carry goal, scope, constraints, deliverable, and verification expectations
+    - final user-facing convergence comes from the role holding closure responsibility
+
 implementation_bias:
   naming_mode: responsibility-first
   routing_priority: responsibility-first
@@ -70,6 +128,7 @@ implementation_bias:
 shared_refs:
   policy_ref: team.policy
   capability_ref: shared-capabilities
+  tools_and_skills_ref: tools-and-skills
 
 tags:
   - template
