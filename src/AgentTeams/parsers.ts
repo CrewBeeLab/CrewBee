@@ -56,6 +56,10 @@ function asBoolean(value: unknown, label: string): boolean {
   return value;
 }
 
+function asOptionalBoolean(value: unknown): boolean | undefined {
+  return typeof value === "boolean" ? value : undefined;
+}
+
 function asStringArray(value: unknown, label: string): string[] {
   if (!Array.isArray(value)) {
     throw new Error(`${label} must be an array.`);
@@ -378,19 +382,40 @@ export function mapAgentProfile(filePath: string): AgentProfileSpec {
 
 export function mapTeamManifest(filePath: string): TeamManifest {
   const raw = parseYamlFile(filePath);
+  const id = asString(raw.id, "id");
+  const name = asString(raw.name, "name");
   const mission = asRecord(raw.mission, "mission");
   const scope = asRecord(raw.scope, "scope");
   const leader = asRecord(raw.leader, "leader");
   const workingMode = asRecord(raw.working_mode ?? raw.workingMode, "working_mode");
-  const workflow = asRecord(raw.workflow, "workflow");
-  const implementationBias = asRecord(raw.implementation_bias ?? raw.implementationBias, "implementation_bias");
-  const sharedRefs = asRecord(raw.shared_refs ?? raw.sharedRefs, "shared_refs");
+  const workflow = asOptionalRecord(raw.workflow);
+  const implementationBias = asOptionalRecord(raw.implementation_bias ?? raw.implementationBias);
+  const sharedRefs = asOptionalRecord(raw.shared_refs ?? raw.sharedRefs);
+  const ownershipRouting = asOptionalRecord(raw.ownership_routing ?? raw.ownershipRouting);
+  const roleBoundaries = asOptionalRecord(raw.role_boundaries ?? raw.roleBoundaries);
+  const governance = asOptionalRecord(raw.governance);
+  const governanceApprovalPolicy = asOptionalRecord(
+    governance?.approval_policy ?? governance?.approvalPolicy,
+  );
+  const governanceQualityFloor = asOptionalRecord(
+    governance?.quality_floor ?? governance?.qualityFloor,
+  );
+  const defaultWorkflow = raw.default_workflow ?? raw.defaultWorkflow;
+  const resolvedWorkflowStages = defaultWorkflow
+    ? asStringArray(defaultWorkflow, "default_workflow")
+    : workflow
+      ? asStringArray(workflow.stages, "workflow.stages")
+      : [];
+
+  if (resolvedWorkflowStages.length === 0) {
+    throw new Error(`${filePath} must define workflow.stages or default_workflow.`);
+  }
 
   return {
-    id: asString(raw.id, "id"),
+    id,
     kind: "agent-team",
     version: asString(raw.version, "version"),
-    name: asString(raw.name, "name"),
+    name,
     status: asString(raw.status, "status") as TeamManifest["status"],
     owner: asString(raw.owner, "owner"),
     description: asString(raw.description, "description"),
@@ -415,12 +440,17 @@ export function mapTeamManifest(filePath: string): TeamManifest {
           };
         })
       : [],
-    modes: asStringArray(raw.modes, "modes") as TeamManifest["modes"],
+    modes: raw.modes
+      ? (asStringArray(raw.modes, "modes") as TeamManifest["modes"])
+      : ["single-executor", "team-collaboration"],
     workingMode: {
       humanToLeaderOnly: asBoolean(workingMode.human_to_leader_only ?? workingMode.humanToLeaderOnly, "working_mode.human_to_leader_only"),
       leaderDrivenCoordination: asBoolean(
         workingMode.leader_driven_coordination ?? workingMode.leaderDrivenCoordination,
         "working_mode.leader_driven_coordination",
+      ),
+      singleActiveContextOwner: asOptionalBoolean(
+        workingMode.single_active_context_owner ?? workingMode.singleActiveContextOwner,
       ),
       agentCommunicationViaSessionContext: asBoolean(
         workingMode.agent_communication_via_session_context ?? workingMode.agentCommunicationViaSessionContext,
@@ -436,31 +466,111 @@ export function mapTeamManifest(filePath: string): TeamManifest {
       ),
     },
     workflow: {
-      id: asString(workflow.id, "workflow.id"),
-      name: asString(workflow.name, "workflow.name"),
-      stages: asStringArray(workflow.stages, "workflow.stages"),
+      id: workflow ? asString(workflow.id, "workflow.id") : `${id}-default`,
+      name: workflow ? asString(workflow.name, "workflow.name") : `${name} default workflow`,
+      stages: resolvedWorkflowStages,
     },
-    implementationBias: {
-      namingMode: asString(implementationBias.naming_mode ?? implementationBias.namingMode, "implementation_bias.naming_mode") as TeamManifest["implementationBias"]["namingMode"],
-      routingPriority: asString(
-        implementationBias.routing_priority ?? implementationBias.routingPriority,
-        "implementation_bias.routing_priority",
-      ) as TeamManifest["implementationBias"]["routingPriority"],
-      promptEmphasis: asString(implementationBias.prompt_emphasis ?? implementationBias.promptEmphasis, "implementation_bias.prompt_emphasis"),
-      displayEmphasis: asString(implementationBias.display_emphasis ?? implementationBias.displayEmphasis, "implementation_bias.display_emphasis"),
-      personaVisibility: asString(
-        implementationBias.persona_visibility ?? implementationBias.personaVisibility,
-        "implementation_bias.persona_visibility",
-      ) as TeamManifest["implementationBias"]["personaVisibility"],
-      responsibilityVisibility: asString(
-        implementationBias.responsibility_visibility ?? implementationBias.responsibilityVisibility,
-        "implementation_bias.responsibility_visibility",
-      ) as TeamManifest["implementationBias"]["responsibilityVisibility"],
-    },
-    sharedRefs: {
-      policyRef: asString(sharedRefs.policy_ref ?? sharedRefs.policyRef, "shared_refs.policy_ref"),
-      capabilityRef: asOptionalString(sharedRefs.capability_ref ?? sharedRefs.capabilityRef),
-    },
+    defaultWorkflow: resolvedWorkflowStages,
+    implementationBias: implementationBias
+      ? {
+          namingMode: asString(
+            implementationBias.naming_mode ?? implementationBias.namingMode,
+            "implementation_bias.naming_mode",
+          ) as NonNullable<TeamManifest["implementationBias"]>["namingMode"],
+          routingPriority: asString(
+            implementationBias.routing_priority ?? implementationBias.routingPriority,
+            "implementation_bias.routing_priority",
+          ) as NonNullable<TeamManifest["implementationBias"]>["routingPriority"],
+          promptEmphasis: asString(
+            implementationBias.prompt_emphasis ?? implementationBias.promptEmphasis,
+            "implementation_bias.prompt_emphasis",
+          ),
+          displayEmphasis: asString(
+            implementationBias.display_emphasis ?? implementationBias.displayEmphasis,
+            "implementation_bias.display_emphasis",
+          ),
+          personaVisibility: asString(
+            implementationBias.persona_visibility ?? implementationBias.personaVisibility,
+            "implementation_bias.persona_visibility",
+          ) as NonNullable<TeamManifest["implementationBias"]>["personaVisibility"],
+          responsibilityVisibility: asString(
+            implementationBias.responsibility_visibility ?? implementationBias.responsibilityVisibility,
+            "implementation_bias.responsibility_visibility",
+          ) as NonNullable<TeamManifest["implementationBias"]>["responsibilityVisibility"],
+        }
+      : undefined,
+    ownershipRouting: ownershipRouting
+      ? {
+          defaultActiveOwner: asString(
+            ownershipRouting.default_active_owner ?? ownershipRouting.defaultActiveOwner,
+            "ownership_routing.default_active_owner",
+          ),
+          switchToManagementLeaderWhen: asStringArray(
+            ownershipRouting.switch_to_management_leader_when ?? ownershipRouting.switchToManagementLeaderWhen,
+            "ownership_routing.switch_to_management_leader_when",
+          ),
+        }
+      : undefined,
+    roleBoundaries: roleBoundaries
+      ? {
+          writeExecutionRoles: asStringArray(
+            roleBoundaries.write_execution_roles ?? roleBoundaries.writeExecutionRoles,
+            "role_boundaries.write_execution_roles",
+          ),
+          readOnlySupportRoles: asStringArray(
+            roleBoundaries.read_only_support_roles ?? roleBoundaries.readOnlySupportRoles,
+            "role_boundaries.read_only_support_roles",
+          ),
+        }
+      : undefined,
+    structurePrinciples: raw.structure_principles ?? raw.structurePrinciples
+      ? asStringArray(raw.structure_principles ?? raw.structurePrinciples, "structure_principles")
+      : undefined,
+    governance: governance
+      ? {
+          instructionPrecedence: asStringArray(
+            governance.instruction_precedence ?? governance.instructionPrecedence,
+            "governance.instruction_precedence",
+          ),
+          approvalPolicy: {
+            requiredFor: asStringArray(
+              governanceApprovalPolicy?.required_for ?? governanceApprovalPolicy?.requiredFor,
+              "governance.approval_policy.required_for",
+            ),
+            allowAssumeFor: asStringArray(
+              governanceApprovalPolicy?.allow_assume_for ?? governanceApprovalPolicy?.allowAssumeFor,
+              "governance.approval_policy.allow_assume_for",
+            ),
+          },
+          forbiddenActions: asStringArray(
+            governance.forbidden_actions ?? governance.forbiddenActions,
+            "governance.forbidden_actions",
+          ),
+          qualityFloor: {
+            requiredChecks: asStringArray(
+              governanceQualityFloor?.required_checks ?? governanceQualityFloor?.requiredChecks,
+              "governance.quality_floor.required_checks",
+            ),
+            evidenceRequired: asBoolean(
+              governanceQualityFloor?.evidence_required ?? governanceQualityFloor?.evidenceRequired,
+              "governance.quality_floor.evidence_required",
+            ),
+          },
+          workingRules: asStringArray(
+            governance.working_rules ?? governance.workingRules,
+            "governance.working_rules",
+          ),
+        }
+      : undefined,
+    sharedRefs: sharedRefs
+      ? {
+          policyRef: asOptionalString(sharedRefs.policy_ref ?? sharedRefs.policyRef),
+          capabilityRef: asOptionalString(sharedRefs.capability_ref ?? sharedRefs.capabilityRef),
+          toolsAndSkillsRef: asOptionalString(
+            sharedRefs.tools_and_skills_ref ?? sharedRefs.toolsAndSkillsRef,
+          ),
+        }
+      : undefined,
     tags: raw.tags ? asStringArray(raw.tags, "tags") : [],
   };
 }

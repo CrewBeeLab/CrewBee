@@ -38,9 +38,20 @@ export interface TeamMemberRef {
   role: string;
 }
 
+export interface TeamOwnershipRouting {
+  defaultActiveOwner: string;
+  switchToManagementLeaderWhen: string[];
+}
+
+export interface TeamRoleBoundaries {
+  writeExecutionRoles: string[];
+  readOnlySupportRoles: string[];
+}
+
 export interface WorkingModeSpec {
   humanToLeaderOnly: boolean;
   leaderDrivenCoordination: boolean;
+  singleActiveContextOwner?: boolean;
   agentCommunicationViaSessionContext: boolean;
   explicitRoutingFilesRequired: boolean;
   explicitContractFilesRequired: boolean;
@@ -56,8 +67,17 @@ export interface ImplementationBiasProfile {
 }
 
 export interface SharedRefsSpec {
-  policyRef: string;
+  policyRef?: string;
   capabilityRef?: string;
+  toolsAndSkillsRef?: string;
+}
+
+export interface TeamGovernanceSpec {
+  instructionPrecedence: string[];
+  approvalPolicy: ApprovalPolicy;
+  forbiddenActions: string[];
+  qualityFloor: QualityFloor;
+  workingRules: string[];
 }
 
 export interface TeamManifest {
@@ -75,8 +95,13 @@ export interface TeamManifest {
   modes: ExecutionMode[];
   workingMode: WorkingModeSpec;
   workflow: TeamWorkflowSpec;
-  implementationBias: ImplementationBiasProfile;
-  sharedRefs: SharedRefsSpec;
+  defaultWorkflow: string[];
+  implementationBias?: ImplementationBiasProfile;
+  ownershipRouting?: TeamOwnershipRouting;
+  roleBoundaries?: TeamRoleBoundaries;
+  structurePrinciples?: string[];
+  governance?: TeamGovernanceSpec;
+  sharedRefs?: SharedRefsSpec;
   tags: string[];
 }
 
