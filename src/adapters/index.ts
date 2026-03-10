@@ -11,6 +11,19 @@ export interface AdapterDefinition {
   hostId: string;
   displayName: string;
   capabilities: HostCapabilityContract;
+  entryModel?: {
+    hostOwnsPrimaryEntry: boolean;
+    usesNativeAgentSelection: boolean;
+    usesNativeModelSelection: boolean;
+    usesHostCli: boolean;
+    requiresCustomManagerEntry: boolean;
+  };
+  coexistence?: {
+    independentFromForeignPlugins: boolean;
+    safeWhenCoInstalled: boolean;
+    reservedAgentNamePrefix?: string;
+    reservedConfigKeyPrefix?: string;
+  };
 }
 
 export interface TeamRuntimeBinding {
@@ -68,3 +81,5 @@ export function createRuntimeEvents(plan: TeamExecutionPlan): RuntimeEvent[] {
     },
   ];
 }
+
+export * from "./opencode";
