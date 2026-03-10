@@ -42,7 +42,36 @@ collaboration:
     - general-leader
 
 capabilities:
-  toolset: repo-readwrite
+  requested_tools:
+    - read
+    - glob
+    - grep
+    - edit
+    - write
+    - bash
+    - lsp_diagnostics
+  permission:
+    - permission: read
+      pattern: "*"
+      action: allow
+    - permission: glob
+      pattern: "*"
+      action: allow
+    - permission: grep
+      pattern: "*"
+      action: allow
+    - permission: edit
+      pattern: "*"
+      action: ask
+    - permission: write
+      pattern: "*"
+      action: ask
+    - permission: bash
+      pattern: "*"
+      action: ask
+    - permission: lsp_diagnostics
+      pattern: "*"
+      action: allow
   instructions:
     - repo-core
 

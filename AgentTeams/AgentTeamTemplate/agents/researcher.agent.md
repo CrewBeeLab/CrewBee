@@ -44,7 +44,28 @@ collaboration:
     - leader
 
 capabilities:
-  toolset: web-research
+  requested_tools:
+    - read
+    - glob
+    - grep
+    - webfetch
+    - websearch
+  permission:
+    - permission: read
+      pattern: "*"
+      action: allow
+    - permission: glob
+      pattern: "*"
+      action: allow
+    - permission: grep
+      pattern: "*"
+      action: allow
+    - permission: webfetch
+      pattern: "*"
+      action: allow
+    - permission: websearch
+      pattern: "*"
+      action: allow
   instructions:
     - repo-core
 

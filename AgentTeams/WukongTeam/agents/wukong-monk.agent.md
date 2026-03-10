@@ -43,7 +43,20 @@ collaboration:
     - wukong-leader
 
 capabilities:
-  toolset: repo-readonly
+  requested_tools:
+    - read
+    - glob
+    - grep
+  permission:
+    - permission: read
+      pattern: "*"
+      action: allow
+    - permission: glob
+      pattern: "*"
+      action: allow
+    - permission: grep
+      pattern: "*"
+      action: allow
   instructions:
     - repo-core
 

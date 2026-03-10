@@ -55,7 +55,36 @@ collaboration:
       description: Escalate only when the task cannot move forward safely.
 
 capabilities:
-  toolset: repo-readwrite
+  requested_tools:
+    - read
+    - glob
+    - grep
+    - edit
+    - write
+    - bash
+    - lsp_diagnostics
+  permission:
+    - permission: read
+      pattern: "*"
+      action: allow
+    - permission: glob
+      pattern: "*"
+      action: allow
+    - permission: grep
+      pattern: "*"
+      action: allow
+    - permission: edit
+      pattern: "*"
+      action: ask
+    - permission: write
+      pattern: "*"
+      action: ask
+    - permission: bash
+      pattern: "*"
+      action: ask
+    - permission: lsp_diagnostics
+      pattern: "*"
+      action: allow
   skills:
     - git-master
   memory: project-memory
