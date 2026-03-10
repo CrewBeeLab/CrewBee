@@ -255,6 +255,14 @@ export interface AgentMetadata {
   tags?: string[];
 }
 
+export type AgentExposure = "user-selectable" | "internal-only";
+
+export interface AgentEntryPointSpec {
+  exposure: AgentExposure;
+  selectionLabel?: string;
+  selectionDescription?: string;
+}
+
 export interface AgentProfileSpec {
   metadata: AgentMetadata;
   personaCore: PersonaCore;
@@ -270,6 +278,7 @@ export interface AgentProfileSpec {
   heuristics?: string[];
   antiPatterns?: string[];
   examples?: AgentExamples;
+  entryPoint?: AgentEntryPointSpec;
 }
 
 export interface TeamDocumentationRefs {
@@ -316,6 +325,9 @@ export interface RuntimeSnapshot {
 export interface HostCapabilityContract {
   supportsAgentRegistration: boolean;
   supportsAgentSwitching: boolean;
+  supportsNativeAgentSelection: boolean;
+  supportsNativeModelSelection: boolean;
+  supportsCliOverrides: boolean;
   supportsSingleExecutorMode: boolean;
   supportsTeamCollaboration: boolean;
   supportsRuntimeEvents: boolean;

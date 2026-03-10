@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { parse as parseYaml } from "yaml";
 
 import type {
+  AgentEntryPointSpec,
   AgentExamples,
   AgentGuardrails,
   AgentOps,
@@ -311,6 +312,18 @@ function mapGuardrails(raw: UnknownRecord | undefined, body: string): AgentGuard
   return { critical };
 }
 
+function mapEntryPoint(raw: UnknownRecord | undefined): AgentEntryPointSpec | undefined {
+  if (!raw) {
+    return undefined;
+  }
+
+  return {
+    exposure: asString(raw.exposure, "entry_point.exposure") as AgentEntryPointSpec["exposure"],
+    selectionLabel: asOptionalString(raw.selection_label ?? raw.selectionLabel),
+    selectionDescription: asOptionalString(raw.selection_description ?? raw.selectionDescription),
+  };
+}
+
 export function mapAgentProfile(filePath: string): AgentProfileSpec {
   const { data, body } = parseFrontmatter(filePath);
   const personaCore = asRecord(data.persona_core ?? data.personaCore, "persona_core");
@@ -377,6 +390,7 @@ export function mapAgentProfile(filePath: string): AgentProfileSpec {
             badFit: asStringArray(asRecord(data.examples, "examples").bad_fit ?? asRecord(data.examples, "examples").badFit ?? [], "examples.bad_fit"),
           }
         : extractExamples(extractSection(body, "Examples")),
+    entryPoint: mapEntryPoint(asOptionalRecord(data.entry_point ?? data.entryPoint)),
   };
 }
 
