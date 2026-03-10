@@ -19,7 +19,7 @@ AgentScroll V1 的架构被明确收束为三个一级对象：
 ## 当前代码框架对应关系
 
 - `src/core`：定义 Team manifest、Team policy、shared capabilities、agent profile、运行态选择与宿主能力契约。
-- `src/AgentTeams`：维护 Team Library 子系统；把嵌入式 `CodingTeam` 与 `AgentTeams/` 下的文件型 Team 统一装配为同一种 Team package 形态。
+- `src/agent-teams`：维护 Team Library 子系统；把嵌入式 `CodingTeam` 与 `AgentTeams/` 下的文件型 Team 统一装配为同一种 Team package 形态。
 - `src/adapters`：定义适配宿主时所需的 runtime binding 与事件抽象。
 - `src/manager`：定义 Team 选择、启用、执行计划与运行快照的管理层入口。
 - `AgentTeams`：存放通过配置文件定义的 Team 目录；当前主要承载 `GeneralTeam` 与 `WukongTeam`。
@@ -39,7 +39,7 @@ AgentScroll V1 的架构被明确收束为三个一级对象：
 
 ## Team Library 子系统
 
-当前 `src/AgentTeams` 已从单一巨型入口拆分为更清晰的内部模块：
+当前 `src/agent-teams` 已从单一巨型入口拆分为更清晰的内部模块：
 
 - `constants.ts` / `types.ts`：Team loader 侧的稳定常量与校验输出类型。
 - `parsers.ts`：YAML 与 agent profile markdown frontmatter 的纯解析 / 映射逻辑。
