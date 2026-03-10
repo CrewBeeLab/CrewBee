@@ -46,10 +46,9 @@ collaboration:
   escalation_targets:
     - user
 
-capability_bindings:
-  model_profile_ref: balanced-default
-  tool_profile_ref: repo-readwrite
-  instruction_pack_refs:
+capabilities:
+  toolset: repo-readwrite
+  instructions:
     - repo-core
     - agentscroll-team-framework
 

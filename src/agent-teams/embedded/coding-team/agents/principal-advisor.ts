@@ -97,14 +97,13 @@ export function createPrincipalAdvisorAgent(): AgentProfileSpec {
         defaultHandoffs: [],
         escalationTargets: [binding("user", "关键信息缺失且继续回答会显著影响建议正确性时升级")],
       },
-      capabilityBindings: {
-        modelProfileRef: "advisory-high",
-        toolProfileRef: "research-readonly",
-        skillProfileRefs: ["repo-search-toolkit", "external-research-toolkit"],
-        memoryProfileRef: "session-context-primary",
-        hookBundleRef: "coding-team-guardrails",
-        instructionPackRefs: ["team-policy", "repo-policy"],
-        mcpServerRefs: [],
+      capabilities: {
+        toolset: "research-readonly",
+        skills: ["repo-search-toolkit", "external-research-toolkit"],
+        memory: "session-context-primary",
+        hooks: "coding-team-guardrails",
+        instructions: ["team-policy", "repo-policy"],
+        mcpServers: [],
       },
       workflowOverride: {
         deviationsFromArchetypeOnly: {

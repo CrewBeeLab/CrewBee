@@ -1,4 +1,5 @@
 import type { AgentTeamDefinition, TeamLibrary } from "../core";
+import { getToolset } from "../runtime";
 
 import { EMBEDDED_TEAM_IDS } from "./constants";
 import type { TeamValidationIssue } from "./types";
@@ -84,15 +85,24 @@ export function validateTeamDefinition(team: AgentTeamDefinition): TeamValidatio
     });
   }
 
-  if (
-    team.sharedCapabilities &&
-    manifest.sharedRefs?.capabilityRef &&
-    manifest.sharedRefs.capabilityRef !== team.sharedCapabilities.id
-  ) {
-    issues.push({
-      level: "error",
-      message: `Shared capabilities id '${team.sharedCapabilities.id}' does not match manifest ref '${manifest.sharedRefs.capabilityRef}'.`,
-    });
+  for (const [agentId] of Object.entries(manifest.agentRuntime ?? {})) {
+    if (!agentIds.has(agentId)) {
+      issues.push({
+        level: "error",
+        message: `Agent runtime override '${agentId}' is not defined in this Team.`,
+      });
+    }
+  }
+
+  for (const agent of team.agents) {
+    try {
+      getToolset(agent.capabilities.toolset);
+    } catch (error) {
+      issues.push({
+        level: "error",
+        message: `Agent '${agent.metadata.id}' references unknown toolset '${agent.capabilities.toolset}'. ${String(error)}`,
+      });
+    }
   }
 
   if (manifest.sharedRefs?.policyRef && manifest.sharedRefs.policyRef !== policy.id) {

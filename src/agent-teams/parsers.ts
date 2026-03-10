@@ -3,18 +3,19 @@ import { readFileSync } from "node:fs";
 import { parse as parseYaml } from "yaml";
 
 import type {
+  AgentRuntimeModelConfig,
   AgentEntryPointSpec,
   AgentExamples,
   AgentGuardrails,
   AgentOps,
+  AgentCapabilities,
   AgentProfileSpec,
-  CapabilityBindings,
   CollaborationBindingInput,
   MinimalOperations,
   MinimalTemplates,
   OutputContract,
-  SharedCapabilities,
   TeamManifest,
+  TeamAgentRuntimeMap,
   TeamPolicy,
   WorkflowOverride,
 } from "../core";
@@ -163,27 +164,26 @@ function extractExamples(section?: string): AgentExamples | undefined {
   return { goodFit, badFit };
 }
 
-function mapCapabilityBindings(raw: UnknownRecord | undefined): CapabilityBindings | undefined {
+function mapCapabilities(raw: UnknownRecord | undefined): AgentCapabilities | undefined {
   if (!raw) {
     return undefined;
   }
 
   return {
-    modelProfileRef: asString(raw.model_profile_ref ?? raw.modelProfileRef, "model_profile_ref"),
-    toolProfileRef: asString(raw.tool_profile_ref ?? raw.toolProfileRef, "tool_profile_ref"),
-    skillProfileRefs:
-      raw.skill_profile_refs ?? raw.skillProfileRefs
-        ? asStringArray(raw.skill_profile_refs ?? raw.skillProfileRefs, "skill_profile_refs")
+    toolset: asString(raw.toolset ?? raw.tools, "toolset"),
+    skills:
+      raw.skills
+        ? asStringArray(raw.skills, "skills")
         : undefined,
-    memoryProfileRef: asOptionalString(raw.memory_profile_ref ?? raw.memoryProfileRef),
-    hookBundleRef: asOptionalString(raw.hook_bundle_ref ?? raw.hookBundleRef),
-    instructionPackRefs:
-      raw.instruction_pack_refs ?? raw.instructionPackRefs
-        ? asStringArray(raw.instruction_pack_refs ?? raw.instructionPackRefs, "instruction_pack_refs")
+    memory: asOptionalString(raw.memory),
+    hooks: asOptionalString(raw.hooks),
+    instructions:
+      raw.instructions
+        ? asStringArray(raw.instructions, "instructions")
         : undefined,
-    mcpServerRefs:
-      raw.mcp_server_refs ?? raw.mcpServerRefs
-        ? asStringArray(raw.mcp_server_refs ?? raw.mcpServerRefs, "mcp_server_refs")
+    mcpServers:
+      raw.mcp_servers
+        ? asStringArray(raw.mcp_servers, "mcp_servers")
         : undefined,
   };
 }
@@ -233,7 +233,7 @@ function mapCollaborationBinding(entry: unknown): CollaborationBindingInput {
   return {
     agentRef: asString(record.agent_ref ?? record.agentRef, "agent_ref"),
     description: asString(record.description, "description"),
-    capabilityBindings: mapCapabilityBindings(asOptionalRecord(record.capability_bindings ?? record.capabilityBindings)),
+    capabilities: mapCapabilities(asOptionalRecord(record.capabilities)),
     workflowOverride: mapWorkflowOverride(asOptionalRecord(record.workflow_override ?? record.workflowOverride)),
     outputContract: mapOutputContract(asOptionalRecord(record.output_contract ?? record.outputContract)),
   };
@@ -324,12 +324,36 @@ function mapEntryPoint(raw: UnknownRecord | undefined): AgentEntryPointSpec | un
   };
 }
 
+function mapAgentRuntime(raw: UnknownRecord | undefined): TeamAgentRuntimeMap | undefined {
+  if (!raw) {
+    return undefined;
+  }
+
+  return Object.fromEntries(
+    Object.entries(raw).map(([agentId, value]) => {
+      const record = asRecord(value, `agent_runtime.${agentId}`);
+      const options = asOptionalRecord(record.options);
+
+      const runtime: AgentRuntimeModelConfig = {
+        provider: asString(record.provider, `agent_runtime.${agentId}.provider`),
+        model: asString(record.model, `agent_runtime.${agentId}.model`),
+        temperature: record.temperature !== undefined ? Number(record.temperature) : undefined,
+        topP: record.top_p !== undefined || record.topP !== undefined ? Number(record.top_p ?? record.topP) : undefined,
+        variant: asOptionalString(record.variant),
+        options: options ? { ...options } : undefined,
+      };
+
+      return [agentId, runtime];
+    }),
+  );
+}
+
 export function mapAgentProfile(filePath: string): AgentProfileSpec {
   const { data, body } = parseFrontmatter(filePath);
   const personaCore = asRecord(data.persona_core ?? data.personaCore, "persona_core");
   const responsibilityCore = asRecord(data.responsibility_core ?? data.responsibilityCore, "responsibility_core");
   const collaboration = asRecord(data.collaboration, "collaboration");
-  const capabilityBindings = asRecord(data.capability_bindings ?? data.capabilityBindings, "capability_bindings");
+  const capabilities = asRecord(data.capabilities, "capabilities");
 
   return {
     metadata: {
@@ -370,7 +394,7 @@ export function mapAgentProfile(filePath: string): AgentProfileSpec {
           : undefined,
     },
     collaboration: mapCollaboration(collaboration),
-    capabilityBindings: mapCapabilityBindings(capabilityBindings) as CapabilityBindings,
+    capabilities: mapCapabilities(capabilities) as AgentCapabilities,
     workflowOverride: mapWorkflowOverride(asOptionalRecord(data.workflow_override ?? data.workflowOverride)),
     outputContract: mapOutputContract(asOptionalRecord(data.output_contract ?? data.outputContract)) as OutputContract,
     ops: mapAgentOps(asOptionalRecord(data.ops)),
@@ -408,6 +432,7 @@ export function mapTeamManifest(filePath: string): TeamManifest {
   const ownershipRouting = asOptionalRecord(raw.ownership_routing ?? raw.ownershipRouting);
   const roleBoundaries = asOptionalRecord(raw.role_boundaries ?? raw.roleBoundaries);
   const governance = asOptionalRecord(raw.governance);
+  const agentRuntime = asOptionalRecord(raw.agent_runtime ?? raw.agentRuntime);
   const governanceApprovalPolicy = asOptionalRecord(
     governance?.approval_policy ?? governance?.approvalPolicy,
   );
@@ -576,13 +601,10 @@ export function mapTeamManifest(filePath: string): TeamManifest {
           ),
         }
       : undefined,
+    agentRuntime: mapAgentRuntime(agentRuntime),
     sharedRefs: sharedRefs
       ? {
           policyRef: asOptionalString(sharedRefs.policy_ref ?? sharedRefs.policyRef),
-          capabilityRef: asOptionalString(sharedRefs.capability_ref ?? sharedRefs.capabilityRef),
-          toolsAndSkillsRef: asOptionalString(
-            sharedRefs.tools_and_skills_ref ?? sharedRefs.toolsAndSkillsRef,
-          ),
         }
       : undefined,
     tags: raw.tags ? asStringArray(raw.tags, "tags") : [],
@@ -610,45 +632,5 @@ export function mapTeamPolicy(filePath: string): TeamPolicy {
     },
     workingRules: asStringArray(raw.working_rules ?? raw.workingRules, "working_rules"),
     notes: raw.notes ? asStringArray(raw.notes, "notes") : [],
-  };
-}
-
-export function mapSharedCapabilities(filePath: string): SharedCapabilities {
-  const raw = parseYamlFile(filePath);
-  const models = asRecord(raw.models, "models");
-  const tools = asRecord(raw.tools, "tools");
-  const skills = asRecord(raw.skills, "skills");
-  const instructionPacks = asRecord(raw.instruction_packs ?? raw.instructionPacks, "instruction_packs");
-  const memory = asRecord(raw.memory, "memory");
-  const hooks = asRecord(raw.hooks, "hooks");
-  const mcp = asRecord(raw.mcp, "mcp");
-
-  return {
-    id: asString(raw.id, "id"),
-    kind: "shared-capabilities",
-    version: asString(raw.version, "version"),
-    models: {
-      default: asString(models.default, "models.default"),
-      available: asStringArray(models.available, "models.available"),
-    },
-    tools: {
-      defaultProfile: asString(tools.default_profile ?? tools.defaultProfile, "tools.default_profile"),
-      availableProfiles: asStringArray(tools.available_profiles ?? tools.availableProfiles, "tools.available_profiles"),
-    },
-    skills: {
-      shared: asStringArray(skills.shared ?? [], "skills.shared"),
-    },
-    instructionPacks: {
-      shared: asStringArray(instructionPacks.shared ?? [], "instruction_packs.shared"),
-    },
-    memory: {
-      defaultProfile: asString(memory.default_profile ?? memory.defaultProfile, "memory.default_profile"),
-    },
-    hooks: {
-      defaultBundle: asString(hooks.default_bundle ?? hooks.defaultBundle, "hooks.default_bundle"),
-    },
-    mcp: {
-      sharedServers: asStringArray(mcp.shared_servers ?? mcp.sharedServers ?? [], "mcp.shared_servers"),
-    },
   };
 }

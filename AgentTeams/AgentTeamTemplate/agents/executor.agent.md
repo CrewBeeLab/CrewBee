@@ -45,12 +45,11 @@ collaboration:
   escalation_targets:
     - leader
 
-capability_bindings:
-  model_profile_ref: reasoning-high
-  tool_profile_ref: repo-readwrite
-  skill_profile_refs:
+capabilities:
+  toolset: repo-readwrite
+  skills:
     - git-master
-  instruction_pack_refs:
+  instructions:
     - repo-core
 
 output_contract:

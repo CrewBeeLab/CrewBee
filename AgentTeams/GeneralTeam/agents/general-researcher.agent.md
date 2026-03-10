@@ -43,10 +43,9 @@ collaboration:
   escalation_targets:
     - general-leader
 
-capability_bindings:
-  model_profile_ref: balanced-default
-  tool_profile_ref: web-research
-  instruction_pack_refs:
+capabilities:
+  toolset: web-research
+  instructions:
     - repo-core
 
 output_contract:

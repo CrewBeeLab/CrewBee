@@ -42,10 +42,9 @@ collaboration:
   escalation_targets:
     - general-leader
 
-capability_bindings:
-  model_profile_ref: reasoning-high
-  tool_profile_ref: repo-readonly
-  instruction_pack_refs:
+capabilities:
+  toolset: repo-readonly
+  instructions:
     - repo-core
 
 output_contract:

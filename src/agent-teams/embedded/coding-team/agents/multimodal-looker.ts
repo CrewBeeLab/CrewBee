@@ -71,14 +71,13 @@ export function createMultimodalLookerAgent(): AgentProfileSpec {
         defaultHandoffs: [],
         escalationTargets: [binding("user", "当提取目标本身不清晰，或关键内容不可读且显著影响结果时升级")],
       },
-      capabilityBindings: {
-        modelProfileRef: "multimodal-analysis-high",
-        toolProfileRef: "multimodal-readonly",
-        skillProfileRefs: [],
-        memoryProfileRef: "session-context-primary",
-        hookBundleRef: "multimodal-extraction-guardrails",
-        instructionPackRefs: ["team-policy", "repo-policy"],
-        mcpServerRefs: [],
+      capabilities: {
+        toolset: "multimodal-readonly",
+        skills: [],
+        memory: "session-context-primary",
+        hooks: "multimodal-extraction-guardrails",
+        instructions: ["team-policy", "repo-policy"],
+        mcpServers: [],
       },
       workflowOverride: {
         deviationsFromArchetypeOnly: {

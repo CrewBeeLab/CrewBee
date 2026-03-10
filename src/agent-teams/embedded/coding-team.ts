@@ -1,6 +1,5 @@
 import type {
   AgentTeamDefinition,
-  SharedCapabilities,
   TeamManifest,
   TeamPolicy,
 } from "../../core";
@@ -129,10 +128,18 @@ export function createEmbeddedCodingTeam(): AgentTeamDefinition {
         "仓库内研究与外部研究必须分离",
       ],
     },
+    agentRuntime: {
+      "coding-leader": { provider: "openai", model: "gpt-5.4", temperature: 0.2, topP: 0.85, variant: "long-context" },
+      "management-leader": { provider: "openai", model: "gpt-5.4", temperature: 0.15, topP: 0.75 },
+      "coding-executor": { provider: "openai", model: "gpt-5.4", temperature: 0.25, topP: 0.9 },
+      "codebase-explorer": { provider: "openai", model: "gpt-5.4", temperature: 0.1, topP: 0.8 },
+      "web-researcher": { provider: "openai", model: "gpt-5.4", temperature: 0.2, topP: 0.85 },
+      reviewer: { provider: "openai", model: "gpt-5.4", temperature: 0.15, topP: 0.75 },
+      "principal-advisor": { provider: "openai", model: "gpt-5.4", temperature: 0.15, topP: 0.75 },
+      "multimodal-looker": { provider: "openai", model: "gpt-5.4", temperature: 0.2, topP: 0.85 },
+    },
     sharedRefs: {
       policyRef: "coding-team.policy",
-      capabilityRef: "coding-team.shared-capabilities",
-      toolsAndSkillsRef: "tools-and-skills",
     },
     tags: ["代码", "leader驱动", "上下文连续性", "主执行者中心", "评审中心", "证据驱动"],
   };
@@ -175,48 +182,11 @@ export function createEmbeddedCodingTeam(): AgentTeamDefinition {
     ],
   };
 
-  const sharedCapabilities: SharedCapabilities = {
-    id: "coding-team.shared-capabilities",
-    kind: "shared-capabilities",
-    version: "1.0.0",
-    models: {
-      default: "coding-deep",
-      available: ["coding-deep", "reasoning-high", "balanced-default", "exploration-high", "multimodal-analysis-high"],
-    },
-    tools: {
-      defaultProfile: "coding-team-default",
-      availableProfiles: [
-        "coding-team-default",
-        "repo-readonly",
-        "repo-readwrite",
-        "web-research",
-        "research-readonly",
-        "multimodal-readonly",
-      ],
-    },
-    skills: {
-      shared: ["repo-search-toolkit", "external-research-toolkit", "verification-toolkit"],
-    },
-    instructionPacks: {
-      shared: ["team-policy", "repo-policy"],
-    },
-    memory: {
-      defaultProfile: "session-context-primary",
-    },
-    hooks: {
-      defaultBundle: "coding-team-guardrails",
-    },
-    mcp: {
-      sharedServers: [],
-    },
-  };
-
   const agents = createCodingTeamAgents();
 
   return {
     manifest,
     policy,
-    sharedCapabilities,
     agents,
   };
 }

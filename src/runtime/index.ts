@@ -14,3 +14,6 @@ export type {
   SessionRuntimeBinding,
   TeamCatalogProjection,
 } from "./types";
+
+export { getToolset, isAvailableTool, listAvailableTools, listToolsets } from "./registries";
+export type { AvailableToolDefinition, ToolsetDefinition } from "./registries";

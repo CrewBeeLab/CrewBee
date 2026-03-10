@@ -88,14 +88,13 @@ export function createCodingExecutorAgent(): AgentProfileSpec {
         defaultHandoffs: [],
         escalationTargets: [binding("user", "用户")],
       },
-      capabilityBindings: {
-        modelProfileRef: "execution-medium-default-high-on-complex",
-        toolProfileRef: "codebase-readwrite-direct",
-        skillProfileRefs: ["runtime-skill-registry"],
-        memoryProfileRef: "session-context-primary",
-        hookBundleRef: "todo-and-verification-guardrails",
-        instructionPackRefs: ["team-policy", "repo-policy"],
-        mcpServerRefs: [],
+      capabilities: {
+        toolset: "codebase-readwrite-direct",
+        skills: ["runtime-skill-registry"],
+        memory: "session-context-primary",
+        hooks: "todo-and-verification-guardrails",
+        instructions: ["team-policy", "repo-policy"],
+        mcpServers: [],
       },
       workflowOverride: {
         deviationsFromArchetypeOnly: {

@@ -107,14 +107,13 @@ export function createCodingLeaderAgent(): AgentProfileSpec {
         binding("user", "真实互斥需求、审批边界或穷尽探索后仍缺关键事实时升级"),
       ],
     },
-    capabilityBindings: {
-      modelProfileRef: "coding-deep",
-      toolProfileRef: "coding-team-default",
-      skillProfileRefs: ["repo-search-toolkit", "external-research-toolkit", "verification-toolkit"],
-      memoryProfileRef: "session-context-primary",
-      hookBundleRef: "coding-team-guardrails",
-      instructionPackRefs: ["team-policy", "repo-policy"],
-      mcpServerRefs: [],
+    capabilities: {
+      toolset: "coding-team-default",
+      skills: ["repo-search-toolkit", "external-research-toolkit", "verification-toolkit"],
+      memory: "session-context-primary",
+      hooks: "coding-team-guardrails",
+      instructions: ["team-policy", "repo-policy"],
+      mcpServers: [],
     },
     workflowOverride: {
       deviationsFromArchetypeOnly: {

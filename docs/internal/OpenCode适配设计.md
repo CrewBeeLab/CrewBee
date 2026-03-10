@@ -6,11 +6,12 @@
 
 **在不改变 OpenCode 用户使用习惯的前提下，如何让 AgentScroll 作为一个独立插件接入 OpenCode，并把 AgentScroll 的 Agent Team 定义稳定投影为 OpenCode 可选 Agent。**
 
-这版设计相对前一版有三个关键调整：
+这版设计相对前一版有四个关键调整：
 
 1. AgentScroll 与 oh-my-opencode 在功能开发上视为互斥体系，AgentScroll 不依赖 oh-my-opencode 的任何功能。
 2. OpenCode 仍然是唯一入口；配置、Agent 选择、Model 选择、CLI 参数都继续沿用 OpenCode 原生方式。
 3. Team 不再通过额外 Manager 入口暴露，而是通过一组投影后的 OpenCode Agent 暴露给用户；用户选择某个投影 Agent，本质上就是选择了某个 Team 的执行入口。
+4. `shared-capabilities.yaml` 不再是当前框架主路径；provider/model 级别配置收敛到 `team.manifest.yaml` 的 `agent_runtime` 中。
 
 配套的机器可读决策文件见 `docs/opencode-team-decisions.json`。
 
@@ -167,7 +168,6 @@ AgentScroll 的原生模型是 Team-first：
 
 * Team manifest
 * Team policy
-* shared capabilities
 * agent profiles
 
 ### Boundary 2: Catalog Projection Assembler
@@ -240,7 +240,24 @@ AgentScroll 的原生模型是 Team-first：
 
 **某个 Team 里的哪些角色，允许被直接选作入口。**
 
-## 5.2 CodingTeam 的投影规则
+## 5.2 Team manifest 中的 `agent_runtime`
+
+当前框架把 provider/model 级别的宿主运行时配置收敛到 `team.manifest.yaml` 的 `agent_runtime` 中。
+
+它表达的是：
+
+* 某个 Team 内 Agent 在宿主中默认使用哪个 `provider`
+* 某个 Team 内 Agent 在宿主中默认使用哪个 `model`
+* 如有需要，也可继续承载 `variant`、`temperature`、`topP`、`options` 等宿主模型配置
+
+优先级规则是：
+
+* `agent_runtime` 显式配置
+* 高于 `model_profile_ref` 的解析结果
+
+而 `model_profile_ref` 自身继续保留，用来表达“抽象模型档位”和默认能力类别。
+
+## 5.3 CodingTeam 的投影规则
 
 当前建议的第一批投影如下。
 
@@ -268,7 +285,7 @@ AgentScroll 的原生模型是 Team-first：
 
 因此“用户选择 Agent 执行者，就是选择 Team”在这个模型下是成立的。
 
-## 5.3 对 GeneralTeam / WukongTeam 的推广规则
+## 5.4 对 GeneralTeam / WukongTeam 的推广规则
 
 并不是每个 Team 都必须把全部成员暴露给用户。
 

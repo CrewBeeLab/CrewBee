@@ -54,17 +54,16 @@ collaboration:
     - agent_ref: user
       description: Escalate only when the task cannot move forward safely.
 
-capability_bindings:
-  model_profile_ref: reasoning-high
-  tool_profile_ref: repo-readwrite
-  skill_profile_refs:
+capabilities:
+  toolset: repo-readwrite
+  skills:
     - git-master
-  memory_profile_ref: project-memory
-  hook_bundle_ref: repo-guardrails
-  instruction_pack_refs:
+  memory: project-memory
+  hooks: repo-guardrails
+  instructions:
     - repo-core
     - agentscroll-team-framework
-  mcp_server_refs:
+  mcp_servers:
     - github
 
 workflow_override:

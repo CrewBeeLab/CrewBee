@@ -69,9 +69,25 @@ implementation_bias:
   persona_visibility: high
   responsibility_visibility: high
 
+agent_runtime:
+  wukong-leader:
+    provider: openai
+    model: gpt-5.4
+  wukong-monk:
+    provider: openai
+    model: gpt-5.4
+  wukong-bajie:
+    provider: openai
+    model: gpt-5.4
+  wukong-wujing:
+    provider: openai
+    model: gpt-5.4
+  wukong-dragon:
+    provider: openai
+    model: gpt-5.4
+
 shared_refs:
   policy_ref: wukong-team.policy
-  capability_ref: wukong-team.shared-capabilities
 
 tags:
   - exploration

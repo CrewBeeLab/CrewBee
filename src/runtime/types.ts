@@ -10,6 +10,7 @@ import type {
 export interface CatalogAgentProjection {
   teamId: string;
   teamName: string;
+  sourceTeam: AgentTeamDefinition;
   sourceAgentId: string;
   roleKind: TeamRoleKind;
   exposure: AgentExposure;

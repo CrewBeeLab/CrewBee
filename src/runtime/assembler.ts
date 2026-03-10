@@ -39,6 +39,7 @@ export function createCatalogAgentProjection(
   return {
     teamId: team.manifest.id,
     teamName: team.manifest.name,
+    sourceTeam: team,
     sourceAgentId: agent.metadata.id,
     roleKind,
     exposure: getExposure(agent),

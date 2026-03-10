@@ -90,14 +90,13 @@ export function createCodebaseExplorerAgent(): AgentProfileSpec {
           binding("user", "当真实需求边界在穷尽仓库证据后仍不清晰时升级"),
         ],
       },
-      capabilityBindings: {
-        modelProfileRef: "repo-search-reasoning-fast",
-        toolProfileRef: "internal-code-search-readonly",
-        skillProfileRefs: ["repo-search-toolkit"],
-        memoryProfileRef: "session-context-primary",
-        hookBundleRef: "search-structure-and-path-guardrails",
-        instructionPackRefs: ["team-policy", "repo-policy"],
-        mcpServerRefs: [],
+      capabilities: {
+        toolset: "internal-code-search-readonly",
+        skills: ["repo-search-toolkit"],
+        memory: "session-context-primary",
+        hooks: "search-structure-and-path-guardrails",
+        instructions: ["team-policy", "repo-policy"],
+        mcpServers: [],
       },
       workflowOverride: {
         deviationsFromArchetypeOnly: {

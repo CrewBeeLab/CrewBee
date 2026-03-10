@@ -73,9 +73,28 @@ implementation_bias:
   persona_visibility: balanced
   responsibility_visibility: high
 
+agent_runtime:
+  general-leader:
+    provider: openai
+    model: gpt-5.4
+  general-researcher:
+    provider: openai
+    model: gpt-5.4
+  general-analyst:
+    provider: openai
+    model: gpt-5.4
+  general-writer:
+    provider: openai
+    model: gpt-5.4
+  general-editor:
+    provider: openai
+    model: gpt-5.4
+  general-operator:
+    provider: openai
+    model: gpt-5.4
+
 shared_refs:
   policy_ref: general-team.policy
-  capability_ref: general-team.shared-capabilities
 
 tags:
   - general

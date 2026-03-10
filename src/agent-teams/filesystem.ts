@@ -5,11 +5,10 @@ import type { AgentTeamDefinition } from "../core";
 
 import { TEAM_CONFIG_ROOT } from "./constants";
 import { resolveTeamDocumentation } from "./documentation";
-import { mapAgentProfile, mapSharedCapabilities, mapTeamManifest, mapTeamPolicy } from "./parsers";
+import { mapAgentProfile, mapTeamManifest, mapTeamPolicy } from "./parsers";
 
 const TEAM_MANIFEST_FILE = "team.manifest.yaml";
 const TEAM_POLICY_FILE = "team.policy.yaml";
-const SHARED_CAPABILITIES_FILE = "shared-capabilities.yaml";
 
 export function resolveTeamConfigRoot(baseDir: string = process.cwd()): string {
   return path.resolve(baseDir, TEAM_CONFIG_ROOT);
@@ -33,7 +32,6 @@ export function loadTeamDefinitionFromDirectory(
 ): AgentTeamDefinition {
   const manifest = mapTeamManifest(path.join(teamDir, TEAM_MANIFEST_FILE));
   const policy = mapTeamPolicy(path.join(teamDir, TEAM_POLICY_FILE));
-  const sharedCapabilitiesPath = path.join(teamDir, SHARED_CAPABILITIES_FILE);
   const agentsDir = path.join(teamDir, "agents");
 
   if (!existsSync(agentsDir)) {
@@ -48,7 +46,6 @@ export function loadTeamDefinitionFromDirectory(
   return {
     manifest,
     policy,
-    sharedCapabilities: existsSync(sharedCapabilitiesPath) ? mapSharedCapabilities(sharedCapabilitiesPath) : undefined,
     agents,
     documentation: resolveTeamDocumentation(teamDir, workspaceRoot),
   };

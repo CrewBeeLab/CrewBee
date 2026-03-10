@@ -12,5 +12,5 @@
 - Team 相关规范要尽量显式、可版本化。
 - 优先使用小而可组合的合同结构，而不是大而全的单体接口。
 - `src/core` 保持宿主无关，不提前写死 OpenCode 之外的实现细节。
-- 已定义 Team 放在 `AgentTeams/`，模板放在 `AgentTeamTemplate/`。
+- 已定义 Team 放在 `AgentTeams/`，模板放在 `AgentTeams/AgentTeamTemplate/`。
 - `docs/` 下文档以中文为主，面向人类理解与项目推进。

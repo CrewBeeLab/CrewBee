@@ -125,10 +125,19 @@ implementation_bias:
   persona_visibility: balanced
   responsibility_visibility: high
 
+agent_runtime:
+  leader:
+    provider: openai
+    model: gpt-5.4
+  researcher:
+    provider: openai
+    model: gpt-5.4
+  executor:
+    provider: openai
+    model: gpt-5.4
+
 shared_refs:
   policy_ref: team.policy
-  capability_ref: shared-capabilities
-  tools_and_skills_ref: tools-and-skills
 
 tags:
   - template

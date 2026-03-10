@@ -68,9 +68,18 @@ export interface ImplementationBiasProfile {
 
 export interface SharedRefsSpec {
   policyRef?: string;
-  capabilityRef?: string;
-  toolsAndSkillsRef?: string;
 }
+
+export interface AgentRuntimeModelConfig {
+  provider: string;
+  model: string;
+  temperature?: number;
+  topP?: number;
+  variant?: string;
+  options?: Record<string, unknown>;
+}
+
+export type TeamAgentRuntimeMap = Record<string, AgentRuntimeModelConfig>;
 
 export interface TeamGovernanceSpec {
   instructionPrecedence: string[];
@@ -101,6 +110,7 @@ export interface TeamManifest {
   roleBoundaries?: TeamRoleBoundaries;
   structurePrinciples?: string[];
   governance?: TeamGovernanceSpec;
+  agentRuntime?: TeamAgentRuntimeMap;
   sharedRefs?: SharedRefsSpec;
   tags: string[];
 }
@@ -125,35 +135,6 @@ export interface TeamPolicy {
   qualityFloor: QualityFloor;
   workingRules: string[];
   notes: string[];
-}
-
-export interface SharedCapabilities {
-  id: string;
-  kind: "shared-capabilities";
-  version: string;
-  models: {
-    default: string;
-    available: string[];
-  };
-  tools: {
-    defaultProfile: string;
-    availableProfiles: string[];
-  };
-  skills: {
-    shared: string[];
-  };
-  instructionPacks: {
-    shared: string[];
-  };
-  memory: {
-    defaultProfile: string;
-  };
-  hooks: {
-    defaultBundle: string;
-  };
-  mcp: {
-    sharedServers: string[];
-  };
 }
 
 export interface PersonaCore {
@@ -182,7 +163,7 @@ export interface ResponsibilityCore {
 export interface CollaborationBinding {
   agentRef: string;
   description: string;
-  capabilityBindings?: Partial<CapabilityBindings>;
+  capabilities?: Partial<AgentCapabilities>;
   workflowOverride?: WorkflowOverride;
   outputContract?: OutputContract;
 }
@@ -195,14 +176,13 @@ export interface CollaborationSpec {
   escalationTargets: CollaborationBindingInput[];
 }
 
-export interface CapabilityBindings {
-  modelProfileRef: string;
-  toolProfileRef: string;
-  skillProfileRefs?: string[];
-  memoryProfileRef?: string;
-  hookBundleRef?: string;
-  instructionPackRefs?: string[];
-  mcpServerRefs?: string[];
+export interface AgentCapabilities {
+  toolset: string;
+  skills?: string[];
+  memory?: string;
+  hooks?: string;
+  instructions?: string[];
+  mcpServers?: string[];
 }
 
 export interface WorkflowOverride {
@@ -268,7 +248,7 @@ export interface AgentProfileSpec {
   personaCore: PersonaCore;
   responsibilityCore: ResponsibilityCore;
   collaboration: CollaborationSpec;
-  capabilityBindings: CapabilityBindings;
+  capabilities: AgentCapabilities;
   workflowOverride?: WorkflowOverride;
   outputContract: OutputContract;
   ops?: AgentOps;
@@ -289,7 +269,6 @@ export interface TeamDocumentationRefs {
 export interface AgentTeamDefinition {
   manifest: TeamManifest;
   policy: TeamPolicy;
-  sharedCapabilities?: SharedCapabilities;
   agents: AgentProfileSpec[];
   documentation?: TeamDocumentationRefs;
 }

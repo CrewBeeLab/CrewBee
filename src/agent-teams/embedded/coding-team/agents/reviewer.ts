@@ -101,14 +101,13 @@ export function createReviewerAgent(): AgentProfileSpec {
         binding("user", "当关键验收标准或目标本身存在实质冲突且无法靠上下文判断时升级"),
       ],
     },
-    capabilityBindings: {
-      modelProfileRef: "advisory-high",
-      toolProfileRef: "orchestrator-qa",
-      skillProfileRefs: ["repo-search-toolkit", "verification-toolkit", "external-research-toolkit"],
-      memoryProfileRef: "session-context-primary",
-      hookBundleRef: "coding-team-guardrails",
-      instructionPackRefs: ["team-policy", "repo-policy"],
-      mcpServerRefs: [],
+    capabilities: {
+      toolset: "orchestrator-qa",
+      skills: ["repo-search-toolkit", "verification-toolkit", "external-research-toolkit"],
+      memory: "session-context-primary",
+      hooks: "coding-team-guardrails",
+      instructions: ["team-policy", "repo-policy"],
+      mcpServers: [],
     },
     workflowOverride: {
       deviationsFromArchetypeOnly: {

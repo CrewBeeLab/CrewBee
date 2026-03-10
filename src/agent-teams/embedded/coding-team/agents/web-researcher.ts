@@ -89,14 +89,13 @@ export function createWebResearcherAgent(): AgentProfileSpec {
           binding("user", "当版本、目标库或研究边界存在关键歧义且显著影响结论时升级"),
         ],
       },
-      capabilityBindings: {
-        modelProfileRef: "external-research-evidence-high",
-        toolProfileRef: "docs-github-history-readonly",
-        skillProfileRefs: ["open-source-research-toolkit"],
-        memoryProfileRef: "session-context-primary",
-        hookBundleRef: "evidence-recency-version-guardrails",
-        instructionPackRefs: ["team-policy", "repo-policy"],
-        mcpServerRefs: [],
+      capabilities: {
+        toolset: "docs-github-history-readonly",
+        skills: ["open-source-research-toolkit"],
+        memory: "session-context-primary",
+        hooks: "evidence-recency-version-guardrails",
+        instructions: ["team-policy", "repo-policy"],
+        mcpServers: [],
       },
       workflowOverride: {
         deviationsFromArchetypeOnly: {
