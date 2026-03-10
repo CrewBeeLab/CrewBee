@@ -21,7 +21,7 @@ Evolve the repository without drifting from the V1 Team-first model:
 ## Preferred implementation shape
 
 - Put reusable typed contracts in `src/core/`.
-- Put baseline composed Team definitions in `src/AgentTeams/`.
+- Put baseline composed Team definitions in `src/agent-teams/`.
 - Put host bridge logic in `src/adapters/`.
 - Put selection/control/visibility logic in `src/manager/`.
 - Mirror file-authored Team assets in `AgentTeams/` and `AgentTeamTemplate/`.

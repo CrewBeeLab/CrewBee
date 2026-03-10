@@ -13,7 +13,7 @@ Agent Team -> manifest + policy + shared-capabilities + agent profiles + TEAM.md
 ## Module responsibilities
 
 - `src/core`: shared Team-oriented contracts for manifests, policies, capabilities, agent profiles, and runtime selection.
-- `src/AgentTeams`: hybrid Team library assembly; embeds `CodingTeam` and loads public teams from `AgentTeams/`.
+- `src/agent-teams`: hybrid Team library assembly; embeds `CodingTeam` and loads public teams from `AgentTeams/`.
 - `src/adapters`: host capability mapping, Team injection, and runtime event/log integration.
 - `src/manager`: Team selection, configuration, status visibility, and debug-friendly control surface.
 - `AgentTeams`: file-authored public teams such as `GeneralTeam` and `WukongTeam`.

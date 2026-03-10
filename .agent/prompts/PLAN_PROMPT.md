@@ -31,7 +31,7 @@ Produce a compact execution plan that is immediately actionable for the current 
 ## Example acceptance items
 
 - `Team manifest/policy/profile contracts exist in src/core/`
-- `Baseline Teams export aligned definitions from src/AgentTeams/`
+- `Baseline Teams export aligned definitions from src/agent-teams/`
 - `AgentTeamTemplate/ and AgentTeams/ directories reflect the current Team model`
 - `Typecheck passes`
 - `.agent prompts and handoff docs reference the current framework shape`
