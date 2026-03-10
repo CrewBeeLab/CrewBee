@@ -89,9 +89,14 @@ export function createCodebaseExplorerAgent(): AgentProfileSpec {
           binding("principal-advisor", "当仓库内证据已找到，但其含义需要高阶判断时升级"),
           binding("user", "当真实需求边界在穷尽仓库证据后仍不清晰时升级"),
         ],
-      },
-      capabilities: {
-        toolset: "internal-code-search-readonly",
+    },
+    capabilities: {
+        requestedTools: ["read", "glob", "grep"],
+        permission: [
+          { permission: "read", pattern: "*", action: "allow" },
+          { permission: "glob", pattern: "*", action: "allow" },
+          { permission: "grep", pattern: "*", action: "allow" },
+        ],
         skills: ["repo-search-toolkit"],
         memory: "session-context-primary",
         hooks: "search-structure-and-path-guardrails",

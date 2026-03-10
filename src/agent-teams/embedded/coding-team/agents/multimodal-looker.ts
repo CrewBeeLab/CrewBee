@@ -72,7 +72,11 @@ export function createMultimodalLookerAgent(): AgentProfileSpec {
         escalationTargets: [binding("user", "当提取目标本身不清晰，或关键内容不可读且显著影响结果时升级")],
       },
       capabilities: {
-        toolset: "multimodal-readonly",
+        requestedTools: ["read", "look_at"],
+        permission: [
+          { permission: "read", pattern: "*", action: "allow" },
+          { permission: "look_at", pattern: "*", action: "allow" },
+        ],
         skills: [],
         memory: "session-context-primary",
         hooks: "multimodal-extraction-guardrails",

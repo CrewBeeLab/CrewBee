@@ -98,7 +98,14 @@ export function createPrincipalAdvisorAgent(): AgentProfileSpec {
         escalationTargets: [binding("user", "关键信息缺失且继续回答会显著影响建议正确性时升级")],
       },
       capabilities: {
-        toolset: "research-readonly",
+        requestedTools: ["read", "glob", "grep", "webfetch", "websearch"],
+        permission: [
+          { permission: "read", pattern: "*", action: "allow" },
+          { permission: "glob", pattern: "*", action: "allow" },
+          { permission: "grep", pattern: "*", action: "allow" },
+          { permission: "webfetch", pattern: "*", action: "allow" },
+          { permission: "websearch", pattern: "*", action: "allow" },
+        ],
         skills: ["repo-search-toolkit", "external-research-toolkit"],
         memory: "session-context-primary",
         hooks: "coding-team-guardrails",

@@ -90,7 +90,14 @@ export function createWebResearcherAgent(): AgentProfileSpec {
         ],
       },
       capabilities: {
-        toolset: "docs-github-history-readonly",
+        requestedTools: ["read", "glob", "grep", "webfetch", "websearch"],
+        permission: [
+          { permission: "read", pattern: "*", action: "allow" },
+          { permission: "glob", pattern: "*", action: "allow" },
+          { permission: "grep", pattern: "*", action: "allow" },
+          { permission: "webfetch", pattern: "*", action: "allow" },
+          { permission: "websearch", pattern: "*", action: "allow" },
+        ],
         skills: ["open-source-research-toolkit"],
         memory: "session-context-primary",
         hooks: "evidence-recency-version-guardrails",

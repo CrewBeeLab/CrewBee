@@ -102,7 +102,13 @@ export function createReviewerAgent(): AgentProfileSpec {
       ],
     },
     capabilities: {
-      toolset: "orchestrator-qa",
+      requestedTools: ["read", "glob", "grep", "task"],
+      permission: [
+        { permission: "read", pattern: "*", action: "allow" },
+        { permission: "glob", pattern: "*", action: "allow" },
+        { permission: "grep", pattern: "*", action: "allow" },
+        { permission: "task", pattern: "*", action: "allow" },
+      ],
       skills: ["repo-search-toolkit", "verification-toolkit", "external-research-toolkit"],
       memory: "session-context-primary",
       hooks: "coding-team-guardrails",
