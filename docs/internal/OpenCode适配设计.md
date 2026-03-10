@@ -82,7 +82,7 @@ AgentScroll 的原生模型是 Team-first：
 
 * Team 是一级对象
 * Leader / 成员属于 Team 内部结构
-* Team 自带 workflow、policy、capability bindings
+* Team 自带 workflow、policy、agent capabilities
 
 本次适配的关键做法不是改变 OpenCode 的入口，而是：
 
@@ -253,9 +253,9 @@ AgentScroll 的原生模型是 Team-first：
 优先级规则是：
 
 * `agent_runtime` 显式配置
-* 高于 `model_profile_ref` 的解析结果
+* 高于任何默认宿主模型假设
 
-而 `model_profile_ref` 自身继续保留，用来表达“抽象模型档位”和默认能力类别。
+当前框架里，provider/model 的单一事实来源就是 `agent_runtime`。
 
 ## 5.3 CodingTeam 的投影规则
 
@@ -452,7 +452,7 @@ src/
 * `experimental.chat.messages.transform`
   * 注入 instruction packs 与必要 Team 上下文
 * `chat.params`
-  * 依据 `model_profile_ref` 调整参数
+  * 依据 `agent_runtime` 调整模型参数
 * `tool.execute.before`
   * 做 role boundary 和 task routing guard
 * `tool.execute.after`

@@ -94,7 +94,7 @@ export function createWebResearcherAgent(): AgentProfileSpec {
         skills: ["open-source-research-toolkit"],
         memory: "session-context-primary",
         hooks: "evidence-recency-version-guardrails",
-        instructions: ["team-policy", "repo-policy"],
+        instructions: ["team-governance", "repo-policy"],
         mcpServers: [],
       },
       workflowOverride: {

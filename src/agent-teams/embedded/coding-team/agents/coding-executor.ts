@@ -93,7 +93,7 @@ export function createCodingExecutorAgent(): AgentProfileSpec {
         skills: ["runtime-skill-registry"],
         memory: "session-context-primary",
         hooks: "todo-and-verification-guardrails",
-        instructions: ["team-policy", "repo-policy"],
+        instructions: ["team-governance", "repo-policy"],
         mcpServers: [],
       },
       workflowOverride: {

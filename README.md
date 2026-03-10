@@ -21,7 +21,7 @@ This repository is an implementation-oriented V1 framework baseline for that dir
 - `src/adapters`: host integration module directory.
 - `src/manager`: management and observability module directory.
 - `AgentTeams`: file-based definitions for configurable teams such as `GeneralTeam` and `WukongTeam`.
-- `AgentTeamTemplate`: reusable Agent Team template aligned to the V1 manifest/policy/agent-profile model.
+- `AgentTeamTemplate`: reusable Agent Team template aligned to the V1 manifest-governance-agent-profile model.
 - `docs`: architecture and planning notes.
 - `.agent`: compact execution and project context docs for agent sessions.
 
@@ -29,7 +29,7 @@ This repository is an implementation-oriented V1 framework baseline for that dir
 
 The framework now includes:
 
-- typed Team manifests, policies, shared capabilities, and agent profiles in `src/`
+- typed Team manifests, manifest-level governance, and agent profiles in `src/`
 - an embedded default `CodingTeam` in `src/agent-teams`
 - file-based Team definitions for `GeneralTeam` and `WukongTeam` under `AgentTeams`
 - concrete agent profile assets under `AgentTeams/*/agents/*.agent.md`

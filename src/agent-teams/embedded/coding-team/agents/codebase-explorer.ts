@@ -95,7 +95,7 @@ export function createCodebaseExplorerAgent(): AgentProfileSpec {
         skills: ["repo-search-toolkit"],
         memory: "session-context-primary",
         hooks: "search-structure-and-path-guardrails",
-        instructions: ["team-policy", "repo-policy"],
+        instructions: ["team-governance", "repo-policy"],
         mcpServers: [],
       },
       workflowOverride: {

@@ -15,7 +15,7 @@ function createTeamContext(team: AgentTeamDefinition): string[] {
   return [
     `Team Mission: ${team.manifest.mission.objective}`,
     `Team Description: ${team.manifest.description}`,
-    `Workflow: ${team.manifest.defaultWorkflow.join(" -> ")}`,
+    `Workflow: ${team.manifest.workflow.stages.join(" -> ")}`,
   ];
 }
 
@@ -31,9 +31,9 @@ function createAgentContext(agent: AgentProfileSpec): string[] {
 function createPolicyContext(team: AgentTeamDefinition): string[] {
   return [
     "Working Rules:",
-    ...team.policy.workingRules.map((rule) => `- ${rule}`),
+    ...team.manifest.governance.workingRules.map((rule) => `- ${rule}`),
     "Forbidden Actions:",
-    ...team.policy.forbiddenActions.map((rule) => `- ${rule}`),
+    ...team.manifest.governance.forbiddenActions.map((rule) => `- ${rule}`),
   ];
 }
 

@@ -60,13 +60,6 @@ workflow:
     - verify
     - summarize
 
-default_workflow:
-  - intake
-  - clarify-or-scout
-  - delegate-or-execute
-  - verify
-  - summarize
-
 ownership_routing:
   default_active_owner: leader
   switch_to_management_leader_when:
@@ -116,6 +109,9 @@ governance:
     - support agents report back to the leader or active owner
     - delegation and consultation must carry goal, scope, constraints, deliverable, and verification expectations
     - final user-facing convergence comes from the role holding closure responsibility
+  notes:
+    - Session Context is the default collaboration channel.
+    - Explicit routing and contract files are intentionally out of the starter scope.
 
 implementation_bias:
   naming_mode: responsibility-first
@@ -135,9 +131,6 @@ agent_runtime:
   executor:
     provider: openai
     model: gpt-5.4
-
-shared_refs:
-  policy_ref: team.policy
 
 tags:
   - template

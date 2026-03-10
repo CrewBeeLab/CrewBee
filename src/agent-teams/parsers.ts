@@ -16,7 +16,6 @@ import type {
   OutputContract,
   TeamManifest,
   TeamAgentRuntimeMap,
-  TeamPolicy,
   WorkflowOverride,
 } from "../core";
 
@@ -428,26 +427,24 @@ export function mapTeamManifest(filePath: string): TeamManifest {
   const workingMode = asRecord(raw.working_mode ?? raw.workingMode, "working_mode");
   const workflow = asOptionalRecord(raw.workflow);
   const implementationBias = asOptionalRecord(raw.implementation_bias ?? raw.implementationBias);
-  const sharedRefs = asOptionalRecord(raw.shared_refs ?? raw.sharedRefs);
   const ownershipRouting = asOptionalRecord(raw.ownership_routing ?? raw.ownershipRouting);
   const roleBoundaries = asOptionalRecord(raw.role_boundaries ?? raw.roleBoundaries);
-  const governance = asOptionalRecord(raw.governance);
+  const governance = asRecord(raw.governance, "governance");
+  const governanceApprovalPolicy = asRecord(
+    governance.approval_policy ?? governance.approvalPolicy,
+    "governance.approval_policy",
+  );
+  const governanceQualityFloor = asRecord(
+    governance.quality_floor ?? governance.qualityFloor,
+    "governance.quality_floor",
+  );
   const agentRuntime = asOptionalRecord(raw.agent_runtime ?? raw.agentRuntime);
-  const governanceApprovalPolicy = asOptionalRecord(
-    governance?.approval_policy ?? governance?.approvalPolicy,
-  );
-  const governanceQualityFloor = asOptionalRecord(
-    governance?.quality_floor ?? governance?.qualityFloor,
-  );
-  const defaultWorkflow = raw.default_workflow ?? raw.defaultWorkflow;
-  const resolvedWorkflowStages = defaultWorkflow
-    ? asStringArray(defaultWorkflow, "default_workflow")
-    : workflow
-      ? asStringArray(workflow.stages, "workflow.stages")
-      : [];
+  const resolvedWorkflowStages = workflow
+    ? asStringArray(workflow.stages, "workflow.stages")
+    : [];
 
   if (resolvedWorkflowStages.length === 0) {
-    throw new Error(`${filePath} must define workflow.stages or default_workflow.`);
+    throw new Error(`${filePath} must define workflow.stages.`);
   }
 
   return {
@@ -509,7 +506,6 @@ export function mapTeamManifest(filePath: string): TeamManifest {
       name: workflow ? asString(workflow.name, "workflow.name") : `${name} default workflow`,
       stages: resolvedWorkflowStages,
     },
-    defaultWorkflow: resolvedWorkflowStages,
     implementationBias: implementationBias
       ? {
           namingMode: asString(
@@ -565,72 +561,42 @@ export function mapTeamManifest(filePath: string): TeamManifest {
     structurePrinciples: raw.structure_principles ?? raw.structurePrinciples
       ? asStringArray(raw.structure_principles ?? raw.structurePrinciples, "structure_principles")
       : undefined,
-    governance: governance
-      ? {
-          instructionPrecedence: asStringArray(
-            governance.instruction_precedence ?? governance.instructionPrecedence,
-            "governance.instruction_precedence",
-          ),
-          approvalPolicy: {
-            requiredFor: asStringArray(
-              governanceApprovalPolicy?.required_for ?? governanceApprovalPolicy?.requiredFor,
-              "governance.approval_policy.required_for",
-            ),
-            allowAssumeFor: asStringArray(
-              governanceApprovalPolicy?.allow_assume_for ?? governanceApprovalPolicy?.allowAssumeFor,
-              "governance.approval_policy.allow_assume_for",
-            ),
-          },
-          forbiddenActions: asStringArray(
-            governance.forbidden_actions ?? governance.forbiddenActions,
-            "governance.forbidden_actions",
-          ),
-          qualityFloor: {
-            requiredChecks: asStringArray(
-              governanceQualityFloor?.required_checks ?? governanceQualityFloor?.requiredChecks,
-              "governance.quality_floor.required_checks",
-            ),
-            evidenceRequired: asBoolean(
-              governanceQualityFloor?.evidence_required ?? governanceQualityFloor?.evidenceRequired,
-              "governance.quality_floor.evidence_required",
-            ),
-          },
-          workingRules: asStringArray(
-            governance.working_rules ?? governance.workingRules,
-            "governance.working_rules",
-          ),
-        }
-      : undefined,
+    governance: {
+      instructionPrecedence: asStringArray(
+        governance.instruction_precedence ?? governance.instructionPrecedence,
+        "governance.instruction_precedence",
+      ),
+      approvalPolicy: {
+        requiredFor: asStringArray(
+          governanceApprovalPolicy.required_for ?? governanceApprovalPolicy.requiredFor,
+          "governance.approval_policy.required_for",
+        ),
+        allowAssumeFor: asStringArray(
+          governanceApprovalPolicy.allow_assume_for ?? governanceApprovalPolicy.allowAssumeFor,
+          "governance.approval_policy.allow_assume_for",
+        ),
+      },
+      forbiddenActions: asStringArray(
+        governance.forbidden_actions ?? governance.forbiddenActions,
+        "governance.forbidden_actions",
+      ),
+      qualityFloor: {
+        requiredChecks: asStringArray(
+          governanceQualityFloor.required_checks ?? governanceQualityFloor.requiredChecks,
+          "governance.quality_floor.required_checks",
+        ),
+        evidenceRequired: asBoolean(
+          governanceQualityFloor.evidence_required ?? governanceQualityFloor.evidenceRequired,
+          "governance.quality_floor.evidence_required",
+        ),
+      },
+      workingRules: asStringArray(
+        governance.working_rules ?? governance.workingRules,
+        "governance.working_rules",
+      ),
+      notes: governance.notes ? asStringArray(governance.notes, "governance.notes") : undefined,
+    },
     agentRuntime: mapAgentRuntime(agentRuntime),
-    sharedRefs: sharedRefs
-      ? {
-          policyRef: asOptionalString(sharedRefs.policy_ref ?? sharedRefs.policyRef),
-        }
-      : undefined,
     tags: raw.tags ? asStringArray(raw.tags, "tags") : [],
-  };
-}
-
-export function mapTeamPolicy(filePath: string): TeamPolicy {
-  const raw = parseYamlFile(filePath);
-  const approvalPolicy = asRecord(raw.approval_policy ?? raw.approvalPolicy, "approval_policy");
-  const qualityFloor = asRecord(raw.quality_floor ?? raw.qualityFloor, "quality_floor");
-
-  return {
-    id: asString(raw.id, "id"),
-    kind: "team-policy",
-    version: asString(raw.version, "version"),
-    instructionPrecedence: asStringArray(raw.instruction_precedence ?? raw.instructionPrecedence, "instruction_precedence"),
-    approvalPolicy: {
-      requiredFor: asStringArray(approvalPolicy.required_for ?? approvalPolicy.requiredFor, "approval_policy.required_for"),
-      allowAssumeFor: asStringArray(approvalPolicy.allow_assume_for ?? approvalPolicy.allowAssumeFor, "approval_policy.allow_assume_for"),
-    },
-    forbiddenActions: asStringArray(raw.forbidden_actions ?? raw.forbiddenActions, "forbidden_actions"),
-    qualityFloor: {
-      requiredChecks: asStringArray(qualityFloor.required_checks ?? qualityFloor.requiredChecks, "quality_floor.required_checks"),
-      evidenceRequired: asBoolean(qualityFloor.evidence_required ?? qualityFloor.evidenceRequired, "quality_floor.evidence_required"),
-    },
-    workingRules: asStringArray(raw.working_rules ?? raw.workingRules, "working_rules"),
-    notes: raw.notes ? asStringArray(raw.notes, "notes") : [],
   };
 }

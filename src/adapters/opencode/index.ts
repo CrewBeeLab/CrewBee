@@ -26,11 +26,11 @@ export {
   resolveProjectedAgentSelection,
   type OpenCodeAgentSelectionInput,
   type OpenCodeAgentConfigPatch,
-  type OpenCodeProjectedAgentDefinition,
-  type OpenCodeProjectedAgentConfig,
-  type OpenCodeProjectedAgentCapabilities,
-  type OpenCodeProjectedAgentMetadata,
-  type OpenCodeProjectedAgentMode,
+  type OpenCodeAgentDefinition,
+  type OpenCodeAgentConfig,
+  type OpenCodeAgentCapabilities,
+  type OpenCodeAgentMetadata,
+  type OpenCodeAgentMode,
 } from "./projection";
 
 export { createOpenCodePermissionRules, type OpenCodePermissionAction, type OpenCodePermissionRule } from "./permission-mapper";

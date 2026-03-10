@@ -102,7 +102,7 @@ export function createPrincipalAdvisorAgent(): AgentProfileSpec {
         skills: ["repo-search-toolkit", "external-research-toolkit"],
         memory: "session-context-primary",
         hooks: "coding-team-guardrails",
-        instructions: ["team-policy", "repo-policy"],
+        instructions: ["team-governance", "repo-policy"],
         mcpServers: [],
       },
       workflowOverride: {

@@ -54,7 +54,7 @@ export function createAdapterRunContext(plan: TeamExecutionPlan, team: AgentTeam
     snapshot: {
       teamId: plan.selection.teamId,
       mode: plan.selection.mode,
-      activeExecutor: plan.activeExecutorId,
+      activeOwner: plan.activeOwnerId,
       stage: plan.stage,
       recentActions: [],
     },
@@ -72,8 +72,8 @@ export function createRuntimeEvents(plan: TeamExecutionPlan): RuntimeEvent[] {
       detail: `Selected mode ${plan.selection.mode}.`,
     },
     {
-      type: "executor-changed",
-      detail: `Active executor is ${plan.activeExecutorId}.`,
+      type: "owner-changed",
+      detail: `Active owner is ${plan.activeOwnerId}.`,
     },
     {
       type: "stage-changed",

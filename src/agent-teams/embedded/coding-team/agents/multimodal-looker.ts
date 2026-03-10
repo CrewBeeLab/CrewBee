@@ -76,7 +76,7 @@ export function createMultimodalLookerAgent(): AgentProfileSpec {
         skills: [],
         memory: "session-context-primary",
         hooks: "multimodal-extraction-guardrails",
-        instructions: ["team-policy", "repo-policy"],
+        instructions: ["team-governance", "repo-policy"],
         mcpServers: [],
       },
       workflowOverride: {

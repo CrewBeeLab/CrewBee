@@ -8,9 +8,9 @@ import {
 import { createOpenCodePermissionRules, type OpenCodePermissionRule } from "./permission-mapper";
 import { createOpenCodeAgentPrompt } from "./prompt-builder";
 
-export type OpenCodeProjectedAgentMode = "primary" | "subagent";
+export type OpenCodeAgentMode = "primary" | "subagent";
 
-export interface OpenCodeProjectedAgentCapabilities {
+export interface OpenCodeAgentCapabilities {
   toolset: string;
   skills: string[];
   instructions: string[];
@@ -35,7 +35,7 @@ export interface OpenCodeResolvedToolConfig {
   missingTools: string[];
 }
 
-export interface OpenCodeProjectedAgentMetadata {
+export interface OpenCodeAgentMetadata {
   teamId: string;
   teamName: string;
   sourceAgentId: string;
@@ -44,26 +44,26 @@ export interface OpenCodeProjectedAgentMetadata {
   exposure: CatalogAgentProjection["exposure"];
 }
 
-export interface OpenCodeProjectedAgentConfig {
+export interface OpenCodeAgentConfig {
   configKey: string;
   publicName: string;
   teamId: string;
   sourceAgentId: string;
-  mode: OpenCodeProjectedAgentMode;
+  mode: OpenCodeAgentMode;
   hidden: boolean;
   description: string;
   prompt: string;
   permission: OpenCodePermissionRule[];
-  capabilities: OpenCodeProjectedAgentCapabilities;
+  capabilities: OpenCodeAgentCapabilities;
   resolvedModel?: OpenCodeResolvedModelConfig;
   resolvedTooling: OpenCodeResolvedToolConfig;
-  metadata: OpenCodeProjectedAgentMetadata;
+  metadata: OpenCodeAgentMetadata;
 }
 
-export interface OpenCodeProjectedAgentDefinition {
+export interface OpenCodeAgentDefinition {
   name: string;
   description: string;
-  mode: OpenCodeProjectedAgentMode;
+  mode: OpenCodeAgentMode;
   hidden?: boolean;
   model?: {
     providerID: string;
@@ -75,16 +75,16 @@ export interface OpenCodeProjectedAgentDefinition {
   prompt: string;
   permission: OpenCodePermissionRule[];
   options: {
-    capabilities: OpenCodeProjectedAgentCapabilities;
+    capabilities: OpenCodeAgentCapabilities;
     resolvedModel?: OpenCodeResolvedModelConfig;
     resolvedTooling: OpenCodeResolvedToolConfig;
-    metadata: OpenCodeProjectedAgentMetadata;
+    metadata: OpenCodeAgentMetadata;
     providerOptions?: Record<string, unknown>;
   };
 }
 
 export interface OpenCodeAgentConfigPatch {
-  agent: Record<string, OpenCodeProjectedAgentDefinition>;
+  agent: Record<string, OpenCodeAgentDefinition>;
   defaultAgent?: string;
 }
 
@@ -109,7 +109,7 @@ export function createOpenCodeConfigKey(agent: CatalogAgentProjection): string {
   return `agentscroll.${sanitizeSegment(agent.teamId)}.${sanitizeSegment(agent.surfaceLabel)}`;
 }
 
-export function projectCatalogAgentToOpenCode(agent: CatalogAgentProjection): OpenCodeProjectedAgentConfig {
+export function projectCatalogAgentToOpenCode(agent: CatalogAgentProjection): OpenCodeAgentConfig {
   const capabilities = agent.sourceAgent.capabilities;
   const toolset = getToolset(capabilities.toolset);
   const runtimeOverride = agent.sourceTeam.manifest.agentRuntime?.[agent.sourceAgentId];
@@ -161,11 +161,11 @@ export function projectCatalogAgentToOpenCode(agent: CatalogAgentProjection): Op
   };
 }
 
-export function projectCatalogToOpenCodeAgents(catalog: CatalogProjection): OpenCodeProjectedAgentConfig[] {
+export function projectCatalogToOpenCodeAgents(catalog: CatalogProjection): OpenCodeAgentConfig[] {
   return catalog.agents.map((agent) => projectCatalogAgentToOpenCode(agent));
 }
 
-export function createOpenCodeAgentDefinition(agent: OpenCodeProjectedAgentConfig): OpenCodeProjectedAgentDefinition {
+export function createOpenCodeAgentDefinition(agent: OpenCodeAgentConfig): OpenCodeAgentDefinition {
   return {
     name: agent.publicName,
     description: agent.description,
@@ -193,7 +193,7 @@ export function createOpenCodeAgentDefinition(agent: OpenCodeProjectedAgentConfi
 }
 
 export function createOpenCodeAgentConfigPatch(input: {
-  agents: OpenCodeProjectedAgentConfig[];
+  agents: OpenCodeAgentConfig[];
   defaultAgentConfigKey?: string;
 }): OpenCodeAgentConfigPatch {
   return {
@@ -203,23 +203,23 @@ export function createOpenCodeAgentConfigPatch(input: {
 }
 
 export function findProjectedAgentByConfigKey(
-  agents: OpenCodeProjectedAgentConfig[],
+  agents: OpenCodeAgentConfig[],
   configKey: string,
-): OpenCodeProjectedAgentConfig | undefined {
+): OpenCodeAgentConfig | undefined {
   return agents.find((agent) => agent.configKey === configKey);
 }
 
 export function findProjectedAgentByPublicName(
-  agents: OpenCodeProjectedAgentConfig[],
+  agents: OpenCodeAgentConfig[],
   publicName: string,
-): OpenCodeProjectedAgentConfig | undefined {
+): OpenCodeAgentConfig | undefined {
   return agents.find((agent) => agent.publicName === publicName);
 }
 
 export function resolveProjectedAgentSelection(
-  agents: OpenCodeProjectedAgentConfig[],
+  agents: OpenCodeAgentConfig[],
   selection: OpenCodeAgentSelectionInput,
-): OpenCodeProjectedAgentConfig | undefined {
+): OpenCodeAgentConfig | undefined {
   if (selection.configKey) {
     const byConfigKey = findProjectedAgentByConfigKey(agents, selection.configKey);
     if (byConfigKey) {

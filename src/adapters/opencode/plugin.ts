@@ -21,7 +21,7 @@ import {
   projectCatalogToOpenCodeAgents,
   resolveProjectedAgentSelection,
   type OpenCodeAgentConfigPatch,
-  type OpenCodeProjectedAgentConfig,
+  type OpenCodeAgentConfig,
 } from "./projection";
 
 export interface OpenCodeAdapterDefaults {
@@ -46,7 +46,7 @@ export interface OpenCodeBootstrapInput {
 export interface OpenCodeBootstrapOutput {
   adapter: AdapterDefinition;
   catalog: CatalogProjection;
-  projectedAgents: OpenCodeProjectedAgentConfig[];
+  projectedAgents: OpenCodeAgentConfig[];
   configPatch: OpenCodeAgentConfigPatch;
   mergedConfig?: OpenCodeConfigLike;
   mergeResult?: OpenCodeConfigMergeResult;
@@ -78,7 +78,7 @@ export function createOpenCodeAdapterDefinition(): AdapterDefinition {
 }
 
 function resolveBindingAgent(input: {
-  projectedAgents: OpenCodeProjectedAgentConfig[];
+  projectedAgents: OpenCodeAgentConfig[];
   selectedHostAgent?: string;
   catalog: CatalogProjection;
   selectedTeamId?: string;
@@ -124,9 +124,9 @@ function resolveBindingAgent(input: {
 }
 
 function filterSafeProjectedAgents(
-  agents: OpenCodeProjectedAgentConfig[],
+  agents: OpenCodeAgentConfig[],
   collisions: OpenCodeProjectionCollisionReport,
-): OpenCodeProjectedAgentConfig[] {
+): OpenCodeAgentConfig[] {
   const blockedConfigKeys = new Set(collisions.configKeyCollisions);
   const blockedPublicNames = new Set(collisions.publicNameCollisions);
 

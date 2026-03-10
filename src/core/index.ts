@@ -66,10 +66,6 @@ export interface ImplementationBiasProfile {
   responsibilityVisibility: "high" | "balanced" | "low";
 }
 
-export interface SharedRefsSpec {
-  policyRef?: string;
-}
-
 export interface AgentRuntimeModelConfig {
   provider: string;
   model: string;
@@ -87,6 +83,7 @@ export interface TeamGovernanceSpec {
   forbiddenActions: string[];
   qualityFloor: QualityFloor;
   workingRules: string[];
+  notes?: string[];
 }
 
 export interface TeamManifest {
@@ -104,14 +101,12 @@ export interface TeamManifest {
   modes: ExecutionMode[];
   workingMode: WorkingModeSpec;
   workflow: TeamWorkflowSpec;
-  defaultWorkflow: string[];
   implementationBias?: ImplementationBiasProfile;
   ownershipRouting?: TeamOwnershipRouting;
   roleBoundaries?: TeamRoleBoundaries;
   structurePrinciples?: string[];
-  governance?: TeamGovernanceSpec;
+  governance: TeamGovernanceSpec;
   agentRuntime?: TeamAgentRuntimeMap;
-  sharedRefs?: SharedRefsSpec;
   tags: string[];
 }
 
@@ -123,18 +118,6 @@ export interface ApprovalPolicy {
 export interface QualityFloor {
   requiredChecks: string[];
   evidenceRequired: boolean;
-}
-
-export interface TeamPolicy {
-  id: string;
-  kind: "team-policy";
-  version: string;
-  instructionPrecedence: string[];
-  approvalPolicy: ApprovalPolicy;
-  forbiddenActions: string[];
-  qualityFloor: QualityFloor;
-  workingRules: string[];
-  notes: string[];
 }
 
 export interface PersonaCore {
@@ -268,7 +251,6 @@ export interface TeamDocumentationRefs {
 
 export interface AgentTeamDefinition {
   manifest: TeamManifest;
-  policy: TeamPolicy;
   agents: AgentProfileSpec[];
   documentation?: TeamDocumentationRefs;
 }
@@ -288,7 +270,7 @@ export interface TeamSelection {
 export interface TeamExecutionPlan {
   selection: TeamSelection;
   teamName: string;
-  activeExecutorId: string;
+  activeOwnerId: string;
   stage: string;
   delegatedByLeader: boolean;
 }
@@ -296,7 +278,7 @@ export interface TeamExecutionPlan {
 export interface RuntimeSnapshot {
   teamId: string;
   mode: ExecutionMode;
-  activeExecutor: string;
+  activeOwner: string;
   stage: string;
   recentActions: string[];
 }
@@ -315,6 +297,6 @@ export interface HostCapabilityContract {
 }
 
 export interface RuntimeEvent {
-  type: "team-selected" | "mode-selected" | "stage-changed" | "executor-changed" | "note";
+  type: "team-selected" | "mode-selected" | "stage-changed" | "owner-changed" | "note";
   detail: string;
 }

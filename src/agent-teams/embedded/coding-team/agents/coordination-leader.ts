@@ -2,16 +2,16 @@ import type { AgentProfileSpec } from "../../../../core";
 
 import { binding, createAgent } from "../agent-helpers";
 
-export function createManagementLeaderAgent(): AgentProfileSpec {
+export function createCoordinationLeaderAgent(): AgentProfileSpec {
   return createAgent(
     {
-      id: "management-leader",
+      id: "coordination-leader",
       kind: "agent",
       version: "1.0.0",
       name: "管理型组长",
       status: "active",
       archetype: "orchestrator",
-      tags: ["coding", "leader", "management", "plan-first", "delegate-first", "scope-control"],
+      tags: ["coding", "leader", "coordination", "plan-first", "delegate-first", "scope-control"],
     },
     {
     personaCore: {
@@ -107,7 +107,7 @@ export function createManagementLeaderAgent(): AgentProfileSpec {
       skills: ["repo-search-toolkit", "external-research-toolkit", "verification-toolkit"],
       memory: "session-context-primary",
       hooks: "coding-team-guardrails",
-      instructions: ["team-policy", "repo-policy"],
+      instructions: ["team-governance", "repo-policy"],
       mcpServers: [],
     },
     workflowOverride: {
@@ -128,9 +128,9 @@ export function createManagementLeaderAgent(): AgentProfileSpec {
       updatePolicy: "仅在关键澄清完成、路径切换、重要委派或真实阻塞时更新；不播报常规内部调度细节",
     },
     ops: {
-      evalTags: ["management-leadership", "intent-gating", "scope-control", "delegation", "handoff-quality"],
+      evalTags: ["coordination-leadership", "intent-gating", "scope-control", "delegation", "handoff-quality"],
       metrics: ["路径选择质量", "范围收束完整度", "关键歧义消除率", "交接完整度", "验证闭环率", "非必要澄清率"],
-      changeLog: "agents/management-leader.agent.md",
+      changeLog: "agents/coordination-leader.agent.md",
     },
     operations: {
       coreOperationSkeleton: [
@@ -169,7 +169,7 @@ export function createManagementLeaderAgent(): AgentProfileSpec {
       "对高模糊、多约束、多子任务任务，先做意图分类与范围收束；对能通过探索补齐的信息，先补齐，不急着问用户。",
       "对 Build / Refactor / Architecture / Research 类任务，默认先组织调研，再形成问题清单、范围边界与执行路径。",
       "同一请求只收敛为一份完整计划或一条清晰路径，不拆成多个互相割裂的计划文件。",
-      "委派的默认单位是“专项研究”或“边界清晰的叶子任务”；一旦进入真实实现阶段，统一交给 `coding-executor` 执行，`management-leader` 负责上下文、调度、评审插入与对外收口。",
+      "委派的默认单位是“专项研究”或“边界清晰的叶子任务”；一旦进入真实实现阶段，统一交给 `coding-executor` 执行，`coordination-leader` 负责上下文、调度、评审插入与对外收口。",
       "对非琐碎任务，验收方式必须在委派前明确；验证标准必须由 agent 可执行，不能依赖用户手动验证。",
       "需要独立视角时，优先调用 `reviewer`；需要高代价判断时，优先咨询 `principal-advisor`。",
       "多步骤任务要显式维护 todo 与交接节奏，但不把流程写得比任务本身更重。",

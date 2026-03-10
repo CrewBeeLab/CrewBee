@@ -1,7 +1,6 @@
 import type {
   AgentTeamDefinition,
   TeamManifest,
-  TeamPolicy,
 } from "../../core";
 
 import { createCodingTeamAgents } from "./coding-team/agents";
@@ -46,7 +45,7 @@ export function createEmbeddedCodingTeam(): AgentTeamDefinition {
     },
     members: [
       {
-        agentRef: "management-leader",
+        agentRef: "coordination-leader",
         role: "第二 Leader 风格；用于高模糊、多子任务、范围收束优先的开局；执行工作委托给 coding-executor",
       },
       {
@@ -73,7 +72,6 @@ export function createEmbeddedCodingTeam(): AgentTeamDefinition {
       name: "Coding default workflow",
       stages: ["接单", "代码定位与证据收集", "轻量计划或按需分派", "实现", "评审", "验证", "总结"],
     },
-    defaultWorkflow: ["接单", "代码定位与证据收集", "轻量计划或按需分派", "实现", "评审", "验证", "总结"],
     implementationBias: {
       namingMode: "responsibility-first",
       routingPriority: "responsibility-first",
@@ -127,10 +125,14 @@ export function createEmbeddedCodingTeam(): AgentTeamDefinition {
         "叶子执行者必须自行验证；最终收口由 owner 统一完成",
         "仓库内研究与外部研究必须分离",
       ],
+      notes: [
+        "CodingTeam 的治理规则以 manifest.governance 为单一事实来源。",
+        "当前仓库尚未定义 task-orchestrator 内置 agent，因此 embedded CodingTeam 暂未把它加入强校验成员列表。",
+      ],
     },
     agentRuntime: {
       "coding-leader": { provider: "openai", model: "gpt-5.4", temperature: 0.2, topP: 0.85, variant: "long-context" },
-      "management-leader": { provider: "openai", model: "gpt-5.4", temperature: 0.15, topP: 0.75 },
+      "coordination-leader": { provider: "openai", model: "gpt-5.4", temperature: 0.15, topP: 0.75 },
       "coding-executor": { provider: "openai", model: "gpt-5.4", temperature: 0.25, topP: 0.9 },
       "codebase-explorer": { provider: "openai", model: "gpt-5.4", temperature: 0.1, topP: 0.8 },
       "web-researcher": { provider: "openai", model: "gpt-5.4", temperature: 0.2, topP: 0.85 },
@@ -138,55 +140,13 @@ export function createEmbeddedCodingTeam(): AgentTeamDefinition {
       "principal-advisor": { provider: "openai", model: "gpt-5.4", temperature: 0.15, topP: 0.75 },
       "multimodal-looker": { provider: "openai", model: "gpt-5.4", temperature: 0.2, topP: 0.85 },
     },
-    sharedRefs: {
-      policyRef: "coding-team.policy",
-    },
     tags: ["代码", "leader驱动", "上下文连续性", "主执行者中心", "评审中心", "证据驱动"],
-  };
-
-  const policy: TeamPolicy = {
-    id: "coding-team.policy",
-    kind: "team-policy",
-    version: "1.0.0",
-    instructionPrecedence: ["平台规则", "仓库规则", "团队规则", "Agent 规则", "任务规则"],
-    approvalPolicy: {
-      requiredFor: ["破坏性操作", "外部副作用", "代码提交（commit）"],
-      allowAssumeFor: ["低风险实现细节"],
-    },
-    forbiddenActions: [
-      "伪造证据",
-      "未经验证宣称完成",
-      "忽略硬约束",
-      "假装读过未读代码",
-      "未经明确批准压制类型错误",
-    ],
-    qualityFloor: {
-      requiredChecks: ["诊断检查（diagnostics）", "构建检查（build）", "测试检查（tests）"],
-      evidenceRequired: true,
-    },
-    workingRules: [
-      "Leader 是主要入口",
-      "同一时刻只允许一个 active owner 持有主上下文",
-      "支援 Agent 必须向 Leader 或当前主执行 owner 回报",
-      "任何委派或咨询都必须写清目标、范围、约束、交付与验证口径",
-      "面向用户的最终总结必须由持有收口责任的角色给出",
-      "非琐碎任务在宣称完成前必须经过评审",
-      "叶子执行者必须自行验证；最终收口由 owner 统一完成",
-      "仓库内研究与外部研究必须分离",
-    ],
-    notes: [
-      "Coding Team 以主执行 owner 为中心，而不是常驻的 Orchestrator / Planner / Executor 三权平分结构。",
-      "规划能力尽量内化到主执行链路，Reviewer 的独立性高于独立 Planner。",
-      "仓库内研究、外部研究、独立评审与高阶顾问能力按需支撑主执行链路。",
-      "当前仓库尚未定义 task-orchestrator 内置 agent，因此 embedded CodingTeam 暂未把它加入强校验成员列表。",
-    ],
   };
 
   const agents = createCodingTeamAgents();
 
   return {
     manifest,
-    policy,
     agents,
   };
 }

@@ -103,7 +103,7 @@ export function createCodingLeaderAgent(): AgentProfileSpec {
       ],
       escalationTargets: [
         binding("principal-advisor", "高代价、高不确定性或多轮失败后的升级咨询"),
-        binding("management-leader", "当任务仍处于高模糊、多子任务、范围收束优先阶段时，可转为其主导开局"),
+        binding("coordination-leader", "当任务仍处于高模糊、多子任务、范围收束优先阶段时，可转为其主导开局"),
         binding("user", "真实互斥需求、审批边界或穷尽探索后仍缺关键事实时升级"),
       ],
     },
@@ -112,14 +112,14 @@ export function createCodingLeaderAgent(): AgentProfileSpec {
       skills: ["repo-search-toolkit", "external-research-toolkit", "verification-toolkit"],
       memory: "session-context-primary",
       hooks: "coding-team-guardrails",
-      instructions: ["team-policy", "repo-policy"],
+      instructions: ["team-governance", "repo-policy"],
       mcpServers: [],
     },
     workflowOverride: {
       deviationsFromArchetypeOnly: {
         autonomyLevel: "高自治；默认先探索、先推进、先验证；对非琐碎任务优先自己持有主链路，只把专项工作按需分出",
         ambiguityPolicy:
-          "explore-first；先覆盖高概率意图并收集证据；若任务本质仍是范围收束和多任务拆配，可把 active ownership 转交 management-leader 开局，进入真实实现后再收回",
+          "explore-first；先覆盖高概率意图并收集证据；若任务本质仍是范围收束和多任务拆配，可把 active ownership 转交 coordination-leader 开局，进入真实实现后再收回",
         stopConditions: [
           "需求之间存在真实互斥，无法同时满足",
           "关键缺失信息经仓库探索、外部研究、上下文推断与专项咨询后仍不可获得",
@@ -168,7 +168,7 @@ export function createCodingLeaderAgent(): AgentProfileSpec {
       "对非琐碎任务，默认执行完整闭环：代码定位 / 证据收集 -> 轻量计划 -> 自执行或按需分派 -> 评审 -> 验证 -> 对外收口。",
       "委派的默认单位是“专项研究”或“边界清晰的叶子任务”，而不是把整条主责任链外包出去。拿不准时，倾向委派子任务换取质量。",
       "需要独立视角时，优先调用 reviewer；评审不是装饰步骤，而是完成声明前的质量刹车。",
-      "遇到高模糊任务，先用探索缩小不确定性；只有当任务本质仍是范围收束、路由判断和多任务编排时，才把 active ownership 切给 management-leader。",
+      "遇到高模糊任务，先用探索缩小不确定性；只有当任务本质仍是范围收束、路由判断和多任务编排时，才把 active ownership 切给 coordination-leader。",
       "写任何代码前先搜索现有实现，确认命名、结构、导入、错误处理、测试与验证模式；默认只做完成任务所需的最小必要改动。",
       "对自己或子角色完成的改动都要回到主链路做统一验证；不能仅凭“已经做完”的口头结果收口。",
       "非琐碎任务必须显式维护 todo 节奏：先拆分、一次只推进一个 in_progress、完成后立即单独标记 completed。",
@@ -178,7 +178,7 @@ export function createCodingLeaderAgent(): AgentProfileSpec {
     antiPatterns: [
       "把自己退化成纯调度器，只发任务不理解代码、不掌握主上下文",
       "把整条实现责任链交给 coding-executor，自己只做转述",
-      "高模糊任务不先探索就急于切给 management-leader，导致不必要的 ownership 抖动",
+      "高模糊任务不先探索就急于切给 coordination-leader，导致不必要的 ownership 抖动",
       "非琐碎任务不插入 reviewer 就直接宣布 done",
       "只验证自己改的部分，不验证子角色交回结果与整体系统影响",
       "中途频繁向用户同步内部细节，打断主链路推进",

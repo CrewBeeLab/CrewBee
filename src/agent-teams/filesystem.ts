@@ -5,10 +5,9 @@ import type { AgentTeamDefinition } from "../core";
 
 import { TEAM_CONFIG_ROOT } from "./constants";
 import { resolveTeamDocumentation } from "./documentation";
-import { mapAgentProfile, mapTeamManifest, mapTeamPolicy } from "./parsers";
+import { mapAgentProfile, mapTeamManifest } from "./parsers";
 
 const TEAM_MANIFEST_FILE = "team.manifest.yaml";
-const TEAM_POLICY_FILE = "team.policy.yaml";
 
 export function resolveTeamConfigRoot(baseDir: string = process.cwd()): string {
   return path.resolve(baseDir, TEAM_CONFIG_ROOT);
@@ -31,7 +30,6 @@ export function loadTeamDefinitionFromDirectory(
   workspaceRoot: string = process.cwd(),
 ): AgentTeamDefinition {
   const manifest = mapTeamManifest(path.join(teamDir, TEAM_MANIFEST_FILE));
-  const policy = mapTeamPolicy(path.join(teamDir, TEAM_POLICY_FILE));
   const agentsDir = path.join(teamDir, "agents");
 
   if (!existsSync(agentsDir)) {
@@ -45,7 +43,6 @@ export function loadTeamDefinitionFromDirectory(
 
   return {
     manifest,
-    policy,
     agents,
     documentation: resolveTeamDocumentation(teamDir, workspaceRoot),
   };
