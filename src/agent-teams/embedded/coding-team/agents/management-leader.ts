@@ -200,6 +200,12 @@ export function createManagementLeaderAgent(): AgentProfileSpec {
       ],
       badFit: ["请你从头到尾亲自长期实现整个复杂功能，不要委派。", "只改一个已知文件里的单行拼写错误。"],
     },
+    entryPoint: {
+      exposure: "user-selectable",
+      selectionLabel: "coordination-leader",
+      selectionDescription:
+        "CodingTeam 的协调型 Leader 投影；适合高模糊、范围待收束、多子任务编排的开局路径。",
+    },
     },
   );
 }

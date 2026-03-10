@@ -182,6 +182,11 @@ export function createCodingExecutorAgent(): AgentProfileSpec {
         ],
         badFit: ["帮我规划整个模块重构路线。", "协调多个代理把这组 todo 并行做完。", "先帮我做需求访谈，再决定要不要实现。"],
       },
+      entryPoint: {
+        exposure: "user-selectable",
+        selectionLabel: "executor",
+        selectionDescription: "CodingTeam 的直接执行入口；适合边界清晰、希望直接进入实现闭环的用户路径。",
+      },
     },
   );
 }

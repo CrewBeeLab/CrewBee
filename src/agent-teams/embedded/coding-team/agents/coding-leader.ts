@@ -195,6 +195,11 @@ export function createCodingLeaderAgent(): AgentProfileSpec {
       ],
       badFit: ["只改一个已知文件里的单行拼写错误。", "纯范围访谈、纯项目排期或长期项目管理任务。"],
     },
+    entryPoint: {
+      exposure: "user-selectable",
+      selectionLabel: "leader",
+      selectionDescription: "CodingTeam 的默认主执行 Leader；在 OpenCode 中选择它，就进入以 coding-leader 为主 owner 的 CodingTeam 路径。",
+    },
     },
   );
 }
