@@ -41,7 +41,8 @@ function createCapabilityContext(agent: AgentProfileSpec): string[] {
   const capabilities = agent.capabilities;
 
   return [
-    `Toolset: ${capabilities.toolset}`,
+    `Requested Tools: ${capabilities.requestedTools.join(", ")}`,
+    `Permission Rules: ${capabilities.permission.map((rule) => `${rule.permission}:${rule.pattern}:${rule.action}`).join(", ")}`,
     ...(capabilities.instructions && capabilities.instructions.length > 0
       ? [`Instructions: ${capabilities.instructions.join(", ")}`]
       : []),

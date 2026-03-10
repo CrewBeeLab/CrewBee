@@ -8,6 +8,7 @@ import type {
   AgentExamples,
   AgentGuardrails,
   AgentOps,
+  AgentPermissionAction,
   AgentCapabilities,
   AgentProfileSpec,
   CollaborationBindingInput,
@@ -168,8 +169,28 @@ function mapCapabilities(raw: UnknownRecord | undefined): AgentCapabilities | un
     return undefined;
   }
 
+  const permissionRaw = raw.permission ?? raw.permission_rules ?? raw.permissionRules ?? raw.permissions;
+
+  if (!Array.isArray(permissionRaw)) {
+    throw new Error("permission must be an array.");
+  }
+
   return {
-    toolset: asString(raw.toolset ?? raw.tools, "toolset"),
+    requestedTools: asStringArray(raw.requested_tools ?? raw.requestedTools ?? raw.tools, "requested_tools"),
+    permission: permissionRaw.map((entry, index) => {
+      const record = asRecord(entry, `permission[${index}]`);
+      const action = asString(record.action, `permission[${index}].action`);
+
+      if (!["allow", "deny", "ask"].includes(action)) {
+        throw new Error(`permission[${index}].action must be one of allow/deny/ask.`);
+      }
+
+      return {
+        permission: asString(record.permission, `permission[${index}].permission`),
+        action: action as AgentPermissionAction,
+        pattern: asOptionalString(record.pattern) ?? "*",
+      };
+    }),
     skills:
       raw.skills
         ? asStringArray(raw.skills, "skills")

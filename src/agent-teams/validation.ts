@@ -1,5 +1,4 @@
 import type { AgentTeamDefinition, TeamLibrary } from "../core";
-import { getToolset } from "../runtime";
 
 import { EMBEDDED_TEAM_IDS } from "./constants";
 import type { TeamValidationIssue } from "./types";
@@ -82,12 +81,19 @@ export function validateTeamDefinition(team: AgentTeamDefinition): TeamValidatio
   }
 
   for (const agent of team.agents) {
-    try {
-      getToolset(agent.capabilities.toolset);
-    } catch (error) {
+    const requestedTools = new Set(agent.capabilities.requestedTools);
+
+    if (requestedTools.size === 0) {
       issues.push({
         level: "error",
-        message: `Agent '${agent.metadata.id}' references unknown toolset '${agent.capabilities.toolset}'. ${String(error)}`,
+        message: `Agent '${agent.metadata.id}' must declare at least one requested tool.`,
+      });
+    }
+
+    if (agent.capabilities.permission.length === 0) {
+      issues.push({
+        level: "error",
+        message: `Agent '${agent.metadata.id}' must declare at least one permission rule.`,
       });
     }
   }

@@ -1,8 +1,9 @@
+import type { AgentPermissionRule } from "../../core";
 import type { CatalogAgentProjection, CatalogProjection } from "../../runtime";
 import {
-  getToolset,
+  createAvailableToolContext,
   isAvailableTool,
-  type ToolsetDefinition,
+  type AvailableToolDefinition,
 } from "../../runtime/registries";
 
 import { createOpenCodePermissionRules, type OpenCodePermissionRule } from "./permission-mapper";
@@ -11,7 +12,8 @@ import { createOpenCodeAgentPrompt } from "./prompt-builder";
 export type OpenCodeAgentMode = "primary" | "subagent";
 
 export interface OpenCodeAgentCapabilities {
-  toolset: string;
+  requestedTools: string[];
+  permission: AgentPermissionRule[];
   skills: string[];
   instructions: string[];
   mcpServers: string[];
@@ -30,9 +32,11 @@ export interface OpenCodeResolvedModelConfig {
 }
 
 export interface OpenCodeResolvedToolConfig {
-  toolset: ToolsetDefinition;
+  requestedTools: string[];
   availableTools: string[];
   missingTools: string[];
+  availabilitySource: "host-provided" | "agentscroll-plugin" | "merged" | "default-placeholder";
+  availabilityIsExplicit: boolean;
 }
 
 export interface OpenCodeAgentMetadata {
@@ -93,6 +97,10 @@ export interface OpenCodeAgentSelectionInput {
   publicName?: string;
 }
 
+export interface OpenCodeProjectionOptions {
+  availableTools?: readonly (string | AvailableToolDefinition)[];
+}
+
 function sanitizeSegment(value: string): string {
   return value
     .trim()
@@ -109,12 +117,19 @@ export function createOpenCodeConfigKey(agent: CatalogAgentProjection): string {
   return `agentscroll.${sanitizeSegment(agent.teamId)}.${sanitizeSegment(agent.surfaceLabel)}`;
 }
 
-export function projectCatalogAgentToOpenCode(agent: CatalogAgentProjection): OpenCodeAgentConfig {
+export function projectCatalogAgentToOpenCode(
+  agent: CatalogAgentProjection,
+  options: OpenCodeProjectionOptions = {},
+): OpenCodeAgentConfig {
   const capabilities = agent.sourceAgent.capabilities;
-  const toolset = getToolset(capabilities.toolset);
   const runtimeOverride = agent.sourceTeam.manifest.agentRuntime?.[agent.sourceAgentId];
-  const availableTools = toolset.requestedTools.filter((toolId) => isAvailableTool(toolId));
-  const missingTools = toolset.requestedTools.filter((toolId) => !isAvailableTool(toolId));
+  const availableToolContext = createAvailableToolContext(options.availableTools);
+  const availableTools = availableToolContext.hasExplicitTools
+    ? capabilities.requestedTools.filter((toolId: string) => isAvailableTool(toolId, availableToolContext))
+    : [...capabilities.requestedTools];
+  const missingTools = availableToolContext.hasExplicitTools
+    ? capabilities.requestedTools.filter((toolId: string) => !isAvailableTool(toolId, availableToolContext))
+    : [];
 
   return {
     configKey: createOpenCodeConfigKey(agent),
@@ -125,9 +140,10 @@ export function projectCatalogAgentToOpenCode(agent: CatalogAgentProjection): Op
     hidden: agent.exposure !== "user-selectable",
     description: agent.description,
     prompt: createOpenCodeAgentPrompt(agent),
-    permission: createOpenCodePermissionRules(agent),
+    permission: createOpenCodePermissionRules(agent, availableToolContext),
     capabilities: {
-      toolset: capabilities.toolset,
+      requestedTools: capabilities.requestedTools,
+      permission: capabilities.permission,
       skills: capabilities.skills ?? [],
       instructions: capabilities.instructions ?? [],
       mcpServers: capabilities.mcpServers ?? [],
@@ -146,9 +162,11 @@ export function projectCatalogAgentToOpenCode(agent: CatalogAgentProjection): Op
         }
       : undefined,
     resolvedTooling: {
-      toolset,
+      requestedTools: capabilities.requestedTools,
       availableTools,
       missingTools,
+      availabilitySource: availableToolContext.source,
+      availabilityIsExplicit: availableToolContext.hasExplicitTools,
     },
     metadata: {
       teamId: agent.teamId,
@@ -161,8 +179,11 @@ export function projectCatalogAgentToOpenCode(agent: CatalogAgentProjection): Op
   };
 }
 
-export function projectCatalogToOpenCodeAgents(catalog: CatalogProjection): OpenCodeAgentConfig[] {
-  return catalog.agents.map((agent) => projectCatalogAgentToOpenCode(agent));
+export function projectCatalogToOpenCodeAgents(
+  catalog: CatalogProjection,
+  options: OpenCodeProjectionOptions = {},
+): OpenCodeAgentConfig[] {
+  return catalog.agents.map((agent) => projectCatalogAgentToOpenCode(agent, options));
 }
 
 export function createOpenCodeAgentDefinition(agent: OpenCodeAgentConfig): OpenCodeAgentDefinition {

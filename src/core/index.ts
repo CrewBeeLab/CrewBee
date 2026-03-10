@@ -159,8 +159,17 @@ export interface CollaborationSpec {
   escalationTargets: CollaborationBindingInput[];
 }
 
+export type AgentPermissionAction = "allow" | "deny" | "ask";
+
+export interface AgentPermissionRule {
+  permission: string;
+  action: AgentPermissionAction;
+  pattern: string;
+}
+
 export interface AgentCapabilities {
-  toolset: string;
+  requestedTools: string[];
+  permission: AgentPermissionRule[];
   skills?: string[];
   memory?: string;
   hooks?: string;
