@@ -1,33 +1,73 @@
+import { listImplementedAgentScrollPluginTools } from "./plugin-tools";
+
 export interface AvailableToolDefinition {
   id: string;
-  source: "opencode-builtin" | "agentscroll-plugin";
+  source: "host-provided" | "agentscroll-plugin" | "default-placeholder";
 }
 
-const OPENCODE_BUILTIN_TOOLS: AvailableToolDefinition[] = [
-  { id: "question", source: "opencode-builtin" },
-  { id: "bash", source: "opencode-builtin" },
-  { id: "read", source: "opencode-builtin" },
-  { id: "glob", source: "opencode-builtin" },
-  { id: "grep", source: "opencode-builtin" },
-  { id: "edit", source: "opencode-builtin" },
-  { id: "write", source: "opencode-builtin" },
-  { id: "task", source: "opencode-builtin" },
-  { id: "webfetch", source: "opencode-builtin" },
-  { id: "todowrite", source: "opencode-builtin" },
-  { id: "websearch", source: "opencode-builtin" },
-  { id: "codesearch", source: "opencode-builtin" },
-  { id: "skill", source: "opencode-builtin" },
-  { id: "apply_patch", source: "opencode-builtin" },
-  { id: "lsp_diagnostics", source: "opencode-builtin" },
-  { id: "look_at", source: "opencode-builtin" },
-];
-
-const AGENTSCROLL_PLUGIN_TOOLS: AvailableToolDefinition[] = [];
-
-export function listAvailableTools(): AvailableToolDefinition[] {
-  return [...OPENCODE_BUILTIN_TOOLS, ...AGENTSCROLL_PLUGIN_TOOLS];
+export interface AvailableToolContext {
+  tools: AvailableToolDefinition[];
+  source: "host-provided" | "agentscroll-plugin" | "merged" | "default-placeholder";
+  hasExplicitTools: boolean;
 }
 
-export function isAvailableTool(toolId: string): boolean {
-  return listAvailableTools().some((tool) => tool.id === toolId);
+function normalizeTool(tool: string | AvailableToolDefinition): AvailableToolDefinition {
+  if (typeof tool === "string") {
+    return { id: tool, source: "host-provided" };
+  }
+
+  return tool;
+}
+
+export function createAvailableToolContext(
+  tools?: readonly (string | AvailableToolDefinition)[],
+): AvailableToolContext {
+  const hostTools = tools?.map(normalizeTool) ?? [];
+  const pluginTools = listImplementedAgentScrollPluginTools().map((tool) => ({
+    id: tool.id,
+    source: tool.source,
+  }));
+
+  const mergedTools = [...hostTools];
+
+  for (const pluginTool of pluginTools) {
+    if (!mergedTools.some((tool) => tool.id === pluginTool.id)) {
+      mergedTools.push(pluginTool);
+    }
+  }
+
+  if (mergedTools.length === 0) {
+    // Framework-level fallback only: when the host has not provided tool metadata yet,
+    // keep the model permissive and mark the source as a default placeholder instead of
+    // hardcoding a specific OpenCode builtin tool list.
+    return {
+      tools: [],
+      source: "default-placeholder",
+      hasExplicitTools: false,
+    };
+  }
+
+  const source = hostTools.length > 0 && pluginTools.length > 0
+    ? "merged"
+    : hostTools.length > 0
+      ? "host-provided"
+      : "agentscroll-plugin";
+
+  return {
+    tools: mergedTools,
+    source,
+    hasExplicitTools: true,
+  };
+}
+
+export function listAvailableTools(context?: AvailableToolContext): AvailableToolDefinition[] {
+  return context?.tools ?? [];
+}
+
+export function isAvailableTool(toolId: string, context?: AvailableToolContext): boolean {
+  if (!context || !context.hasExplicitTools) {
+    return true;
+  }
+
+  return context.tools.some((tool) => tool.id === toolId);
 }

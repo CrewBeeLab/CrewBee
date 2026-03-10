@@ -35,3 +35,4 @@ export {
 
 export { createOpenCodePermissionRules, type OpenCodePermissionAction, type OpenCodePermissionRule } from "./permission-mapper";
 export { createOpenCodeAgentPrompt } from "./prompt-builder";
+export { createOpenCodeToolDomainPlan, type OpenCodeToolDomainPlan } from "./tool-domain";

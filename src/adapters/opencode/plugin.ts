@@ -1,5 +1,6 @@
 import type { AdapterDefinition } from "../index";
 import type { ExecutionMode, TeamLibrary } from "../../core";
+import type { AvailableToolDefinition } from "../../runtime";
 import {
   createCatalogProjection,
   createSessionRuntimeBinding,
@@ -18,11 +19,12 @@ import {
 } from "./coexistence";
 import {
   createOpenCodeAgentConfigPatch,
+  type OpenCodeAgentConfig,
   projectCatalogToOpenCodeAgents,
   resolveProjectedAgentSelection,
   type OpenCodeAgentConfigPatch,
-  type OpenCodeAgentConfig,
 } from "./projection";
+import { createOpenCodeToolDomainPlan, type OpenCodeToolDomainPlan } from "./tool-domain";
 
 export interface OpenCodeAdapterDefaults {
   defaultMode: ExecutionMode;
@@ -32,6 +34,7 @@ export interface OpenCodeAdapterDefaults {
 export interface OpenCodeBootstrapInput {
   teamLibrary: TeamLibrary;
   defaults: OpenCodeAdapterDefaults;
+  availableTools?: readonly (string | AvailableToolDefinition)[];
   existingConfig?: OpenCodeConfigLike;
   existingConfigKeys?: string[];
   existingPublicNames?: string[];
@@ -47,6 +50,7 @@ export interface OpenCodeBootstrapOutput {
   adapter: AdapterDefinition;
   catalog: CatalogProjection;
   projectedAgents: OpenCodeAgentConfig[];
+  toolDomainPlan: OpenCodeToolDomainPlan;
   configPatch: OpenCodeAgentConfigPatch;
   mergedConfig?: OpenCodeConfigLike;
   mergeResult?: OpenCodeConfigMergeResult;
@@ -154,7 +158,10 @@ function shouldSetDefaultAgent(input: {
 
 export function createOpenCodeBootstrap(input: OpenCodeBootstrapInput): OpenCodeBootstrapOutput {
   const catalog = createCatalogProjection(input.teamLibrary);
-  const projectedAgents = projectCatalogToOpenCodeAgents(catalog);
+  const toolDomainPlan = createOpenCodeToolDomainPlan();
+  const projectedAgents = projectCatalogToOpenCodeAgents(catalog, {
+    availableTools: input.availableTools,
+  });
   const collisions = detectOpenCodeProjectionCollisions({
     projectedAgents: projectedAgents.map((agent) => ({
       configKey: agent.configKey,
@@ -205,6 +212,7 @@ export function createOpenCodeBootstrap(input: OpenCodeBootstrapInput): OpenCode
     adapter: createOpenCodeAdapterDefinition(),
     catalog,
     projectedAgents: safeProjectedAgents,
+    toolDomainPlan,
     configPatch,
     mergedConfig: mergeResult?.config,
     mergeResult,

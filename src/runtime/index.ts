@@ -15,5 +15,16 @@ export type {
   TeamCatalogProjection,
 } from "./types";
 
-export { getToolset, isAvailableTool, listAvailableTools, listToolsets } from "./registries";
-export type { AvailableToolDefinition, ToolsetDefinition } from "./registries";
+export { createAvailableToolContext, isAvailableTool, listAvailableTools } from "./registries";
+export {
+  getAgentScrollPluginTool,
+  listAgentScrollPluginTools,
+  listImplementedAgentScrollPluginTools,
+} from "./registries";
+export type {
+  AgentScrollPluginToolDefinition,
+  AgentScrollPluginToolStatus,
+  AgentScrollPluginToolVisibility,
+  AvailableToolContext,
+  AvailableToolDefinition,
+} from "./registries";
