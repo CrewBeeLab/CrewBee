@@ -1,83 +1,102 @@
 # 架构概览
 
-AgentScroll V1 的架构被明确收束为三个一级对象：
+AgentScroll 的核心仍然是一个可移植的 Agent Team 框架，但在当前 OpenCode 适配方向下，产品入口已经收敛为：
 
-1. `Agent Team`：用户面对的主执行单元。
-2. `Adapter`：把 Team 映射到具体宿主的桥接层。
-3. `Manager`：负责 Team 选择、模式控制与基础运行可视化的管理层。
+* **OpenCode 仍然是唯一入口**
+* **AgentScroll 负责定义 Team，并把 Team 投影成 OpenCode Agent**
 
-在这一层级之下，Team 自带自己的 Leader、成员、内建 Workflow、工具边界与输出要求。V1 不把 Playbook 作为独立一级对象暴露给用户。
+因此，当前阶段最重要的三个工程对象是：
+
+1. `Agent Team`：静态事实来源
+2. `Runtime Projection`：把 Team 编译成宿主可消费的投影结果
+3. `Adapter`：把投影结果接到具体宿主
+
+`Manager` 仍然可以作为内部辅助层存在，但在 OpenCode V1 适配中，它不再是单独暴露给用户的产品入口。
 
 ## V1 设计立场
 
-- Team 就是任务场景入口，不再额外暴露独立 `scene` 选择。
-- 用户面对的核心选择收敛为 `Team + Mode`。
-- Mode 仅保留 `single-executor` 与 `team-collaboration`。
-- Leader 始终是任务入口与最终收口者，但是否亲自执行、何时委派、是否长期持有 ownership 由 Team 设计决定。
-- Artifact 在 V1 中只保留为轻量交付与验证结果，不发展为复杂控制平面。
+- Team 仍然是方法论上的一级对象。
+- OpenCode 保持 Agent-first 入口；用户继续通过 OpenCode 的 Agent 选择、Model 选择、配置文件和 CLI 使用系统。
+- AgentScroll 不新增单独 Manager 入口，不修改 OpenCode Desktop UI。
+- Team 通过一组投影后的 OpenCode Agent 对用户可见。
+- oh-my-opencode 只可作为研究参考，不能成为运行依赖。
 
 ## 当前代码框架对应关系
 
-- `src/core`：定义 Team manifest、Team policy、shared capabilities、agent profile、运行态选择与宿主能力契约。
-- `src/agent-teams`：维护 Team Library 子系统；把嵌入式 `CodingTeam` 与 `AgentTeams/` 下的文件型 Team 统一装配为同一种 Team package 形态。
-- `src/adapters`：定义适配宿主时所需的 runtime binding 与事件抽象。
-- `src/manager`：定义 Team 选择、启用、执行计划与运行快照的管理层入口。
-- `AgentTeams`：存放通过配置文件定义的 Team 目录；当前主要承载 `GeneralTeam` 与 `WukongTeam`。
-- `AgentTeamTemplate`：存放可复用的 Team 模板，用于新增 Team 时快速落地。
+- `src/core`：宿主无关静态契约，包括 Team、Agent、capability 和宿主能力描述。
+- `src/agent-teams`：Team Library 子系统，负责发现、解析、校验和装配 Team 资产。
+- `src/runtime`：新增的投影层，负责把 Team Library 编译成 Catalog Projection 和 Session Binding。
+- `src/adapters`：宿主桥接层；当前新增 `src/adapters/opencode` 作为 OpenCode 适配骨架。
+- `src/manager`：内部默认值与运行态辅助层，当前不作为用户显式入口。
+- `AgentTeams`：文件型 Team 资产目录。
 
 ## Team 文件模型
 
-对配置文件型 Team，当前工程将静态定义收敛为以下文件：
+当前工程的 Team 静态定义仍然收敛为：
 
-1. `team.manifest.yaml`：定义 Team 身份、Leader、成员、模式、Workflow 与运行假设。
-2. `team.policy.yaml`：定义 Team 共通规则、审批边界、质量底线与禁止项。
-3. `shared-capabilities.yaml`：定义 Team 共享的模型、工具、技能、记忆、hooks 与 MCP 引用。
-4. `agents/*.agent.md`：定义单个 Agent 的静态画像，强调 persona core 与 responsibility core。
-5. `TEAM.md` 或 `docs/TEAM.md`：提供人类可读的 Team 说明文档。
+1. `team.manifest.yaml`
+2. `team.policy.yaml`
+3. `shared-capabilities.yaml`
+4. `agents/*.agent.md`
+5. `TEAM.md` 或 `docs/TEAM.md`
 
-这套模型与项目书保持一致：以 Team 为一级对象、以 Leader 为稳定入口、以 Session Context 为主要协作媒介，而不是依赖重型路由图与契约文件系统。
+在此基础上，Agent Profile 现在增加了一个新的静态维度：
 
-## Team Library 子系统
+* `entryPoint`
 
-当前 `src/agent-teams` 已从单一巨型入口拆分为更清晰的内部模块：
+它表达的是：
 
-- `constants.ts` / `types.ts`：Team loader 侧的稳定常量与校验输出类型。
-- `parsers.ts`：YAML 与 agent profile markdown frontmatter 的纯解析 / 映射逻辑。
-- `filesystem.ts`：基于 Team package 文件结构做目录发现与文件型 Team 加载。
-- `embedded/coding-team.ts`：内置受保护 `CodingTeam` 的源码定义。
-- `documentation.ts`：Team 文档与 agent profile 文档引用整理。
-- `validation.ts`：Team package 与 Team library 的交叉校验。
-- `library.ts`：把多个 Team source 装配为最终 `TeamLibrary`。
+* 这个角色是否适合作为用户直接选择的入口
+* 如果适合，应以什么标签投影到宿主 Agent 列表中
 
-这种拆分的目的，是让“发现 / 解析 / 校验 / 内置 Team 定义 / Library 装配”彼此独立演化，并为后续 OpenCode 插件接入保留稳定边界。
+## OpenCode 适配方式
+
+对 OpenCode，AgentScroll 不再要求用户先选 Team 再选 Mode，而是：
+
+* 把 Team 中适合作为入口的角色投影为 OpenCode 可选 Agent
+* 用户选择哪个投影 Agent，就相当于选择了哪个 Team 的哪条入口路径
+
+例如 `CodingTeam` 当前的用户可选投影是：
+
+* `[CodingTeam]leader`
+* `[CodingTeam]coordination-leader`
+* `[CodingTeam]executor`
+
+而 `reviewer`、`codebase-explorer`、`web-researcher` 等 support 角色仍然可以作为内部角色存在。
 
 ## 运行时桥接方式
 
-当前 TypeScript 框架并不直接执行 Team，而是为后续宿主接入准备清晰的映射层：
+当前运行时桥接分为两层：
 
-- `TeamManifest`、`TeamPolicy`、`SharedCapabilities`、`AgentProfileSpec` 表达静态定义。
-- `AgentTeamDefinition` 负责把内置 Team 与文件型 Team 统一为运行时可加载的 Team 单元。
-- `Manager` 负责选 Team、选 Mode，并生成初始执行计划。
-- `Adapter` 负责把 Team 选择结果映射为宿主中的运行上下文与事件。
+1. **Catalog Projection**
+   * 从 Team Library 生成投影后的 Agent 目录
+2. **Session Binding**
+   * 根据当前选中的 OpenCode Agent，绑定到 Team / role / mode / active owner
 
-后续如果接入 OpenCode 插件，推荐继续保持这一分层：插件消费的是已经装配完成的 Team runtime 结果，而不是直接耦合 YAML、Markdown 或目录扫描细节。
+这样可以同时满足：
+
+* Team 定义仍然保持 Team-first
+* OpenCode 入口仍然保持 Agent-first
+* 用户不需要学习额外 UI
+
+## 共存边界
+
+AgentScroll 与 oh-my-opencode 在功能设计上互斥，但允许用户同时安装。
+
+为此，当前框架要求：
+
+- AgentScroll 只依赖 OpenCode 官方机制，不依赖任何 OMO 内部功能。
+- 投影 Agent 必须使用自己的命名空间。
+- AgentScroll 不主动修改 foreign agents。
+- 默认不抢占 foreign `default_agent`。
+- Hook 设计必须顺序无关、可叠加、无 OMO 前提。
 
 ## 不是当前阶段目标的部分
 
-以下能力目前不在 V1 范围内：
+以下能力当前仍不在 V1 范围内：
 
-- 宿主 runloop 接管
+- 自定义 OpenCode Desktop 界面
+- 独立 AgentScroll Manager UI
 - 自动场景识别与自动 Team 路由
-- 显式的复杂 handoff / completion 契约体系
-- 长期任务状态系统与外部状态同步平台
-
-## 宿主最小能力契约
-
-为了让 AgentScroll 能接入宿主，宿主至少需要支持：
-
-- 注册或切换 Agent 定义
-- 支持单执行者与基础团队协作
-- 输出运行事件流或等价日志
-- 注入 Team 级规则与工具白名单
-- 接收外部 Team 运行配置
-- 导出 Session 日志，便于追踪与审计
+- 对 OpenCode runloop 的接管
+- 对 oh-my-opencode 的兼容层依赖
