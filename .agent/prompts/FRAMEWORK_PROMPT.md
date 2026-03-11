@@ -1,6 +1,6 @@
 # Framework Prompt
 
-Use this prompt when extending the AgentScroll engineering framework.
+Use this prompt when extending the CrewBee engineering framework.
 
 ## Goal
 Evolve the repository without drifting from the V1 Team-first model:

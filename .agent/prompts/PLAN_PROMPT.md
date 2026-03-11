@@ -1,6 +1,6 @@
 # Plan Prompt
 
-Use this prompt when creating or updating `PLAN.yaml` for AgentScroll work.
+Use this prompt when creating or updating `PLAN.yaml` for CrewBee work.
 
 ## Goal
 Produce a compact execution plan that is immediately actionable for the current repository state.

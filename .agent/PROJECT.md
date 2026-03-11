@@ -2,13 +2,13 @@
 
 ## Identity
 
-- Project ID: `agentscroll`
-- Project Name: `AgentScroll`
-- Repository: `E:\1-Projects\AgentScroll`
+- Project ID: `crewbee`
+- Project Name: `CrewBee`
+- Repository: `E:\1-Projects\CrewBee`
 
 ## Objective
 
-Define and ship a V1-ready Agent Team framework that frames AgentScroll as a portable Team system rather than a pack catalog. The framework must now be specific enough to support the next implementation cycle across three layers:
+Define and ship a V1-ready Team-first Agent System that frames CrewBee as a practical Team system rather than a pack catalog. The framework must now be specific enough to support the next implementation cycle across three layers:
 
 - typed framework contracts in `src/`
 - file-based Team definitions in `AgentTeams/` and reusable template assets in `AgentTeamTemplate/`

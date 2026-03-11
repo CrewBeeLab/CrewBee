@@ -1,19 +1,19 @@
 import {
-  listAgentScrollPluginTools,
-  listImplementedAgentScrollPluginTools,
-  type AgentScrollPluginToolDefinition,
+  listCrewBeePluginTools,
+  listImplementedCrewBeePluginTools,
+  type CrewBeePluginToolDefinition,
 } from "../../runtime/registries/plugin-tools";
 
 export interface OpenCodeToolDomainPlan {
   hostId: "opencode";
-  reservedTools: AgentScrollPluginToolDefinition[];
-  implementedTools: AgentScrollPluginToolDefinition[];
+  reservedTools: CrewBeePluginToolDefinition[];
+  implementedTools: CrewBeePluginToolDefinition[];
   toolInjectionMode: "reserved-only" | "inject-implemented-tools";
 }
 
 export function createOpenCodeToolDomainPlan(): OpenCodeToolDomainPlan {
-  const implementedTools = listImplementedAgentScrollPluginTools().filter((tool) => tool.hostTargets.includes("opencode"));
-  const reservedTools = listAgentScrollPluginTools().filter((tool) => tool.hostTargets.includes("opencode"));
+  const implementedTools = listImplementedCrewBeePluginTools().filter((tool) => tool.hostTargets.includes("opencode"));
+  const reservedTools = listCrewBeePluginTools().filter((tool) => tool.hostTargets.includes("opencode"));
 
   return {
     hostId: "opencode",

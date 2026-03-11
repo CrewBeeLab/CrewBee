@@ -1,8 +1,8 @@
 {
-  "name": "agentscroll",
+  "name": "crewbee",
   "version": "0.1.0",
   "private": true,
-  "description": "Portable Agent Team system framework",
+  "description": "A Team-first Agent System",
   "license": "MIT",
   "scripts": {
     "build": "tsc -p tsconfig.json",

@@ -91,7 +91,7 @@ capabilities:
   hooks: repo-guardrails
   instructions:
     - repo-core
-    - agentscroll-team-framework
+    - crewbee-team-framework
   mcp_servers:
     - github
 

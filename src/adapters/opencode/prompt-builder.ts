@@ -4,7 +4,7 @@ import type { CatalogAgentProjection } from "../../runtime";
 
 function createPromptHeader(agent: CatalogAgentProjection): string[] {
   return [
-    `You are ${agent.surfaceLabel}, projected from AgentScroll ${agent.teamName}.`,
+    `You are ${agent.surfaceLabel}, projected from CrewBee ${agent.teamName}.`,
     `Team ID: ${agent.teamId}`,
     `Source Agent ID: ${agent.sourceAgentId}`,
     `Role Kind: ${agent.roleKind}`,

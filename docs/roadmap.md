@@ -5,7 +5,7 @@
 - [x] 建立 `core / agent-teams / adapters / manager` 四个基础模块
 - [x] 定义首版 Team-first 合同模型
 - [x] 定义 V1 所需的 manifest / policy / capabilities / profile 类型结构
-- [x] 建立 `AgentTeamTemplate` 模板目录
+- [x] 建立 `AgentTeams/AgentTeamTemplate` 模板目录
 - [x] 建立 `AgentTeams` 已定义 Team 目录
 - [ ] 为 adapter 层补充契约级测试
 

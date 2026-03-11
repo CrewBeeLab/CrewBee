@@ -3,7 +3,7 @@ kind: agent-team
 version: 1.0.0
 name: General Team
 status: active
-owner: AgentScroll
+owner: CrewBee
 
 description: 面向调研、分析、写作与通用事务执行的通用型团队。
 

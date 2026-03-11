@@ -17,14 +17,14 @@ export type {
 
 export { createAvailableToolContext, isAvailableTool, listAvailableTools } from "./registries";
 export {
-  getAgentScrollPluginTool,
-  listAgentScrollPluginTools,
-  listImplementedAgentScrollPluginTools,
+  getCrewBeePluginTool,
+  listCrewBeePluginTools,
+  listImplementedCrewBeePluginTools,
 } from "./registries";
 export type {
-  AgentScrollPluginToolDefinition,
-  AgentScrollPluginToolStatus,
-  AgentScrollPluginToolVisibility,
+  CrewBeePluginToolDefinition,
+  CrewBeePluginToolStatus,
+  CrewBeePluginToolVisibility,
   AvailableToolContext,
   AvailableToolDefinition,
 } from "./registries";

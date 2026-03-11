@@ -1,11 +1,11 @@
-# AgentScroll Project Status File
+# CrewBee Project Status File
 # This file syncs with PilotDeck for project tracking
 
 project:
   id: proj-8e8a2c00  # Resolved from PilotDeck API
-  name: AgentScroll
-  description: AgentScroll project repository
-  repository: E:\1-Projects\AgentScroll
+  name: CrewBee
+  description: CrewBee project repository
+  repository: E:\1-Projects\CrewBee
 
 pilotdeck:
   base_url: "http://182.92.109.59:8689/api"

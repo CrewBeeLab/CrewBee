@@ -12,7 +12,7 @@
 ## D-0002
 
 - Status: accepted
-- Context: Early scaffold docs framed AgentScroll around Pack and Playbook concepts, which increases V1 complexity and weakens the intended product boundary.
+- Context: Early scaffold docs framed CrewBee around Pack and Playbook concepts, which increases V1 complexity and weakens the intended product boundary.
 - Decision: Reframe V1 around `Agent Team + Manager + Adapter`, fold Playbook into Team as an internal workflow concept, and reduce the primary user-facing selection to `Team + Mode`.
 - Consequences:
   - Pros: clearer V1 scope, simpler docs, lower implementation ambiguity, easier host mapping

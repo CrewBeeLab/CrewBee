@@ -35,7 +35,7 @@ export interface OpenCodeResolvedToolConfig {
   requestedTools: string[];
   availableTools: string[];
   missingTools: string[];
-  availabilitySource: "host-provided" | "agentscroll-plugin" | "merged" | "default-placeholder";
+  availabilitySource: "host-provided" | "crewbee-plugin" | "merged" | "default-placeholder";
   availabilityIsExplicit: boolean;
 }
 
@@ -114,7 +114,7 @@ export function createOpenCodePublicAgentName(agent: CatalogAgentProjection): st
 }
 
 export function createOpenCodeConfigKey(agent: CatalogAgentProjection): string {
-  return `agentscroll.${sanitizeSegment(agent.teamId)}.${sanitizeSegment(agent.surfaceLabel)}`;
+  return `crewbee.${sanitizeSegment(agent.teamId)}.${sanitizeSegment(agent.surfaceLabel)}`;
 }
 
 export function projectCatalogAgentToOpenCode(

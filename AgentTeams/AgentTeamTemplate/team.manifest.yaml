@@ -3,9 +3,9 @@ kind: agent-team
 version: 1.0.0
 name: Agent Team Template
 status: active
-owner: AgentScroll
+owner: CrewBee
 
-description: A reusable AgentScroll Agent Team template for OpenCode-style leader-driven execution.
+description: A reusable CrewBee Agent Team template for OpenCode-style leader-driven execution.
 
 mission:
   objective: Provide a reusable Team template that can be specialized into a concrete Team through a leader-first Team flow.

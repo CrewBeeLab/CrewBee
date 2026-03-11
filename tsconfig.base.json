@@ -5,7 +5,7 @@
     "moduleResolution": "NodeNext",
     "baseUrl": ".",
     "paths": {
-      "@agentscroll/core": [
+      "@crewbee/core": [
         "src/core/index.ts"
       ]
     },

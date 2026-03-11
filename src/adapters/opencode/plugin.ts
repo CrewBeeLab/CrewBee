@@ -58,6 +58,9 @@ export interface OpenCodeBootstrapOutput {
   sessionBinding?: SessionRuntimeBinding;
 }
 
+const CURRENT_PLUGIN_KEY_PREFIX = "crewbee.";
+const LEGACY_PLUGIN_KEY_PREFIX = "agentscroll.";
+
 export function createOpenCodeAdapterDefinition(): AdapterDefinition {
   const coexistence = createOpenCodeCoexistencePolicy();
 
@@ -90,8 +93,11 @@ function resolveBindingAgent(input: {
   defaults: OpenCodeAdapterDefaults;
 }): { teamId: string; sourceAgentId: string } | undefined {
   if (input.selectedHostAgent) {
+    const normalizedHostAgent = input.selectedHostAgent.startsWith(LEGACY_PLUGIN_KEY_PREFIX)
+      ? `${CURRENT_PLUGIN_KEY_PREFIX}${input.selectedHostAgent.slice(LEGACY_PLUGIN_KEY_PREFIX.length)}`
+      : input.selectedHostAgent;
     const hostSelection = resolveProjectedAgentSelection(input.projectedAgents, {
-      configKey: input.selectedHostAgent,
+      configKey: normalizedHostAgent,
       publicName: input.selectedHostAgent,
     });
 
@@ -137,6 +143,53 @@ function filterSafeProjectedAgents(
   return agents.filter((agent) => !blockedConfigKeys.has(agent.configKey) && !blockedPublicNames.has(agent.publicName));
 }
 
+function isCompatibleCrewBeeOwnedKey(key: string): boolean {
+  return key.startsWith(CURRENT_PLUGIN_KEY_PREFIX) || key.startsWith(LEGACY_PLUGIN_KEY_PREFIX);
+}
+
+function getConfiguredAgentName(definition: unknown): string | undefined {
+  if (typeof definition !== "object" || definition === null || !("name" in definition)) {
+    return undefined;
+  }
+
+  const candidate = definition.name;
+  return typeof candidate === "string" ? candidate : undefined;
+}
+
+function getForeignCollisionInputs(input: {
+  existingConfig?: OpenCodeConfigLike;
+  existingConfigKeys?: string[];
+  existingPublicNames?: string[];
+}): { existingConfigKeys?: string[]; existingPublicNames?: string[] } {
+  if (!input.existingConfig?.agent) {
+    return {
+      existingConfigKeys: input.existingConfigKeys,
+      existingPublicNames: input.existingPublicNames,
+    };
+  }
+
+  const compatibleOwnedConfigKeys = new Set<string>();
+  const compatibleOwnedPublicNames = new Set<string>();
+
+  for (const [key, definition] of Object.entries(input.existingConfig.agent)) {
+    if (!isCompatibleCrewBeeOwnedKey(key)) {
+      continue;
+    }
+
+    compatibleOwnedConfigKeys.add(key);
+
+    const publicName = getConfiguredAgentName(definition);
+    if (publicName) {
+      compatibleOwnedPublicNames.add(publicName);
+    }
+  }
+
+  return {
+    existingConfigKeys: input.existingConfigKeys?.filter((key) => !compatibleOwnedConfigKeys.has(key)),
+    existingPublicNames: input.existingPublicNames?.filter((name) => !compatibleOwnedPublicNames.has(name)),
+  };
+}
+
 function shouldSetDefaultAgent(input: {
   existingDefaultAgent?: string;
   defaultAgentConfigKey?: string;
@@ -149,7 +202,7 @@ function shouldSetDefaultAgent(input: {
     return input.defaultAgentConfigKey;
   }
 
-  if (input.existingDefaultAgent.startsWith("agentscroll.")) {
+  if (isCompatibleCrewBeeOwnedKey(input.existingDefaultAgent)) {
     return input.defaultAgentConfigKey;
   }
 
@@ -162,13 +215,18 @@ export function createOpenCodeBootstrap(input: OpenCodeBootstrapInput): OpenCode
   const projectedAgents = projectCatalogToOpenCodeAgents(catalog, {
     availableTools: input.availableTools,
   });
+  const foreignCollisions = getForeignCollisionInputs({
+    existingConfig: input.existingConfig,
+    existingConfigKeys: input.existingConfigKeys,
+    existingPublicNames: input.existingPublicNames,
+  });
   const collisions = detectOpenCodeProjectionCollisions({
     projectedAgents: projectedAgents.map((agent) => ({
       configKey: agent.configKey,
       publicName: agent.publicName,
     })),
-    existingConfigKeys: input.existingConfigKeys,
-    existingPublicNames: input.existingPublicNames,
+    existingConfigKeys: foreignCollisions.existingConfigKeys,
+    existingPublicNames: foreignCollisions.existingPublicNames,
   });
   const safeProjectedAgents = filterSafeProjectedAgents(projectedAgents, collisions);
 

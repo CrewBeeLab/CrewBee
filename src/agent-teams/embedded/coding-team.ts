@@ -12,7 +12,7 @@ export function createEmbeddedCodingTeam(): AgentTeamDefinition {
     version: "1.0.0",
     name: "CodingTeam",
     status: "active",
-    owner: "AgentScroll",
+    owner: "CrewBee",
     description: "以 coding-leader 为 formal leader、以主执行者为中心、由研究、评审与顾问按需支撑的代码工程团队。",
     mission: {
       objective: "以最少但足够的结构完成代码开发、修改、调试、重构、验证与工程交付。",

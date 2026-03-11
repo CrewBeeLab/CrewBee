@@ -1,8 +1,8 @@
-# AgentScroll 架构文档
+# CrewBee 架构文档
 
 ## 1. 文档定位
 
-本文档是 AgentScroll 当前工程实现的唯一架构总览，取代原有的 `docs/框架总览.md`。
+本文档是 CrewBee 当前工程实现的唯一架构总览，取代原有的 `docs/框架总览.md`。
 
 它只描述两类内容：
 
@@ -15,7 +15,7 @@
 
 ## 2. 当前版本的系统定位
 
-AgentScroll 当前实现的是一个 **Agent Team 配置管理框架 + OpenCode 适配骨架**。
+CrewBee 当前实现的是一个 **Agent Team 配置管理框架 + OpenCode 适配骨架**。
 
 它已经完成的核心闭环不是“多 Agent 运行时执行引擎”，而是：
 
@@ -28,13 +28,13 @@ AgentScroll 当前实现的是一个 **Agent Team 配置管理框架 + OpenCode 
 因此，当前工程更准确的公式是：
 
 ```text
-AgentScroll = Team Definitions + Team Library + Runtime Projection + OpenCode Adapter + Internal Manager
+CrewBee = Team Definitions + Team Library + Runtime Projection + OpenCode Adapter + Internal Manager
 ```
 
 对应到项目书中的 V1 收束公式，当前代码已经跑通的是：
 
 ```text
-AgentScroll = Agent Team × Manager × Adapter
+CrewBee = Agent Team × Manager × Adapter
 ```
 
 但需要注意：
@@ -516,7 +516,7 @@ sequenceDiagram
 
 ### 10.1 可用工具注册表
 
-`src/runtime/registries/available-tools.ts` 当前维护的是 AgentScroll 眼中的“宿主当前可用工具上下文”。
+`src/runtime/registries/available-tools.ts` 当前维护的是 CrewBee 眼中的“宿主当前可用工具上下文”。
 
 它不再硬编码 OpenCode builtin tool 列表，而是：
 
@@ -530,14 +530,14 @@ sequenceDiagram
 - 暂时按“工具可用”处理
 - 同时在 `resolvedTooling` 中保留 `availabilitySource` 与 `availabilityIsExplicit` 标记
 
-这一层现在还额外预留了一个未来能力：**AgentScroll 插件自带 tools**。
+这一层现在还额外预留了一个未来能力：**CrewBee 插件自带 tools**。
 
 当前实现方式是：
 
-- `src/runtime/registries/plugin-tools.ts` 维护 AgentScroll 自有 tool 的注册表
+- `src/runtime/registries/plugin-tools.ts` 维护 CrewBee 自有 tool 的注册表
 - registry 中区分 `reserved-placeholder` 与 `implemented`
-- `createAvailableToolContext()` 会把“宿主提供的 tools”和“已实现的 AgentScroll plugin tools”合并成统一上下文
-- 如果某个 AgentScroll plugin tool 还只是保留位，它不会被算进当前 `availableTools`
+- `createAvailableToolContext()` 会把“宿主提供的 tools”和“已实现的 CrewBee plugin tools”合并成统一上下文
+- 如果某个 CrewBee plugin tool 还只是保留位，它不会被算进当前 `availableTools`
 
 这意味着未来新增插件工具时，不需要再改动 Agent Profile 或 permission 的总体模型，只需要：
 
@@ -559,9 +559,9 @@ sequenceDiagram
 
 这使能力声明直接落在 Agent 定义层，而不是额外绕过一个命名型模板层。
 
-### 10.3 AgentScroll 插件 Tools 预留框架
+### 10.3 CrewBee 插件 Tools 预留框架
 
-为了支持后续“AgentScroll 插件自带 tools”的研发计划，当前框架已经预留了两层显式设计：
+为了支持后续“CrewBee 插件自带 tools”的研发计划，当前框架已经预留了两层显式设计：
 
 #### A. 宿主无关层：Plugin Tool Registry
 
@@ -570,7 +570,7 @@ sequenceDiagram
 当前 registry 记录的是 **工具身份与状态**，而不是工具实现本身。每个定义都包含：
 
 - `id`
-- `source = agentscroll-plugin`
+- `source = crewbee-plugin`
 - `status = reserved-placeholder | implemented`
 - `visibility = agent-addressable | internal-only`
 - `description`
@@ -578,9 +578,9 @@ sequenceDiagram
 
 当前预留了三类 placeholder：
 
-- `agentscroll.team-state`
-- `agentscroll.session-binding`
-- `agentscroll.team-handoff`
+- `crewbee.team-state`
+- `crewbee.session-binding`
+- `crewbee.team-handoff`
 
 这些条目现在只是框架保留位，目的是：
 
@@ -594,7 +594,7 @@ sequenceDiagram
 
 这里不直接实现具体工具，而是输出一个 `OpenCodeToolDomainPlan`，说明：
 
-- 当前 OpenCode 侧有哪些 AgentScroll plugin tools 已实现
+- 当前 OpenCode 侧有哪些 CrewBee plugin tools 已实现
 - 哪些仍然只是 reserved placeholder
 - 当前应采用 `reserved-only` 还是 `inject-implemented-tools` 模式
 
@@ -664,7 +664,7 @@ plugin-tools registry
 具体规则：
 
 - `publicName = [${teamName}]${surfaceLabel}`
-- `configKey = agentscroll.<teamId>.<surfaceLabel>`
+- `configKey = crewbee.<teamId>.<surfaceLabel>`
 - `user-selectable` -> `mode: primary`, `hidden: false`
 - `internal-only` -> `mode: subagent`, `hidden: true`
 - 模型覆盖来自 `team.manifest.agentRuntime[agentId]`
@@ -676,7 +676,7 @@ function projectCatalogAgentToOpenCode(agent) {
     const runtimeOverride = agent.sourceTeam.manifest.agentRuntime?.[agent.sourceAgentId];
 
     return {
-    configKey: `agentscroll.${sanitize(teamId)}.${sanitize(surfaceLabel)}`,
+    configKey: `crewbee.${sanitize(teamId)}.${sanitize(surfaceLabel)}`,
     publicName: `[${agent.teamName}]${agent.surfaceLabel}`,
     mode: agent.exposure === "user-selectable" ? "primary" : "subagent",
       hidden: agent.exposure !== "user-selectable",
@@ -701,14 +701,14 @@ function projectCatalogAgentToOpenCode(agent) {
 
 它的职责不是执行工具，而是描述：
 
-- 哪些 AgentScroll plugin tools 面向 OpenCode 保留
+- 哪些 CrewBee plugin tools 面向 OpenCode 保留
 - 哪些已经真的实现
 - 当前 bootstrap 应处于 `reserved-only` 还是 `inject-implemented-tools` 阶段
 
 因此，当前 OpenCode adapter 对 tools 的结构已经分成两层：
 
 - `resolvedTooling`：某个 projected agent 视角下，请求了哪些 tool、当前可用哪些 tool
-- `toolDomainPlan`：整个插件视角下，AgentScroll 自有 tools 的宿主注入准备状态
+- `toolDomainPlan`：整个插件视角下，CrewBee 自有 tools 的宿主注入准备状态
 
 ### 12.3 Prompt Builder
 
@@ -734,7 +734,7 @@ function projectCatalogAgentToOpenCode(agent) {
 关键规则：
 
 - 所有基础 permission 来自 Agent Profile 自己声明的 `permission`
-- AgentScroll 不再在 adapter 层隐式追加 read-only / coordination / write-role overlay
+- CrewBee 不再在 adapter 层隐式追加 read-only / coordination / write-role overlay
 - OpenCode 侧真正是否允许，仍由宿主在运行时根据规则求值决定
 
 这意味着当前权限系统的显式性更强：你在 Agent Profile 中写什么规则，投影到 OpenCode 的就是什么规则；adapter 不再暗中加一层额外权限策略。
@@ -760,9 +760,9 @@ function createOpenCodePermissionRules(agent) {
 `src/adapters/opencode/config-merge.ts` 已实现安全合并策略：
 
 - 新 key 直接插入
-- 已存在但属于 `agentscroll.*` 的 key 可更新
+- 已存在但属于 `crewbee.*` 的 key 可更新
 - foreign key 冲突则跳过
-- `default_agent` 仅在为空，或原本就是 AgentScroll-owned key 时才回填
+- `default_agent` 仅在为空，或原本就是 CrewBee-owned key 时才回填
 
 这与设计文档中的“不要抢 foreign default_agent”是一致的。
 
@@ -770,10 +770,10 @@ function createOpenCodePermissionRules(agent) {
 
 `src/adapters/opencode/coexistence.ts` 当前已落地以下规则：
 
-- `pluginId = agentscroll`
+- `pluginId = crewbee`
 - `dependsOnOhMyOpenCode = false`
 - `featureDevelopmentMode = mutually-exclusive`
-- `reservedConfigKeyPrefix = agentscroll.`
+- `reservedConfigKeyPrefix = crewbee.`
 - `reservedPublicNamePrefix = [`
 - `neverMutateForeignAgents = true`
 
@@ -1017,7 +1017,7 @@ npm run clean
 
 因此，对当前工程最准确的一句话总结是：
 
-> AgentScroll 已经完成了 Team 定义、Team Library、Runtime Projection 和 OpenCode Config Projection 的骨架闭环，但尚未完成真正的宿主运行时执行闭环。
+> CrewBee 已经完成了 Team 定义、Team Library、Runtime Projection 和 OpenCode Config Projection 的骨架闭环，但尚未完成真正的宿主运行时执行闭环。
 
 ---
 

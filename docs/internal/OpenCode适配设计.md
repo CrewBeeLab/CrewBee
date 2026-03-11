@@ -1,14 +1,14 @@
-# AgentScroll OpenCode 适配设计 v2
+# CrewBee OpenCode 适配设计 v2
 
 ## 1. 文档定位
 
 本文档回答的问题已经收敛为：
 
-**在不改变 OpenCode 用户使用习惯的前提下，如何让 AgentScroll 作为一个独立插件接入 OpenCode，并把 AgentScroll 的 Agent Team 定义稳定投影为 OpenCode 可选 Agent。**
+**在不改变 OpenCode 用户使用习惯的前提下，如何让 CrewBee 作为一个独立插件接入 OpenCode，并把 CrewBee 的 Agent Team 定义稳定投影为 OpenCode 可选 Agent。**
 
 这版设计相对前一版有四个关键调整：
 
-1. AgentScroll 与 oh-my-opencode 在功能开发上视为互斥体系，AgentScroll 不依赖 oh-my-opencode 的任何功能。
+1. CrewBee 与 oh-my-opencode 在功能开发上视为互斥体系，CrewBee 不依赖 oh-my-opencode 的任何功能。
 2. OpenCode 仍然是唯一入口；配置、Agent 选择、Model 选择、CLI 参数都继续沿用 OpenCode 原生方式。
 3. Team 不再通过额外 Manager 入口暴露，而是通过一组投影后的 OpenCode Agent 暴露给用户；用户选择某个投影 Agent，本质上就是选择了某个 Team 的执行入口。
 4. `shared-capabilities.yaml` 不再是当前框架主路径；provider/model 级别配置收敛到 `team.manifest.yaml` 的 `agent_runtime` 中。
@@ -21,17 +21,17 @@
 
 ## 2.1 与 oh-my-opencode 的关系
 
-AgentScroll 必须满足以下原则：
+CrewBee 必须满足以下原则：
 
 * **零功能依赖**：不能依赖 oh-my-opencode 的 hooks、task router、manager、prompt system、continuation system 或任何内部模块。
-* **设计互斥**：AgentScroll 的能力设计按“单独安装即可完整工作”来做，而不是按“与 oh-my-opencode 组合后更完整”来做。
-* **允许共存**：如果用户同时安装两个插件，AgentScroll 应尽量通过命名空间、配置键与运行时边界隔离，保持自身行为完整。
+* **设计互斥**：CrewBee 的能力设计按“单独安装即可完整工作”来做，而不是按“与 oh-my-opencode 组合后更完整”来做。
+* **允许共存**：如果用户同时安装两个插件，CrewBee 应尽量通过命名空间、配置键与运行时边界隔离，保持自身行为完整。
 
 这意味着：
 
 * 可以研究 oh-my-opencode 的架构思路；
-* 但 AgentScroll 不能把 oh-my-opencode 当运行前提；
-* 也不能把 AgentScroll 的核心行为挂在 oh-my-opencode 提供的任何功能上。
+* 但 CrewBee 不能把 oh-my-opencode 当运行前提；
+* 也不能把 CrewBee 的核心行为挂在 oh-my-opencode 提供的任何功能上。
 
 ## 2.2 OpenCode 是唯一入口
 
@@ -42,17 +42,17 @@ V1 中，用户的真实入口保持为 OpenCode 本身：
 * OpenCode 原生配置文件
 * OpenCode CLI 参数
 
-AgentScroll 当前阶段**不增加单独的 Manager 入口**。
+CrewBee 当前阶段**不增加单独的 Manager 入口**。
 
 这意味着：
 
 * 不修改 OpenCode Desktop 界面；
-* 不要求用户额外打开一个 AgentScroll UI；
+* 不要求用户额外打开一个 CrewBee UI；
 * 不要求用户通过 `/team-use`、`/team-mode` 之类的自定义命令完成主要选择。
 
 ## 2.3 Team 通过投影 Agent 暴露给用户
 
-AgentScroll 在 OpenCode 中不再只暴露一个 Team Entry Agent。
+CrewBee 在 OpenCode 中不再只暴露一个 Team Entry Agent。
 
 而是把 Team 内一部分合适的角色投影为 OpenCode 的用户可选 Agent。例如：
 
@@ -69,7 +69,7 @@ AgentScroll 在 OpenCode 中不再只暴露一个 Team Entry Agent。
 
 ## 3. 核心设计结论
 
-### 3.1 AgentScroll 在 OpenCode 中的正确形态
+### 3.1 CrewBee 在 OpenCode 中的正确形态
 
 OpenCode 的原生模型是 Agent-first：
 
@@ -78,7 +78,7 @@ OpenCode 的原生模型是 Agent-first：
 * Model 选择是 UI 一级操作
 * 配置由 OpenCode 原生配置系统加载
 
-AgentScroll 的原生模型是 Team-first：
+CrewBee 的原生模型是 Team-first：
 
 * Team 是一级对象
 * Leader / 成员属于 Team 内部结构
@@ -301,9 +301,9 @@ AgentScroll 的原生模型是 Team-first：
 
 ## 6.1 不改变 OpenCode 的原生交互习惯
 
-在 V1 中，AgentScroll 不新增下列产品层要求：
+在 V1 中，CrewBee 不新增下列产品层要求：
 
-* 不要求先进入 AgentScroll Manager
+* 不要求先进入 CrewBee Manager
 * 不要求通过自定义命令先选 Team
 * 不要求修改 Desktop UI
 * 不要求用户额外理解一层 Team UI
@@ -314,11 +314,11 @@ AgentScroll 的原生模型是 Team-first：
 2. 选 Model
 3. 发送请求
 
-只是这些 Agent 里，多了一批由 AgentScroll 投影出来的 Team 入口 Agent。
+只是这些 Agent 里，多了一批由 CrewBee 投影出来的 Team 入口 Agent。
 
 ## 6.2 配置仍然走 OpenCode 原生配置通道
 
-当前阶段不单独定义 `agentscroll.jsonc` 作为主配置入口。
+当前阶段不单独定义 `crewbee.jsonc` 作为主配置入口。
 
 主要配置来源仍然应当是：
 
@@ -327,7 +327,7 @@ AgentScroll 的原生模型是 Team-first：
 * OpenCode Desktop 的 Agent / Model 选择
 * OpenCode CLI 参数
 
-AgentScroll 可以在插件内部维护最少量的运行时辅助状态，但不能要求用户绕开 OpenCode 原生配置入口。
+CrewBee 可以在插件内部维护最少量的运行时辅助状态，但不能要求用户绕开 OpenCode 原生配置入口。
 
 ## 6.3 不修改 OpenCode Desktop 界面
 
@@ -340,7 +340,7 @@ V1 设计明确不考虑 Desktop 界面改造。
 * 原生配置文件
 * 原生 CLI 参数
 
-因此 AgentScroll 的适配目标不是“做一个新的 Team UI”，而是“让 Team 的语义通过 Agent 列表自然显现”。
+因此 CrewBee 的适配目标不是“做一个新的 Team UI”，而是“让 Team 的语义通过 Agent 列表自然显现”。
 
 ---
 
@@ -356,11 +356,11 @@ V1 设计明确不考虑 Desktop 界面改造。
 * tool hook 叠加顺序
 * permission 规则叠加
 
-## 7.2 AgentScroll 必须遵守的共存规则
+## 7.2 CrewBee 必须遵守的共存规则
 
 ### 规则一：不读取、不依赖、不假设 oh-my-opencode 内部状态
 
-AgentScroll 不应：
+CrewBee 不应：
 
 * 读取 oh-my-opencode 私有配置
 * 判断某个 OMO agent 是否存在来决定自身是否工作
@@ -370,23 +370,23 @@ AgentScroll 不应：
 
 建议至少分离两个层面：
 
-* 内部 config key：例如 `agentscroll.coding-team.leader`
+* 内部 config key：例如 `crewbee.coding-team.leader`
 * 用户可见名称：例如 `[CodingTeam]leader`
 
 这样即使别的插件也注册 agent，冲突面也能收缩到最小。
 
 ### 规则三：不修改 foreign agents
 
-AgentScroll 只注入和维护自己生成的 Agent，不主动改写别的插件已经注册的 agent prompt、permission 或 mode。
+CrewBee 只注入和维护自己生成的 Agent，不主动改写别的插件已经注册的 agent prompt、permission 或 mode。
 
 ### 规则四：不抢 `default_agent`，除非用户明确配置
 
-如果用户没有明确把某个 AgentScroll 投影 Agent 设为默认值，插件不应强行覆盖已有默认 agent。
+如果用户没有明确把某个 CrewBee 投影 Agent 设为默认值，插件不应强行覆盖已有默认 agent。
 
 ### 规则五：把 hook 当共享环境而不是独占环境
 
 OpenCode 的 hook 是串行叠加执行的。
-因此 AgentScroll 的 hook 设计必须满足：
+因此 CrewBee 的 hook 设计必须满足：
 
 * 无论是否存在别的插件，单独运行即可完整
 * 即使顺序变化，也不依赖 foreign plugin 的副作用
@@ -444,7 +444,7 @@ src/
 建议主用：
 
 * `config`
-  * 注入 AgentScroll 生成的 projected agents
+  * 注入 CrewBee 生成的 projected agents
 * `chat.message`
   * 根据当前选中 agent 建立 session binding
 * `experimental.chat.system.transform`
@@ -515,10 +515,10 @@ src/
 
 ## 12. 最终结论
 
-这版 OpenCode 适配的核心不是“给 AgentScroll 做一个新的入口”，而是：
+这版 OpenCode 适配的核心不是“给 CrewBee 做一个新的入口”，而是：
 
-**让 AgentScroll 继续保持 Team-first 的静态定义方式，但在 OpenCode 中以原生 Agent 选择体验暴露给用户。**
+**让 CrewBee 继续保持 Team-first 的静态定义方式，但在 OpenCode 中以原生 Agent 选择体验暴露给用户。**
 
 一句话收束：
 
-**AgentScroll 定义 Team，OpenCode 继续作为入口，Adapter 负责把 Team 中可选入口角色投影为 OpenCode Agent。**
+**CrewBee 定义 Team，OpenCode 继续作为入口，Adapter 负责把 Team 中可选入口角色投影为 OpenCode Agent。**

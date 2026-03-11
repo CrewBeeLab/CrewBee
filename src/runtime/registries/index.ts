@@ -6,10 +6,10 @@ export {
   type AvailableToolDefinition,
 } from "./available-tools";
 export {
-  getAgentScrollPluginTool,
-  listAgentScrollPluginTools,
-  listImplementedAgentScrollPluginTools,
-  type AgentScrollPluginToolDefinition,
-  type AgentScrollPluginToolStatus,
-  type AgentScrollPluginToolVisibility,
+  getCrewBeePluginTool,
+  listCrewBeePluginTools,
+  listImplementedCrewBeePluginTools,
+  type CrewBeePluginToolDefinition,
+  type CrewBeePluginToolStatus,
+  type CrewBeePluginToolVisibility,
 } from "./plugin-tools";

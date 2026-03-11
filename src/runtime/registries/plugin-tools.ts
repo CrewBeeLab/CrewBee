@@ -1,36 +1,36 @@
-export type AgentScrollPluginToolStatus = "reserved-placeholder" | "implemented";
+export type CrewBeePluginToolStatus = "reserved-placeholder" | "implemented";
 
-export type AgentScrollPluginToolVisibility = "agent-addressable" | "internal-only";
+export type CrewBeePluginToolVisibility = "agent-addressable" | "internal-only";
 
-export interface AgentScrollPluginToolDefinition {
+export interface CrewBeePluginToolDefinition {
   id: string;
-  source: "agentscroll-plugin";
-  status: AgentScrollPluginToolStatus;
-  visibility: AgentScrollPluginToolVisibility;
+  source: "crewbee-plugin";
+  status: CrewBeePluginToolStatus;
+  visibility: CrewBeePluginToolVisibility;
   description: string;
   hostTargets: string[];
 }
 
-const AGENTSCROLL_PLUGIN_TOOLS: Record<string, AgentScrollPluginToolDefinition> = {
-  "agentscroll.team-state": {
-    id: "agentscroll.team-state",
-    source: "agentscroll-plugin",
+const CREWBEE_PLUGIN_TOOLS: Record<string, CrewBeePluginToolDefinition> = {
+  "crewbee.team-state": {
+    id: "crewbee.team-state",
+    source: "crewbee-plugin",
     status: "reserved-placeholder",
     visibility: "agent-addressable",
     description: "Reserved placeholder for Team runtime state read/write helpers.",
     hostTargets: ["opencode"],
   },
-  "agentscroll.session-binding": {
-    id: "agentscroll.session-binding",
-    source: "agentscroll-plugin",
+  "crewbee.session-binding": {
+    id: "crewbee.session-binding",
+    source: "crewbee-plugin",
     status: "reserved-placeholder",
     visibility: "internal-only",
     description: "Reserved placeholder for session binding synchronization helpers.",
     hostTargets: ["opencode"],
   },
-  "agentscroll.team-handoff": {
-    id: "agentscroll.team-handoff",
-    source: "agentscroll-plugin",
+  "crewbee.team-handoff": {
+    id: "crewbee.team-handoff",
+    source: "crewbee-plugin",
     status: "reserved-placeholder",
     visibility: "agent-addressable",
     description: "Reserved placeholder for explicit Team handoff and delegation helpers.",
@@ -38,14 +38,14 @@ const AGENTSCROLL_PLUGIN_TOOLS: Record<string, AgentScrollPluginToolDefinition> 
   },
 };
 
-export function listAgentScrollPluginTools(): AgentScrollPluginToolDefinition[] {
-  return Object.values(AGENTSCROLL_PLUGIN_TOOLS);
+export function listCrewBeePluginTools(): CrewBeePluginToolDefinition[] {
+  return Object.values(CREWBEE_PLUGIN_TOOLS);
 }
 
-export function listImplementedAgentScrollPluginTools(): AgentScrollPluginToolDefinition[] {
-  return listAgentScrollPluginTools().filter((tool) => tool.status === "implemented");
+export function listImplementedCrewBeePluginTools(): CrewBeePluginToolDefinition[] {
+  return listCrewBeePluginTools().filter((tool) => tool.status === "implemented");
 }
 
-export function getAgentScrollPluginTool(toolId: string): AgentScrollPluginToolDefinition | undefined {
-  return AGENTSCROLL_PLUGIN_TOOLS[toolId];
+export function getCrewBeePluginTool(toolId: string): CrewBeePluginToolDefinition | undefined {
+  return CREWBEE_PLUGIN_TOOLS[toolId];
 }

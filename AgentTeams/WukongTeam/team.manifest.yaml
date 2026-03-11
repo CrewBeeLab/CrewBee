@@ -3,7 +3,7 @@ kind: agent-team
 version: 1.0.0
 name: Wukong Team
 status: active
-owner: AgentScroll
+owner: CrewBee
 
 description: 面向高不确定性、探索性与长周期任务的突破型团队。
 

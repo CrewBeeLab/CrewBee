@@ -3,7 +3,7 @@ schema_version: 1
 plan:
   current_cycle: 2
   current_step_id: "S4"
-  objective: "Initialize an execution-ready AgentScroll Team framework"
+  objective: "Initialize an execution-ready CrewBee Team framework"
   success_criteria:
     - "Team manifest/policy/shared-capabilities/agent-profile contracts exist in src/"
     - "A file-based Team template exists under AgentTeamTemplate/ and defined Teams exist under AgentTeams/"
@@ -13,7 +13,7 @@ plan:
 
 steps:
   - id: "S1"
-    title: "Understand target AgentScroll model"
+    title: "Understand target CrewBee model"
     status: "done" # todo|doing|done|blocked
     depends_on: []
     acceptance:

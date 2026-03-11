@@ -79,7 +79,7 @@ capabilities:
       action: allow
   instructions:
     - repo-core
-    - agentscroll-team-framework
+    - crewbee-team-framework
 
 output_contract:
   tone: concise-bold

@@ -1,5 +1,5 @@
 export interface OpenCodeCoexistencePolicy {
-  pluginId: "agentscroll";
+  pluginId: "crewbee";
   dependsOnOhMyOpenCode: false;
   featureDevelopmentMode: "mutually-exclusive";
   safeWhenCoInstalled: boolean;
@@ -20,11 +20,11 @@ export interface OpenCodeProjectedIdentity {
 
 export function createOpenCodeCoexistencePolicy(): OpenCodeCoexistencePolicy {
   return {
-    pluginId: "agentscroll",
+    pluginId: "crewbee",
     dependsOnOhMyOpenCode: false,
     featureDevelopmentMode: "mutually-exclusive",
     safeWhenCoInstalled: true,
-    reservedConfigKeyPrefix: "agentscroll.",
+    reservedConfigKeyPrefix: "crewbee.",
     reservedPublicNamePrefix: "[",
     neverMutateForeignAgents: true,
   };

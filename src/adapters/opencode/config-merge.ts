@@ -12,8 +12,28 @@ export interface OpenCodeConfigMergeResult {
   skippedAgentKeys: string[];
 }
 
-function isAgentScrollOwnedKey(key: string): boolean {
-  return key.startsWith("agentscroll.");
+const CURRENT_PLUGIN_KEY_PREFIX = "crewbee.";
+const LEGACY_PLUGIN_KEY_PREFIX = "agentscroll.";
+
+function isLegacyCrewBeeOwnedKey(key: string): boolean {
+  return key.startsWith(LEGACY_PLUGIN_KEY_PREFIX);
+}
+
+function isCrewBeeOwnedKey(key: string): boolean {
+  return key.startsWith(CURRENT_PLUGIN_KEY_PREFIX);
+}
+
+function isCompatibleCrewBeeOwnedKey(key: string): boolean {
+  return isCrewBeeOwnedKey(key) || isLegacyCrewBeeOwnedKey(key);
+}
+
+function getConfiguredAgentName(definition: unknown): string | undefined {
+  if (typeof definition !== "object" || definition === null || !("name" in definition)) {
+    return undefined;
+  }
+
+  const candidate = definition.name;
+  return typeof candidate === "string" ? candidate : undefined;
 }
 
 export function applyOpenCodeAgentConfigPatch(
@@ -24,6 +44,18 @@ export function applyOpenCodeAgentConfigPatch(
   const insertedAgentKeys: string[] = [];
   const updatedAgentKeys: string[] = [];
   const skippedAgentKeys: string[] = [];
+  const nextPublicNames = new Set(
+    Object.values(patch.agent)
+      .map((definition) => definition.name)
+      .filter((name): name is string => Boolean(name)),
+  );
+
+  for (const [key, definition] of Object.entries(nextAgents)) {
+    const publicName = getConfiguredAgentName(definition);
+    if (publicName && isLegacyCrewBeeOwnedKey(key) && nextPublicNames.has(publicName)) {
+      delete nextAgents[key];
+    }
+  }
 
   for (const [key, definition] of Object.entries(patch.agent)) {
     if (!(key in nextAgents)) {
@@ -32,7 +64,7 @@ export function applyOpenCodeAgentConfigPatch(
       continue;
     }
 
-    if (isAgentScrollOwnedKey(key)) {
+    if (isCrewBeeOwnedKey(key)) {
       nextAgents[key] = definition;
       updatedAgentKeys.push(key);
       continue;
@@ -46,7 +78,7 @@ export function applyOpenCodeAgentConfigPatch(
     agent: nextAgents,
   };
 
-  if (patch.defaultAgent && (!config.default_agent || isAgentScrollOwnedKey(config.default_agent))) {
+  if (patch.defaultAgent && (!config.default_agent || isCompatibleCrewBeeOwnedKey(config.default_agent))) {
     nextConfig.default_agent = patch.defaultAgent;
   }
 

@@ -54,7 +54,7 @@ Within a Team, V1 expects:
 - Playbook is internalized as Team workflow in V1.
 - Artifact is lightweight and not a control-plane centerpiece.
 - Leader defaults to delegation before self-execution.
-- AgentScroll does not own the host runloop.
+- CrewBee does not own the host runloop.
 
 ## Failure handling
 
