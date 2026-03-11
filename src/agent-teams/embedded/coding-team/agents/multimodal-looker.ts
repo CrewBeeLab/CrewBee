@@ -76,6 +76,9 @@ export function createMultimodalLookerAgent(): AgentProfileSpec {
         permission: [
           { permission: "read", pattern: "*", action: "allow" },
           { permission: "look_at", pattern: "*", action: "allow" },
+          { permission: "edit", pattern: "*", action: "deny" },
+          { permission: "write", pattern: "*", action: "deny" },
+          { permission: "bash", pattern: "*", action: "deny" },
         ],
         skills: [],
         memory: "session-context-primary",
