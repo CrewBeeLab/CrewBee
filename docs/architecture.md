@@ -739,6 +739,12 @@ function projectCatalogAgentToOpenCode(agent) {
 
 这意味着当前权限系统的显式性更强：你在 Agent Profile 中写什么规则，投影到 OpenCode 的就是什么规则；adapter 不再暗中加一层额外权限策略。
 
+因此，对只读功能型 agent（例如默认 `CodingTeam` 中的 `codebase-explorer`、`web-researcher`、`reviewer`、`principal-advisor`、`multimodal-looker`），如果希望禁止写类工具，就必须在其 Agent Profile 里显式声明：
+
+- `edit -> deny`
+- `write -> deny`
+- `bash -> deny`
+
 这段实现实际接近下面这个判断顺序：
 
 ```ts
