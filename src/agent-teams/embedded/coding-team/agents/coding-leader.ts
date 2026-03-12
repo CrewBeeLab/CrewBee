@@ -210,6 +210,23 @@ export function createCodingLeaderAgent(): AgentProfileSpec {
       selectionLabel: "leader",
       selectionDescription: "CodingTeam 的默认主执行 Leader；在 OpenCode 中选择它，就进入以 coding-leader 为主 owner 的 CodingTeam 路径。",
     },
+    promptProjection: {
+      include: [
+        "persona_core",
+        "responsibility_core",
+        "collaboration",
+        "capabilities",
+        "workflow_override",
+        "output_contract",
+        "operations",
+        "templates",
+        "guardrails",
+        "heuristics",
+        "anti_patterns",
+        "examples",
+      ],
+      exclude: ["version", "status", "owner", "tags", "ops", "entry_point"],
+    },
     },
   );
 }

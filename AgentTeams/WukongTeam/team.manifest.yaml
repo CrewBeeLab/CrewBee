@@ -46,6 +46,7 @@ modes:
 working_mode:
   human_to_leader_only: true
   leader_driven_coordination: true
+  single_active_context_owner: true
   agent_communication_via_session_context: true
   explicit_routing_files_required: false
   explicit_contract_files_required: false
@@ -61,6 +62,26 @@ workflow:
     - clear-gate
     - review
 
+ownership_routing:
+  default_active_owner: wukong-leader
+  switch_to_management_leader_when:
+    - 任务仍主要需要探路、重构问题定义或决定下一步借力方向
+    - 尚未形成可稳定推进的单一路径，继续执行会放大试错成本
+
+role_boundaries:
+  write_execution_roles:
+    - wukong-leader
+    - wukong-wujing
+    - wukong-dragon
+  read_only_support_roles:
+    - wukong-monk
+    - wukong-bajie
+
+structure_principles:
+  - 同一时刻只保留一个 active owner 持有主上下文
+  - 探路、借力、稳态推进和上下文续航分别由不同角色承担
+  - 即使允许更强的探索节奏，也必须由 leader 统一收口
+
 implementation_bias:
   naming_mode: hybrid
   routing_priority: balanced
@@ -71,23 +92,23 @@ implementation_bias:
 
 governance:
   instruction_precedence:
-    - platform
-    - repository
-    - team
-    - agent
-    - task
+    - platform rules
+    - repository rules
+    - team rules
+    - agent rules
+    - task rules
   approval_policy:
     required_for:
-      - destructive-actions
-      - external-side-effects
+      - destructive actions
+      - external side effects
       - commit
     allow_assume_for:
-      - low-risk-implementation-details
+      - low-risk implementation details
   forbidden_actions:
-    - fabricate-evidence
-    - claim-done-without-verification
-    - ignore-hard-constraints
-    - pretend-to-have-read-unread-code
+    - fabricate evidence
+    - claim done without verification
+    - ignore hard constraints
+    - pretend to have read unread code
   quality_floor:
     required_checks:
       - diagnostics
@@ -95,9 +116,9 @@ governance:
       - tests
     evidence_required: true
   working_rules:
-    - leader-is-primary-interface
-    - subordinate-agents-report-back-to-leader
-    - final-user-facing-summary-comes-from-leader
+    - leader is the primary interface
+    - support agents report back to the leader or active owner
+    - final user-facing summary comes from the role holding closure responsibility
   notes:
     - Wukong Team 优先处理高不确定性探索任务。
     - 允许更强的探路和借力节奏，但仍保持单一收口责任。

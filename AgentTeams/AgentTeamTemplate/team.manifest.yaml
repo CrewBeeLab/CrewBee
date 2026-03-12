@@ -136,3 +136,18 @@ tags:
   - template
   - leader-driven
   - session-context
+
+prompt_projection:
+  include:
+    - mission
+    - scope
+    - leader
+    - working_mode
+    - workflow
+    - governance
+  exclude:
+    - version
+    - status
+    - owner
+    - tags
+    - agent_runtime

@@ -129,6 +129,40 @@ ops:
     - completion_rate
     - verification_pass_rate
   change_log: docs/TEAM.md
+
+operations:
+  core_operation_skeleton:
+    - Intake the task and decide whether the leader should stay active owner.
+    - Clarify scope only when ambiguity materially affects the outcome.
+    - Delegate or execute with explicit goal, constraints, and verification expectations.
+    - Converge findings and implementation results into one verified closure.
+
+entry_point:
+  exposure: user-selectable
+  selection_label: leader
+  selection_description: Primary user-facing leader entry for a file-based CrewBee team.
+
+prompt_projection:
+  include:
+    - persona_core
+    - responsibility_core
+    - collaboration
+    - capabilities
+    - workflow_override
+    - output_contract
+    - operations
+    - templates
+    - guardrails
+    - heuristics
+    - anti_patterns
+    - examples
+  exclude:
+    - version
+    - status
+    - owner
+    - tags
+    - ops
+    - entry_point
 ---
 
 ## Unique Heuristics

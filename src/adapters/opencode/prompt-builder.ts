@@ -3,255 +3,386 @@ import type {
   AgentTeamDefinition,
   CollaborationBindingInput,
   TeamGovernanceSpec,
+  TeamManifest,
   WorkingModeSpec,
 } from "../../core";
 
+import { shouldProjectField } from "../../prompt-projection";
 import type { ProjectedAgent } from "../../runtime";
+
+const TEAM_FIELD_ORDER = [
+  "id",
+  "kind",
+  "version",
+  "name",
+  "status",
+  "owner",
+  "description",
+  "mission",
+  "scope",
+  "leader",
+  "members",
+  "modes",
+  "working_mode",
+  "workflow",
+  "implementation_bias",
+  "ownership_routing",
+  "role_boundaries",
+  "structure_principles",
+  "governance",
+  "agent_runtime",
+  "tags",
+] as const;
+
+const AGENT_FIELD_ORDER = [
+  "id",
+  "kind",
+  "version",
+  "name",
+  "status",
+  "owner",
+  "tags",
+  "archetype",
+  "persona_core",
+  "responsibility_core",
+  "collaboration",
+  "capabilities",
+  "workflow_override",
+  "output_contract",
+  "operations",
+  "templates",
+  "guardrails",
+  "heuristics",
+  "anti_patterns",
+  "examples",
+  "entry_point",
+  "ops",
+] as const;
 
 function present(value: string | undefined): value is string {
   return Boolean(value && value.trim().length > 0);
-}
-
-function section(title: string, lines: string[]): string[] {
-  if (lines.length === 0) {
-    return [];
-  }
-
-  return [title, ...lines];
 }
 
 function bulletList(items: readonly string[]): string[] {
   return items.filter(present).map((item) => `- ${item}`);
 }
 
-function keyValue(label: string, value?: string): string[] {
-  return present(value) ? [`${label}: ${value}`] : [];
+function scalarLine(label: string, value: string | number | boolean | undefined): string[] {
+  return value === undefined ? [] : [`${label}: ${String(value)}`];
 }
 
 function inlineList(label: string, values?: readonly string[]): string[] {
   return values && values.length > 0 ? [`${label}: ${values.join(", ")}`] : [];
 }
 
-function renderBindings(bindings: readonly CollaborationBindingInput[]): string[] {
-  return bindings.map((binding) => {
-    if (typeof binding === "string") {
-      return `- ${binding}`;
-    }
+function nestedBlock(label: string, lines: string[]): string[] {
+  return lines.length > 0 ? [`${label}:`, ...lines] : [];
+}
 
-    return `- ${binding.agentRef}: ${binding.description}`;
-  });
+function fieldBlock(label: string, lines: string[]): string[] {
+  return lines.length > 0 ? [`${label}:`, ...lines] : [];
+}
+
+function renderBinding(binding: CollaborationBindingInput): string {
+  if (typeof binding === "string") {
+    return binding;
+  }
+
+  const parts = [
+    `agent_ref=${binding.agentRef}`,
+    `description=${binding.description}`,
+  ];
+
+  return parts.join("; ");
+}
+
+function renderBindings(bindings: readonly CollaborationBindingInput[]): string[] {
+  return bulletList(bindings.map(renderBinding));
 }
 
 function renderWorkingMode(workingMode: WorkingModeSpec): string[] {
-  const flags: string[] = [];
-
-  if (workingMode.humanToLeaderOnly) flags.push("human interacts through leader")
-  if (workingMode.leaderDrivenCoordination) flags.push("leader-driven coordination")
-  if (workingMode.singleActiveContextOwner) flags.push("single active context owner")
-  if (workingMode.agentCommunicationViaSessionContext) flags.push("agent communication via session context")
-  if (workingMode.explicitRoutingFilesRequired) flags.push("explicit routing files required")
-  if (workingMode.explicitContractFilesRequired) flags.push("explicit contract files required")
-
-  return bulletList(flags)
+  return [
+    ...scalarLine("human_to_leader_only", workingMode.humanToLeaderOnly),
+    ...scalarLine("leader_driven_coordination", workingMode.leaderDrivenCoordination),
+    ...scalarLine("single_active_context_owner", workingMode.singleActiveContextOwner),
+    ...scalarLine("agent_communication_via_session_context", workingMode.agentCommunicationViaSessionContext),
+    ...scalarLine("explicit_routing_files_required", workingMode.explicitRoutingFilesRequired),
+    ...scalarLine("explicit_contract_files_required", workingMode.explicitContractFilesRequired),
+  ];
 }
 
 function renderGovernance(governance: TeamGovernanceSpec): string[] {
   return [
-    ...section("Instruction Precedence:", bulletList(governance.instructionPrecedence)),
-    ...section("Approval Required For:", bulletList(governance.approvalPolicy.requiredFor)),
-    ...section("Approval Assume For:", bulletList(governance.approvalPolicy.allowAssumeFor)),
-    ...section("Quality Checks:", bulletList(governance.qualityFloor.requiredChecks)),
-    `Evidence Required: ${governance.qualityFloor.evidenceRequired ? "yes" : "no"}`,
-    ...section("Working Rules:", bulletList(governance.workingRules)),
-    ...section("Forbidden Actions:", bulletList(governance.forbiddenActions)),
-    ...section("Governance Notes:", bulletList(governance.notes ?? [])),
-  ].filter(present)
+    ...nestedBlock("instruction_precedence", bulletList(governance.instructionPrecedence)),
+    ...nestedBlock("approval_policy", [
+      ...nestedBlock("required_for", bulletList(governance.approvalPolicy.requiredFor)),
+      ...nestedBlock("allow_assume_for", bulletList(governance.approvalPolicy.allowAssumeFor)),
+    ]),
+    ...nestedBlock("forbidden_actions", bulletList(governance.forbiddenActions)),
+    ...nestedBlock("quality_floor", [
+      ...nestedBlock("required_checks", bulletList(governance.qualityFloor.requiredChecks)),
+      ...scalarLine("evidence_required", governance.qualityFloor.evidenceRequired),
+    ]),
+    ...nestedBlock("working_rules", bulletList(governance.workingRules)),
+    ...nestedBlock("notes", bulletList(governance.notes ?? [])),
+  ];
 }
 
 function createPromptHeader(agent: ProjectedAgent): string[] {
   return [
-    `You are ${agent.surfaceLabel}, projected from CrewBee ${agent.teamName}.`,
-    `Team ID: ${agent.teamId}`,
-    `Source Agent ID: ${agent.sourceAgentId}`,
-    `Role Kind: ${agent.roleKind}`,
-  ]
+    `host.surface_label: ${agent.surfaceLabel}`,
+    `host.team_name: ${agent.teamName}`,
+    `host.team_id: ${agent.teamId}`,
+    `host.source_agent_id: ${agent.sourceAgentId}`,
+    `host.role_kind: ${agent.roleKind}`,
+  ];
 }
 
-function createTeamContext(team: AgentTeamDefinition): string[] {
-  return [
-    ...keyValue("Team Mission", team.manifest.mission.objective),
-    ...section("Team Success Definition:", bulletList(team.manifest.mission.successDefinition)),
-    ...keyValue("Team Description", team.manifest.description),
-    ...section("Team In Scope:", bulletList(team.manifest.scope.inScope)),
-    ...section("Team Out Of Scope:", bulletList(team.manifest.scope.outOfScope)),
-    ...keyValue("Workflow", team.manifest.workflow.stages.join(" -> ")),
-    ...section("Structure Principles:", bulletList(team.manifest.structurePrinciples ?? [])),
-    ...section("Working Mode:", renderWorkingMode(team.manifest.workingMode)),
-  ]
-}
+function renderTeamField(manifest: TeamManifest, field: (typeof TEAM_FIELD_ORDER)[number]): string[] {
+  switch (field) {
+    case "id":
+      return scalarLine("team.id", manifest.id);
+    case "kind":
+      return scalarLine("team.kind", manifest.kind);
+    case "version":
+      return scalarLine("team.version", manifest.version);
+    case "name":
+      return scalarLine("team.name", manifest.name);
+    case "status":
+      return scalarLine("team.status", manifest.status);
+    case "owner":
+      return scalarLine("team.owner", manifest.owner);
+    case "description":
+      return scalarLine("team.description", manifest.description);
+    case "mission":
+      return fieldBlock("team.mission", [
+        ...scalarLine("objective", manifest.mission.objective),
+        ...nestedBlock("success_definition", bulletList(manifest.mission.successDefinition)),
+      ]);
+    case "scope":
+      return fieldBlock("team.scope", [
+        ...nestedBlock("in_scope", bulletList(manifest.scope.inScope)),
+        ...nestedBlock("out_of_scope", bulletList(manifest.scope.outOfScope)),
+      ]);
+    case "leader":
+      return fieldBlock("team.leader", [
+        ...scalarLine("agent_ref", manifest.leader.agentRef),
+        ...nestedBlock("responsibilities", bulletList(manifest.leader.responsibilities)),
+      ]);
+    case "members":
+      return fieldBlock(
+        "team.members",
+        bulletList(manifest.members.map((member) => `agent_ref=${member.agentRef}; role=${member.role}`)),
+      );
+    case "modes":
+      return fieldBlock("team.modes", bulletList(manifest.modes));
+    case "working_mode":
+      return fieldBlock("team.working_mode", renderWorkingMode(manifest.workingMode));
+    case "workflow":
+      return fieldBlock("team.workflow", [
+        ...scalarLine("id", manifest.workflow.id),
+        ...scalarLine("name", manifest.workflow.name),
+        ...nestedBlock("stages", bulletList(manifest.workflow.stages)),
+      ]);
+    case "implementation_bias":
+      return fieldBlock("team.implementation_bias", manifest.implementationBias ? [
+        ...scalarLine("naming_mode", manifest.implementationBias.namingMode),
+        ...scalarLine("routing_priority", manifest.implementationBias.routingPriority),
+        ...scalarLine("prompt_emphasis", manifest.implementationBias.promptEmphasis),
+        ...scalarLine("display_emphasis", manifest.implementationBias.displayEmphasis),
+        ...scalarLine("persona_visibility", manifest.implementationBias.personaVisibility),
+        ...scalarLine("responsibility_visibility", manifest.implementationBias.responsibilityVisibility),
+      ] : []);
+    case "ownership_routing":
+      return fieldBlock("team.ownership_routing", manifest.ownershipRouting ? [
+        ...scalarLine("default_active_owner", manifest.ownershipRouting.defaultActiveOwner),
+        ...nestedBlock(
+          "switch_to_management_leader_when",
+          bulletList(manifest.ownershipRouting.switchToManagementLeaderWhen),
+        ),
+      ] : []);
+    case "role_boundaries":
+      return fieldBlock("team.role_boundaries", manifest.roleBoundaries ? [
+        ...nestedBlock("write_execution_roles", bulletList(manifest.roleBoundaries.writeExecutionRoles)),
+        ...nestedBlock("read_only_support_roles", bulletList(manifest.roleBoundaries.readOnlySupportRoles)),
+      ] : []);
+    case "structure_principles":
+      return fieldBlock("team.structure_principles", bulletList(manifest.structurePrinciples ?? []));
+    case "governance":
+      return fieldBlock("team.governance", renderGovernance(manifest.governance));
+    case "agent_runtime":
+      return fieldBlock(
+        "team.agent_runtime",
+        bulletList(
+          Object.entries(manifest.agentRuntime ?? {}).map(([agentId, runtime]) => {
+            const parts = [
+              `agent=${agentId}`,
+              `provider=${runtime.provider}`,
+              `model=${runtime.model}`,
+            ];
 
-function createAgentIdentityContext(agent: AgentProfileSpec): string[] {
-  return [
-    ...keyValue("Agent Name", agent.metadata.name),
-    ...keyValue("Archetype", agent.metadata.archetype),
-    ...inlineList("Tags", agent.metadata.tags),
-  ]
-}
+            if (runtime.temperature !== undefined) parts.push(`temperature=${runtime.temperature}`);
+            if (runtime.topP !== undefined) parts.push(`top_p=${runtime.topP}`);
+            if (runtime.variant) parts.push(`variant=${runtime.variant}`);
 
-function createPersonaContext(agent: AgentProfileSpec): string[] {
-  return [
-    ...keyValue("Temperament", agent.personaCore.temperament),
-    ...keyValue("Cognitive Style", agent.personaCore.cognitiveStyle),
-    ...keyValue("Risk Posture", agent.personaCore.riskPosture),
-    ...keyValue("Communication Style", agent.personaCore.communicationStyle),
-    ...keyValue("Persistence Style", agent.personaCore.persistenceStyle),
-    ...keyValue("Conflict Style", agent.personaCore.conflictStyle),
-    ...section("Default Values:", bulletList(agent.personaCore.defaultValues)),
-  ]
-}
-
-function createResponsibilityContext(agent: AgentProfileSpec): string[] {
-  return [
-    ...keyValue("Responsibility", agent.responsibilityCore.description),
-    ...keyValue("Objective", agent.responsibilityCore.objective),
-    ...section("Use When:", bulletList(agent.responsibilityCore.useWhen)),
-    ...section("Avoid When:", bulletList(agent.responsibilityCore.avoidWhen)),
-    ...section("Success Definition:", bulletList(agent.responsibilityCore.successDefinition)),
-    ...section("Non Goals:", bulletList(agent.responsibilityCore.nonGoals)),
-    ...section("In Scope:", bulletList(agent.responsibilityCore.inScope)),
-    ...section("Out Of Scope:", bulletList(agent.responsibilityCore.outOfScope)),
-    ...keyValue("Authority", agent.responsibilityCore.authority),
-    ...section("Output Preference:", bulletList(agent.responsibilityCore.outputPreference ?? [])),
-  ]
-}
-
-function createCollaborationContext(agent: AgentProfileSpec): string[] {
-  return [
-    ...section("Default Consults:", renderBindings(agent.collaboration.defaultConsults)),
-    ...section("Default Handoffs:", renderBindings(agent.collaboration.defaultHandoffs)),
-    ...section("Escalation Targets:", renderBindings(agent.collaboration.escalationTargets)),
-  ]
-}
-
-function createCapabilityContext(agent: AgentProfileSpec, requestedTools?: readonly string[]): string[] {
-  const capabilities = agent.capabilities
-
-  return [
-    `Requested Tools: ${(requestedTools ?? capabilities.requestedTools).join(", ")}`,
-    `Permission Rules: ${capabilities.permission.map((rule) => `${rule.permission}:${rule.pattern}:${rule.action}`).join(", ")}`,
-    ...inlineList("Instructions", capabilities.instructions),
-    ...inlineList("Skills", capabilities.skills),
-    ...keyValue("Memory", capabilities.memory),
-    ...keyValue("Hooks", capabilities.hooks),
-    ...inlineList("MCP Servers", capabilities.mcpServers),
-  ]
-}
-
-function createWorkflowOverrideContext(agent: AgentProfileSpec): string[] {
-  const override = agent.workflowOverride?.deviationsFromArchetypeOnly
-
-  if (!override) {
-    return []
+            return parts.join("; ");
+          }),
+        ),
+      );
+    case "tags":
+      return fieldBlock("team.tags", bulletList(manifest.tags));
   }
-
-  return [
-    ...keyValue("Autonomy Level", override.autonomyLevel),
-    ...keyValue("Ambiguity Policy", override.ambiguityPolicy),
-    ...section("Stop Conditions:", bulletList(override.stopConditions ?? [])),
-  ]
 }
 
-function createOutputContractContext(agent: AgentProfileSpec): string[] {
-  return [
-    ...keyValue("Tone", agent.outputContract.tone),
-    ...keyValue("Default Format", agent.outputContract.defaultFormat),
-    ...keyValue("Update Policy", agent.outputContract.updatePolicy),
-  ]
-}
+function renderAgentField(
+  agent: AgentProfileSpec,
+  field: (typeof AGENT_FIELD_ORDER)[number],
+  requestedTools?: readonly string[],
+): string[] {
+  switch (field) {
+    case "id":
+      return scalarLine("agent.id", agent.metadata.id);
+    case "kind":
+      return scalarLine("agent.kind", agent.metadata.kind);
+    case "version":
+      return scalarLine("agent.version", agent.metadata.version);
+    case "name":
+      return scalarLine("agent.name", agent.metadata.name);
+    case "status":
+      return scalarLine("agent.status", agent.metadata.status);
+    case "owner":
+      return scalarLine("agent.owner", agent.metadata.owner);
+    case "tags":
+      return fieldBlock("agent.tags", bulletList(agent.metadata.tags ?? []));
+    case "archetype":
+      return scalarLine("agent.archetype", agent.metadata.archetype);
+    case "persona_core":
+      return fieldBlock("agent.persona_core", [
+        ...scalarLine("temperament", agent.personaCore.temperament),
+        ...scalarLine("cognitive_style", agent.personaCore.cognitiveStyle),
+        ...scalarLine("risk_posture", agent.personaCore.riskPosture),
+        ...scalarLine("communication_style", agent.personaCore.communicationStyle),
+        ...scalarLine("persistence_style", agent.personaCore.persistenceStyle),
+        ...scalarLine("conflict_style", agent.personaCore.conflictStyle),
+        ...nestedBlock("default_values", bulletList(agent.personaCore.defaultValues)),
+      ]);
+    case "responsibility_core":
+      return fieldBlock("agent.responsibility_core", [
+        ...scalarLine("description", agent.responsibilityCore.description),
+        ...nestedBlock("use_when", bulletList(agent.responsibilityCore.useWhen)),
+        ...nestedBlock("avoid_when", bulletList(agent.responsibilityCore.avoidWhen)),
+        ...scalarLine("objective", agent.responsibilityCore.objective),
+        ...nestedBlock("success_definition", bulletList(agent.responsibilityCore.successDefinition)),
+        ...nestedBlock("non_goals", bulletList(agent.responsibilityCore.nonGoals)),
+        ...nestedBlock("in_scope", bulletList(agent.responsibilityCore.inScope)),
+        ...nestedBlock("out_of_scope", bulletList(agent.responsibilityCore.outOfScope)),
+        ...scalarLine("authority", agent.responsibilityCore.authority),
+        ...nestedBlock("output_preference", bulletList(agent.responsibilityCore.outputPreference ?? [])),
+      ]);
+    case "collaboration":
+      return fieldBlock("agent.collaboration", [
+        ...nestedBlock("default_consults", renderBindings(agent.collaboration.defaultConsults)),
+        ...nestedBlock("default_handoffs", renderBindings(agent.collaboration.defaultHandoffs)),
+        ...nestedBlock("escalation_targets", renderBindings(agent.collaboration.escalationTargets)),
+      ]);
+    case "capabilities": {
+      const capabilities = agent.capabilities;
 
-function createGuardrailContext(agent: AgentProfileSpec): string[] {
-  return section("Critical Guardrails:", bulletList(agent.guardrails?.critical ?? []))
-}
+      return fieldBlock("agent.capabilities", [
+        ...inlineList("requested_tools", requestedTools ?? capabilities.requestedTools),
+        ...nestedBlock(
+          "permission",
+          bulletList(
+            capabilities.permission.map(
+              (rule) => `permission=${rule.permission}; pattern=${rule.pattern}; action=${rule.action}`,
+            ),
+          ),
+        ),
+        ...inlineList("skills", capabilities.skills),
+        ...scalarLine("memory", capabilities.memory),
+        ...scalarLine("hooks", capabilities.hooks),
+        ...inlineList("instructions", capabilities.instructions),
+        ...inlineList("mcp_servers", capabilities.mcpServers),
+      ]);
+    }
+    case "workflow_override": {
+      const override = agent.workflowOverride?.deviationsFromArchetypeOnly;
 
-function createOperationContext(agent: AgentProfileSpec): string[] {
-  return section("Core Operation Skeleton:", bulletList(agent.operations?.coreOperationSkeleton ?? []))
-}
-
-function createTemplateContext(agent: AgentProfileSpec): string[] {
-  const templates = agent.templates
-
-  if (!templates) {
-    return []
+      return fieldBlock("agent.workflow_override", override ? [
+        ...nestedBlock("deviations_from_archetype_only", [
+          ...scalarLine("autonomy_level", override.autonomyLevel),
+          ...scalarLine("ambiguity_policy", override.ambiguityPolicy),
+          ...nestedBlock("stop_conditions", bulletList(override.stopConditions ?? [])),
+        ]),
+      ] : []);
+    }
+    case "output_contract":
+      return fieldBlock("agent.output_contract", [
+        ...scalarLine("tone", agent.outputContract.tone),
+        ...scalarLine("default_format", agent.outputContract.defaultFormat),
+        ...scalarLine("update_policy", agent.outputContract.updatePolicy),
+      ]);
+    case "operations":
+      return fieldBlock("agent.operations", [
+        ...nestedBlock("core_operation_skeleton", bulletList(agent.operations?.coreOperationSkeleton ?? [])),
+      ]);
+    case "templates":
+      return fieldBlock("agent.templates", [
+        ...nestedBlock("exploration_checklist", bulletList(agent.templates?.explorationChecklist ?? [])),
+        ...nestedBlock("execution_plan", bulletList(agent.templates?.executionPlan ?? [])),
+        ...nestedBlock("final_report", bulletList(agent.templates?.finalReport ?? [])),
+      ]);
+    case "guardrails":
+      return fieldBlock("agent.guardrails", [
+        ...nestedBlock("critical", bulletList(agent.guardrails?.critical ?? [])),
+      ]);
+    case "heuristics":
+      return fieldBlock("agent.heuristics", bulletList(agent.heuristics ?? []));
+    case "anti_patterns":
+      return fieldBlock("agent.anti_patterns", bulletList(agent.antiPatterns ?? []));
+    case "examples":
+      return fieldBlock("agent.examples", [
+        ...nestedBlock("good_fit", bulletList(agent.examples?.goodFit ?? [])),
+        ...nestedBlock("bad_fit", bulletList(agent.examples?.badFit ?? [])),
+      ]);
+    case "entry_point":
+      return fieldBlock("agent.entry_point", agent.entryPoint ? [
+        ...scalarLine("exposure", agent.entryPoint.exposure),
+        ...scalarLine("selection_label", agent.entryPoint.selectionLabel),
+        ...scalarLine("selection_description", agent.entryPoint.selectionDescription),
+      ] : []);
+    case "ops":
+      return fieldBlock("agent.ops", agent.ops ? [
+        ...inlineList("eval_tags", agent.ops.evalTags),
+        ...inlineList("metrics", agent.ops.metrics),
+        ...scalarLine("change_log", agent.ops.changeLog),
+      ] : []);
   }
-
-  return [
-    ...section("Exploration Checklist Template:", bulletList(templates.explorationChecklist ?? [])),
-    ...section("Execution Plan Template:", bulletList(templates.executionPlan ?? [])),
-    ...section("Final Report Template:", bulletList(templates.finalReport ?? [])),
-  ]
 }
 
-function createHeuristicContext(agent: AgentProfileSpec): string[] {
-  return section("Unique Heuristics:", bulletList(agent.heuristics ?? []))
+function createTeamBlocks(team: AgentTeamDefinition): string[][] {
+  return TEAM_FIELD_ORDER
+    .filter((field) => shouldProjectField(team.manifest.promptProjection, field))
+    .map((field) => renderTeamField(team.manifest, field));
 }
 
-function createAntiPatternContext(agent: AgentProfileSpec): string[] {
-  return section("Agent-Specific Anti-patterns:", bulletList(agent.antiPatterns ?? []))
+function createAgentBlocks(agent: AgentProfileSpec, requestedTools?: readonly string[]): string[][] {
+  return AGENT_FIELD_ORDER
+    .filter((field) => shouldProjectField(agent.promptProjection, field))
+    .map((field) => renderAgentField(agent, field, requestedTools));
 }
 
-function createExampleContext(agent: AgentProfileSpec): string[] {
-  return [
-    ...section("Good Fit Examples:", bulletList(agent.examples?.goodFit ?? [])),
-    ...section("Bad Fit Examples:", bulletList(agent.examples?.badFit ?? [])),
-  ]
-}
-
-function createOpsContext(agent: AgentProfileSpec): string[] {
-  if (!agent.ops) {
-    return []
-  }
-
-  return [
-    ...inlineList("Eval Tags", agent.ops.evalTags),
-    ...inlineList("Metrics", agent.ops.metrics),
-    ...keyValue("Change Log", agent.ops.changeLog),
-  ]
+function joinBlocks(blocks: string[][]): string {
+  return blocks
+    .filter((block) => block.length > 0)
+    .map((block) => block.join("\n"))
+    .join("\n\n");
 }
 
 export function createOpenCodeAgentPrompt(agent: ProjectedAgent, requestedTools?: readonly string[]): string {
-  return [
-    ...createPromptHeader(agent),
-    "",
-    ...section("Team Context:", createTeamContext(agent.sourceTeam)),
-    "",
-    ...section("Agent Identity:", createAgentIdentityContext(agent.sourceAgent)),
-    "",
-    ...section("Persona Core:", createPersonaContext(agent.sourceAgent)),
-    "",
-    ...section("Responsibility Core:", createResponsibilityContext(agent.sourceAgent)),
-    "",
-    ...section("Collaboration:", createCollaborationContext(agent.sourceAgent)),
-    "",
-    ...section("Team Governance:", renderGovernance(agent.sourceTeam.manifest.governance)),
-    "",
-    ...section("Capabilities:", createCapabilityContext(agent.sourceAgent, requestedTools)),
-    "",
-    ...section("Workflow Override:", createWorkflowOverrideContext(agent.sourceAgent)),
-    "",
-    ...section("Output Contract:", createOutputContractContext(agent.sourceAgent)),
-    "",
-    ...createGuardrailContext(agent.sourceAgent),
-    "",
-    ...createOperationContext(agent.sourceAgent),
-    "",
-    ...section("Minimal Templates:", createTemplateContext(agent.sourceAgent)),
-    "",
-    ...createHeuristicContext(agent.sourceAgent),
-    "",
-    ...createAntiPatternContext(agent.sourceAgent),
-    "",
-    ...section("Examples:", createExampleContext(agent.sourceAgent)),
-    "",
-    ...section("Operational Metadata:", createOpsContext(agent.sourceAgent)),
-  ].join("\n")
+  return joinBlocks([
+    createPromptHeader(agent),
+    ...createTeamBlocks(agent.sourceTeam),
+    ...createAgentBlocks(agent.sourceAgent, requestedTools),
+  ]);
 }

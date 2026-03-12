@@ -108,6 +108,7 @@ export interface TeamManifest {
   governance: TeamGovernanceSpec;
   agentRuntime?: TeamAgentRuntimeMap;
   tags: string[];
+  promptProjection?: PromptProjectionSpec;
 }
 
 export interface ApprovalPolicy {
@@ -118,6 +119,11 @@ export interface ApprovalPolicy {
 export interface QualityFloor {
   requiredChecks: string[];
   evidenceRequired: boolean;
+}
+
+export interface PromptProjectionSpec {
+  include?: string[];
+  exclude?: string[];
 }
 
 export interface PersonaCore {
@@ -251,6 +257,7 @@ export interface AgentProfileSpec {
   antiPatterns?: string[];
   examples?: AgentExamples;
   entryPoint?: AgentEntryPointSpec;
+  promptProjection?: PromptProjectionSpec;
 }
 
 export interface TeamDocumentationRefs {

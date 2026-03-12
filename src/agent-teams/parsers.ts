@@ -15,10 +15,15 @@ import type {
   MinimalOperations,
   MinimalTemplates,
   OutputContract,
+  PromptProjectionSpec,
   TeamManifest,
   TeamAgentRuntimeMap,
   WorkflowOverride,
 } from "../core";
+import {
+  normalizeAgentPromptProjection,
+  normalizeTeamPromptProjection,
+} from "../prompt-projection";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -344,6 +349,21 @@ function mapEntryPoint(raw: UnknownRecord | undefined): AgentEntryPointSpec | un
   };
 }
 
+function mapPromptProjection(raw: UnknownRecord | undefined): PromptProjectionSpec | undefined {
+  if (!raw) {
+    return undefined;
+  }
+
+  const include = raw.include ? asStringArray(raw.include, "prompt_projection.include") : undefined;
+  const exclude = raw.exclude ? asStringArray(raw.exclude, "prompt_projection.exclude") : undefined;
+
+  if (!include && !exclude) {
+    return undefined;
+  }
+
+  return { include, exclude };
+}
+
 function mapAgentRuntime(raw: UnknownRecord | undefined): TeamAgentRuntimeMap | undefined {
   if (!raw) {
     return undefined;
@@ -435,6 +455,9 @@ export function mapAgentProfile(filePath: string): AgentProfileSpec {
           }
         : extractExamples(extractSection(body, "Examples")),
     entryPoint: mapEntryPoint(asOptionalRecord(data.entry_point ?? data.entryPoint)),
+    promptProjection: normalizeAgentPromptProjection(
+      mapPromptProjection(asOptionalRecord(data.prompt_projection ?? data.promptProjection)),
+    ),
   };
 }
 
@@ -619,5 +642,8 @@ export function mapTeamManifest(filePath: string): TeamManifest {
     },
     agentRuntime: mapAgentRuntime(agentRuntime),
     tags: raw.tags ? asStringArray(raw.tags, "tags") : [],
+    promptProjection: normalizeTeamPromptProjection(
+      mapPromptProjection(asOptionalRecord(raw.prompt_projection ?? raw.promptProjection)),
+    ),
   };
 }
