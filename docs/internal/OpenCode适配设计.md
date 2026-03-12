@@ -1,5 +1,8 @@
 # CrewBee OpenCode 适配设计 v2
 
+> 说明：本文档保留的是 OpenCode 适配的设计推导与设计边界。
+> 当前已经落地的实现、文件命名和运行时链路，请优先以 `docs/architecture.md` 和 `docs/opencode-runtime-flow.md` 为准。
+
 ## 1. 文档定位
 
 本文档回答的问题已经收敛为：
@@ -88,7 +91,7 @@ CrewBee 的原生模型是 Team-first：
 
 **把 Team-first 的静态定义，投影成一组 OpenCode 原生可选 Agent。**
 
-### 3.2 新的中间层不再是“Manager 驱动的 Team Entry Agent”，而是“Catalog Projection”
+### 3.2 新的中间层不再是“Manager 驱动的 Team Entry Agent”，而是“TeamLibrary Projection”
 
 仍然需要中间层，但它的职责需要调整。
 
@@ -101,7 +104,7 @@ CrewBee 的原生模型是 Team-first：
 
 因此建议把中间层收敛为：
 
-* **Catalog Projection**：从 Team Library 生成一组可投影 Agent 描述
+* **TeamLibrary Projection**：从 Team Library 生成一组可投影 Agent 描述
 * **Session Binding**：从当前 OpenCode 选中的 Agent 反推出 Team / role / mode / active owner
 
 ### 3.3 入口不再是 Team Entry Agent，而是“用户可选投影 Agent”
@@ -170,7 +173,7 @@ CrewBee 的原生模型是 Team-first：
 * Team policy
 * agent profiles
 
-### Boundary 2: Catalog Projection Assembler
+### Boundary 2: TeamLibrary Projection Assembler
 
 负责把：
 
@@ -184,7 +187,7 @@ CrewBee 的原生模型是 Team-first：
 
 ### Boundary 3: OpenCode Adapter
 
-负责把 Catalog Projection 投影成 OpenCode 可消费对象，例如：
+负责把 TeamLibrary Projection 投影成 OpenCode 可消费对象，例如：
 
 * `config.agent`
 * `default_agent`
@@ -401,7 +404,7 @@ OpenCode 的 hook 是串行叠加执行的。
 src/
   core/                      # Team / Agent / capability 的宿主无关静态契约
   agent-teams/               # Team library 的发现、解析、校验与内置 Team
-  runtime/                   # Catalog Projection + Session Binding
+runtime/                   # TeamLibrary Projection + Session Binding
   adapters/
     index.ts                 # 宿主无关 adapter 接口
     opencode/                # OpenCode 适配实现
@@ -412,7 +415,7 @@ src/
 
 这一层现在的职责是：
 
-* 从 Team Library 生成 Catalog Projection
+* 从 Team Library 生成 TeamLibrary Projection
 * 从当前选中的投影 Agent 生成 Session Binding
 
 而不是围绕独立 Manager 命令做 Team 切换。
@@ -422,7 +425,7 @@ src/
 这一层现在的职责是：
 
 * 声明 OpenCode 的 capability contract
-* 把 Catalog Projection 投影成 OpenCode Agent 配置草图
+* 把 TeamLibrary Projection 投影成 OpenCode Agent 配置草图
 * 维护与 foreign plugin 的共存策略
 * 为后续插件 entry 做 bootstrap 骨架
 
@@ -480,7 +483,7 @@ src/
 * `management-leader` -> `user-selectable`，并给出 `coordination-leader` 作为投影标签
 * `coding-executor` -> `user-selectable`
 
-### 10.2 生成一份 Catalog Projection
+### 10.2 生成一份 TeamLibrary Projection
 
 它至少要能输出：
 
@@ -508,7 +511,7 @@ src/
 1. `src/core` 新增 Agent 入口暴露的静态契约
 2. `src/agent-teams/parsers.ts` 支持解析入口暴露字段
 3. `CodingTeam` 中将 leader / coordination-leader / executor 标为可投影入口
-4. `src/runtime/` 新增 Catalog Projection 与 Session Binding 骨架
+4. `src/runtime/` 新增 TeamLibrary Projection 与 Session Binding 骨架
 5. `src/adapters/opencode/` 新增 OpenCode capability / projection / coexistence / bootstrap 骨架
 
 ---

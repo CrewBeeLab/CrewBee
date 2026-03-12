@@ -11,9 +11,10 @@
 
 ## 里程碑 2：OpenCode Adapter 落地
 
-- [ ] 将 Team 核心模型映射到 OpenCode 宿主运行时
-- [ ] 接入运行事件流或等价日志
-- [ ] 支持 Team 选择与 Mode 路由
+- [x] 将 Team 核心模型映射到 OpenCode 配置与插件运行时
+- [x] 接入最小运行事件流与等价日志输出
+- [x] 支持通过 OpenCode Agent 选择建立 Team 入口路由
+- [ ] 支持完整的 Team-collaboration mode 运行时编排
 
 ## 里程碑 3：Manager 能力增强
 
