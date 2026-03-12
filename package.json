@@ -4,6 +4,15 @@
   "private": true,
   "description": "A Team-first Agent System",
   "license": "MIT",
+  "main": "./opencode-plugin.mjs",
+  "types": "./dist/src/adapters/opencode/plugin.d.ts",
+  "exports": {
+    ".": "./opencode-plugin.mjs"
+  },
+  "files": [
+    "dist",
+    "opencode-plugin.mjs"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
@@ -14,6 +23,7 @@
     "typescript": "^5.7.3"
   },
   "dependencies": {
+    "@opencode-ai/plugin": "^1.2.24",
     "yaml": "^2.8.2"
   }
 }
