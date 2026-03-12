@@ -5,7 +5,7 @@ export {
   createTeamCatalogProjection,
   findCatalogAgent,
   pickDefaultUserSelectableAgent,
-} from "./assembler";
+} from "./catalog-projection";
 
 export type {
   CatalogAgentProjection,
