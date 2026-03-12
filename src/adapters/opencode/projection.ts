@@ -6,7 +6,13 @@ import {
   type AvailableToolDefinition,
 } from "../../runtime/registries";
 
-import { createOpenCodePermissionRules, type OpenCodePermissionRule } from "./permission-mapper";
+import {
+  createOpenCodePermissionConfig,
+  createOpenCodePermissionRules,
+  mapOpenCodeToolNames,
+  type OpenCodePermissionConfig,
+  type OpenCodePermissionRule,
+} from "./permission-mapper";
 import { createOpenCodeAgentPrompt } from "./prompt-builder";
 
 export type OpenCodeAgentMode = "primary" | "subagent";
@@ -69,22 +75,13 @@ export interface OpenCodeAgentDefinition {
   description: string;
   mode: OpenCodeAgentMode;
   hidden?: boolean;
-  model?: {
-    providerID: string;
-    modelID: string;
-  };
+  model?: string;
   temperature?: number;
-  topP?: number;
+  top_p?: number;
   variant?: string;
   prompt: string;
-  permission: OpenCodePermissionRule[];
-  options: {
-    capabilities: OpenCodeAgentCapabilities;
-    resolvedModel?: OpenCodeResolvedModelConfig;
-    resolvedTooling: OpenCodeResolvedToolConfig;
-    metadata: OpenCodeAgentMetadata;
-    providerOptions?: Record<string, unknown>;
-  };
+  permission: OpenCodePermissionConfig;
+  options?: Record<string, unknown>;
 }
 
 export interface OpenCodeAgentConfigPatch {
@@ -124,11 +121,12 @@ export function projectCatalogAgentToOpenCode(
   const capabilities = agent.sourceAgent.capabilities;
   const runtimeOverride = agent.sourceTeam.manifest.agentRuntime?.[agent.sourceAgentId];
   const availableToolContext = createAvailableToolContext(options.availableTools);
+  const requestedTools = mapOpenCodeToolNames(capabilities.requestedTools);
   const availableTools = availableToolContext.hasExplicitTools
-    ? capabilities.requestedTools.filter((toolId: string) => isAvailableTool(toolId, availableToolContext))
-    : [...capabilities.requestedTools];
+    ? requestedTools.filter((toolId) => isAvailableTool(toolId, availableToolContext))
+    : [...requestedTools];
   const missingTools = availableToolContext.hasExplicitTools
-    ? capabilities.requestedTools.filter((toolId: string) => !isAvailableTool(toolId, availableToolContext))
+    ? requestedTools.filter((toolId) => !isAvailableTool(toolId, availableToolContext))
     : [];
 
   return {
@@ -139,10 +137,10 @@ export function projectCatalogAgentToOpenCode(
     mode: agent.exposure === "user-selectable" ? "primary" : "subagent",
     hidden: agent.exposure !== "user-selectable",
     description: agent.description,
-    prompt: createOpenCodeAgentPrompt(agent),
+    prompt: createOpenCodeAgentPrompt(agent, requestedTools),
     permission: createOpenCodePermissionRules(agent, availableToolContext),
     capabilities: {
-      requestedTools: capabilities.requestedTools,
+      requestedTools,
       permission: capabilities.permission,
       skills: capabilities.skills ?? [],
       instructions: capabilities.instructions ?? [],
@@ -162,7 +160,7 @@ export function projectCatalogAgentToOpenCode(
         }
       : undefined,
     resolvedTooling: {
-      requestedTools: capabilities.requestedTools,
+      requestedTools,
       availableTools,
       missingTools,
       availabilitySource: availableToolContext.source,
@@ -193,23 +191,14 @@ export function createOpenCodeAgentDefinition(agent: OpenCodeAgentConfig): OpenC
     mode: agent.mode,
     hidden: agent.hidden || undefined,
     model: agent.resolvedModel
-      ? {
-          providerID: agent.resolvedModel.providerID,
-          modelID: agent.resolvedModel.modelID,
-        }
+      ? `${agent.resolvedModel.providerID}/${agent.resolvedModel.modelID}`
       : undefined,
     temperature: agent.resolvedModel?.temperature,
-    topP: agent.resolvedModel?.topP,
+    top_p: agent.resolvedModel?.topP,
     variant: agent.resolvedModel?.variant,
     prompt: agent.prompt,
-    permission: agent.permission,
-    options: {
-      capabilities: agent.capabilities,
-      resolvedModel: agent.resolvedModel,
-      resolvedTooling: agent.resolvedTooling,
-      metadata: agent.metadata,
-      providerOptions: agent.resolvedModel?.options,
-    },
+    permission: createOpenCodePermissionConfig(agent.permission),
+    options: agent.resolvedModel?.options,
   };
 }
 

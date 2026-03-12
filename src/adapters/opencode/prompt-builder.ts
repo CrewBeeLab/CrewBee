@@ -37,11 +37,11 @@ function createPolicyContext(team: AgentTeamDefinition): string[] {
   ];
 }
 
-function createCapabilityContext(agent: AgentProfileSpec): string[] {
+function createCapabilityContext(agent: AgentProfileSpec, requestedTools?: readonly string[]): string[] {
   const capabilities = agent.capabilities;
 
   return [
-    `Requested Tools: ${capabilities.requestedTools.join(", ")}`,
+    `Requested Tools: ${(requestedTools ?? capabilities.requestedTools).join(", ")}`,
     `Permission Rules: ${capabilities.permission.map((rule) => `${rule.permission}:${rule.pattern}:${rule.action}`).join(", ")}`,
     ...(capabilities.instructions && capabilities.instructions.length > 0
       ? [`Instructions: ${capabilities.instructions.join(", ")}`]
@@ -52,7 +52,7 @@ function createCapabilityContext(agent: AgentProfileSpec): string[] {
   ];
 }
 
-export function createOpenCodeAgentPrompt(agent: CatalogAgentProjection): string {
+export function createOpenCodeAgentPrompt(agent: CatalogAgentProjection, requestedTools?: readonly string[]): string {
   return [
     ...createPromptHeader(agent),
     "",
@@ -62,6 +62,6 @@ export function createOpenCodeAgentPrompt(agent: CatalogAgentProjection): string
     "",
     ...createPolicyContext(agent.sourceTeam),
     "",
-    ...createCapabilityContext(agent.sourceAgent),
+    ...createCapabilityContext(agent.sourceAgent, requestedTools),
   ].join("\n");
 }

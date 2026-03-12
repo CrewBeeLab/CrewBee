@@ -1,4 +1,4 @@
-import type { OpenCodeAgentConfigPatch } from "./projection";
+import type { OpenCodeAgentConfigPatch, OpenCodeAgentDefinition } from "./projection";
 
 export interface OpenCodeConfigLike {
   agent?: Record<string, unknown>;
@@ -45,7 +45,7 @@ export function applyOpenCodeAgentConfigPatch(
   const updatedAgentKeys: string[] = [];
   const skippedAgentKeys: string[] = [];
   const nextPublicNames = new Set(
-    Object.values(patch.agent)
+    Object.values(patch.agent as Record<string, OpenCodeAgentDefinition>)
       .map((definition) => definition.name)
       .filter((name): name is string => Boolean(name)),
   );
