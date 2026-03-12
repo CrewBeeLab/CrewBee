@@ -1,0 +1,2 @@
+# Packaging is controlled by package.json "files".
+# Keep this file so npm does not inherit .gitignore and exclude dist/.
