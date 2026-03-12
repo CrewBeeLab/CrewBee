@@ -1,280 +1,134 @@
-import type { AdapterDefinition } from "../index";
-import type { ExecutionMode, TeamLibrary } from "../../core";
-import type { AvailableToolDefinition } from "../../runtime";
+import type { Plugin } from "@opencode-ai/plugin";
+
+import { loadDefaultTeamLibrary, validateTeamLibrary, type TeamValidationIssue } from "../../agent-teams";
+import { createSessionRuntimeBinding, type SessionRuntimeBinding } from "../../runtime";
+
 import {
-  createCatalogProjection,
-  createSessionRuntimeBinding,
-  findCatalogAgent,
-  pickDefaultUserSelectableAgent,
-  type CatalogProjection,
-  type SessionRuntimeBinding,
-} from "../../runtime";
+  createOpenCodeBootstrap,
+  type OpenCodeBootstrapOutput,
+} from "./bootstrap";
+import type { OpenCodeConfigLike } from "./config-merge";
+import { resolveProjectedAgentSelection } from "./projection";
 
-import { createOpenCodeCapabilityContract } from "./capabilities";
-import { applyOpenCodeAgentConfigPatch, type OpenCodeConfigLike, type OpenCodeConfigMergeResult } from "./config-merge";
-import {
-  createOpenCodeCoexistencePolicy,
-  detectOpenCodeProjectionCollisions,
-  type OpenCodeProjectionCollisionReport,
-} from "./coexistence";
-import {
-  createOpenCodeAgentConfigPatch,
-  type OpenCodeAgentConfig,
-  projectCatalogToOpenCodeAgents,
-  resolveProjectedAgentSelection,
-  type OpenCodeAgentConfigPatch,
-} from "./projection";
-import { createOpenCodeToolDomainPlan, type OpenCodeToolDomainPlan } from "./tool-domain";
+const DEFAULT_MODE = "single-executor" as const;
 
-export interface OpenCodeAdapterDefaults {
-  defaultMode: ExecutionMode;
-  defaultTeamId?: string;
+function getDefaultAgent(boot: OpenCodeBootstrapOutput): string | undefined {
+  return boot.mergedConfig?.default_agent ?? boot.configPatch.defaultAgent;
 }
 
-export interface OpenCodeBootstrapInput {
-  teamLibrary: TeamLibrary;
-  defaults: OpenCodeAdapterDefaults;
-  availableTools?: readonly (string | AvailableToolDefinition)[];
-  existingConfig?: OpenCodeConfigLike;
-  existingConfigKeys?: string[];
-  existingPublicNames?: string[];
-  existingDefaultAgent?: string;
-  sessionID?: string;
-  selectedHostAgent?: string;
-  selectedTeamId?: string;
-  selectedSourceAgentId?: string;
-  selectedMode?: ExecutionMode;
+function getConfig(cfg: { agent?: Record<string, unknown> }): OpenCodeConfigLike {
+  return cfg as OpenCodeConfigLike;
 }
 
-export interface OpenCodeBootstrapOutput {
-  adapter: AdapterDefinition;
-  catalog: CatalogProjection;
-  projectedAgents: OpenCodeAgentConfig[];
-  toolDomainPlan: OpenCodeToolDomainPlan;
-  configPatch: OpenCodeAgentConfigPatch;
-  mergedConfig?: OpenCodeConfigLike;
-  mergeResult?: OpenCodeConfigMergeResult;
-  collisions: OpenCodeProjectionCollisionReport;
-  sessionBinding?: SessionRuntimeBinding;
-}
+export const OpenCodeCrewBeePlugin: Plugin = async (ctx) => {
+  const teamLibrary = loadDefaultTeamLibrary(ctx.worktree);
+  const issues = validateTeamLibrary(teamLibrary);
+  const errors = issues.filter((issue: TeamValidationIssue) => issue.level === "error");
 
-const CURRENT_PLUGIN_KEY_PREFIX = "crewbee.";
-const LEGACY_PLUGIN_KEY_PREFIX = "agentscroll.";
-
-export function createOpenCodeAdapterDefinition(): AdapterDefinition {
-  const coexistence = createOpenCodeCoexistencePolicy();
-
-  return {
-    hostId: "opencode",
-    displayName: "OpenCode",
-    capabilities: createOpenCodeCapabilityContract(),
-    entryModel: {
-      hostOwnsPrimaryEntry: true,
-      usesNativeAgentSelection: true,
-      usesNativeModelSelection: true,
-      usesHostCli: true,
-      requiresCustomManagerEntry: false,
-    },
-    coexistence: {
-      independentFromForeignPlugins: true,
-      safeWhenCoInstalled: coexistence.safeWhenCoInstalled,
-      reservedAgentNamePrefix: coexistence.reservedPublicNamePrefix,
-      reservedConfigKeyPrefix: coexistence.reservedConfigKeyPrefix,
-    },
-  };
-}
-
-function resolveBindingAgent(input: {
-  projectedAgents: OpenCodeAgentConfig[];
-  selectedHostAgent?: string;
-  catalog: CatalogProjection;
-  selectedTeamId?: string;
-  selectedSourceAgentId?: string;
-  defaults: OpenCodeAdapterDefaults;
-}): { teamId: string; sourceAgentId: string } | undefined {
-  if (input.selectedHostAgent) {
-    const normalizedHostAgent = input.selectedHostAgent.startsWith(LEGACY_PLUGIN_KEY_PREFIX)
-      ? `${CURRENT_PLUGIN_KEY_PREFIX}${input.selectedHostAgent.slice(LEGACY_PLUGIN_KEY_PREFIX.length)}`
-      : input.selectedHostAgent;
-    const hostSelection = resolveProjectedAgentSelection(input.projectedAgents, {
-      configKey: normalizedHostAgent,
-      publicName: input.selectedHostAgent,
-    });
-
-    if (hostSelection) {
-      return {
-        teamId: hostSelection.teamId,
-        sourceAgentId: hostSelection.sourceAgentId,
-      };
-    }
+  if (errors.length > 0) {
+    throw new Error(errors.map((issue: TeamValidationIssue) => issue.message).join("\n"));
   }
 
-  if (input.selectedTeamId && input.selectedSourceAgentId) {
-    const explicit = findCatalogAgent(input.catalog, input.selectedTeamId, input.selectedSourceAgentId);
-    if (explicit) {
-      return {
-        teamId: explicit.teamId,
-        sourceAgentId: explicit.sourceAgentId,
-      };
-    }
-  }
-
-  const fallbackTeamId = input.defaults.defaultTeamId ?? input.catalog.teams[0]?.team.manifest.id;
-  const fallbackTeam = input.catalog.teams.find((team) => team.team.manifest.id === fallbackTeamId);
-  const fallbackAgent = fallbackTeam ? pickDefaultUserSelectableAgent(fallbackTeam.team) : undefined;
-
-  if (!fallbackTeam || !fallbackAgent) {
-    return undefined;
-  }
-
-  return {
-    teamId: fallbackTeam.team.manifest.id,
-    sourceAgentId: fallbackAgent.metadata.id,
-  };
-}
-
-function filterSafeProjectedAgents(
-  agents: OpenCodeAgentConfig[],
-  collisions: OpenCodeProjectionCollisionReport,
-): OpenCodeAgentConfig[] {
-  const blockedConfigKeys = new Set(collisions.configKeyCollisions);
-  const blockedPublicNames = new Set(collisions.publicNameCollisions);
-
-  return agents.filter((agent) => !blockedConfigKeys.has(agent.configKey) && !blockedPublicNames.has(agent.publicName));
-}
-
-function isCompatibleCrewBeeOwnedKey(key: string): boolean {
-  return key.startsWith(CURRENT_PLUGIN_KEY_PREFIX) || key.startsWith(LEGACY_PLUGIN_KEY_PREFIX);
-}
-
-function getConfiguredAgentName(definition: unknown): string | undefined {
-  if (typeof definition !== "object" || definition === null || !("name" in definition)) {
-    return undefined;
-  }
-
-  const candidate = definition.name;
-  return typeof candidate === "string" ? candidate : undefined;
-}
-
-function getForeignCollisionInputs(input: {
-  existingConfig?: OpenCodeConfigLike;
-  existingConfigKeys?: string[];
-  existingPublicNames?: string[];
-}): { existingConfigKeys?: string[]; existingPublicNames?: string[] } {
-  if (!input.existingConfig?.agent) {
-    return {
-      existingConfigKeys: input.existingConfigKeys,
-      existingPublicNames: input.existingPublicNames,
-    };
-  }
-
-  const compatibleOwnedConfigKeys = new Set<string>();
-  const compatibleOwnedPublicNames = new Set<string>();
-
-  for (const [key, definition] of Object.entries(input.existingConfig.agent)) {
-    if (!isCompatibleCrewBeeOwnedKey(key)) {
-      continue;
-    }
-
-    compatibleOwnedConfigKeys.add(key);
-
-    const publicName = getConfiguredAgentName(definition);
-    if (publicName) {
-      compatibleOwnedPublicNames.add(publicName);
-    }
-  }
-
-  return {
-    existingConfigKeys: input.existingConfigKeys?.filter((key) => !compatibleOwnedConfigKeys.has(key)),
-    existingPublicNames: input.existingPublicNames?.filter((name) => !compatibleOwnedPublicNames.has(name)),
-  };
-}
-
-function shouldSetDefaultAgent(input: {
-  existingDefaultAgent?: string;
-  defaultAgentConfigKey?: string;
-}): string | undefined {
-  if (!input.defaultAgentConfigKey) {
-    return undefined;
-  }
-
-  if (!input.existingDefaultAgent) {
-    return input.defaultAgentConfigKey;
-  }
-
-  if (isCompatibleCrewBeeOwnedKey(input.existingDefaultAgent)) {
-    return input.defaultAgentConfigKey;
-  }
-
-  return undefined;
-}
-
-export function createOpenCodeBootstrap(input: OpenCodeBootstrapInput): OpenCodeBootstrapOutput {
-  const catalog = createCatalogProjection(input.teamLibrary);
-  const toolDomainPlan = createOpenCodeToolDomainPlan();
-  const projectedAgents = projectCatalogToOpenCodeAgents(catalog, {
-    availableTools: input.availableTools,
-  });
-  const foreignCollisions = getForeignCollisionInputs({
-    existingConfig: input.existingConfig,
-    existingConfigKeys: input.existingConfigKeys,
-    existingPublicNames: input.existingPublicNames,
-  });
-  const collisions = detectOpenCodeProjectionCollisions({
-    projectedAgents: projectedAgents.map((agent) => ({
-      configKey: agent.configKey,
-      publicName: agent.publicName,
+  await Promise.all(
+    issues.map((issue: TeamValidationIssue) => ctx.client.app.log({
+      body: {
+        service: "crewbee",
+        level: issue.level === "warning" ? "warn" : "error",
+        message: issue.message,
+        extra: issue.filePath ? { filePath: issue.filePath } : undefined,
+      },
     })),
-    existingConfigKeys: foreignCollisions.existingConfigKeys,
-    existingPublicNames: foreignCollisions.existingPublicNames,
+  );
+
+  let boot = createOpenCodeBootstrap({
+    teamLibrary,
+    defaults: {
+      defaultMode: DEFAULT_MODE,
+    },
   });
-  const safeProjectedAgents = filterSafeProjectedAgents(projectedAgents, collisions);
-
-  const bindingAgent = resolveBindingAgent({
-    projectedAgents: safeProjectedAgents,
-    selectedHostAgent: input.selectedHostAgent,
-    catalog,
-    selectedTeamId: input.selectedTeamId,
-    selectedSourceAgentId: input.selectedSourceAgentId,
-    defaults: input.defaults,
-  });
-
-  const sessionBinding = input.sessionID && bindingAgent
-    ? createSessionRuntimeBinding({
-        projection: catalog,
-        sessionID: input.sessionID,
-        teamId: bindingAgent.teamId,
-        sourceAgentId: bindingAgent.sourceAgentId,
-        mode: input.selectedMode ?? input.defaults.defaultMode,
-        source: input.selectedHostAgent || input.selectedSourceAgentId ? "host-agent-selection" : "plugin-default",
-      })
-    : undefined;
-
-  const defaultProjectedAgent = bindingAgent
-    ? safeProjectedAgents.find(
-        (agent) => agent.teamId === bindingAgent.teamId && agent.sourceAgentId === bindingAgent.sourceAgentId,
-      )
-    : undefined;
-
-  const configPatch = createOpenCodeAgentConfigPatch({
-    agents: safeProjectedAgents,
-    defaultAgentConfigKey: shouldSetDefaultAgent({
-      existingDefaultAgent: input.existingDefaultAgent ?? input.existingConfig?.default_agent,
-      defaultAgentConfigKey: defaultProjectedAgent?.configKey,
-    }),
-  });
-
-  const mergeResult = input.existingConfig ? applyOpenCodeAgentConfigPatch(input.existingConfig, configPatch) : undefined;
+  const bindings = new Map<string, SessionRuntimeBinding>();
 
   return {
-    adapter: createOpenCodeAdapterDefinition(),
-    catalog,
-    projectedAgents: safeProjectedAgents,
-    toolDomainPlan,
-    configPatch,
-    mergedConfig: mergeResult?.config,
-    mergeResult,
-    collisions,
-    sessionBinding,
+    config: async (cfg) => {
+      const current = getConfig(cfg);
+      const next = createOpenCodeBootstrap({
+        teamLibrary,
+        defaults: {
+          defaultMode: DEFAULT_MODE,
+        },
+        existingConfig: current,
+        existingDefaultAgent: typeof current.default_agent === "string" ? current.default_agent : undefined,
+      });
+
+      boot = next;
+      cfg.agent = (next.mergedConfig?.agent ?? next.configPatch.agent) as typeof cfg.agent;
+
+      if (next.mergedConfig?.default_agent) {
+        current.default_agent = next.mergedConfig.default_agent;
+      }
+
+      if (!next.mergeResult) {
+        return;
+      }
+
+      await ctx.client.app.log({
+        body: {
+          service: "crewbee",
+          level: "info",
+          message: "CrewBee projected OpenCode agents into config",
+          extra: {
+            inserted: next.mergeResult.insertedAgentKeys,
+            updated: next.mergeResult.updatedAgentKeys,
+            skipped: next.mergeResult.skippedAgentKeys,
+          },
+        },
+      });
+    },
+    "chat.message": async (input) => {
+      const selected = input.agent ?? getDefaultAgent(boot);
+
+      if (!selected) {
+        return;
+      }
+
+      const agent = resolveProjectedAgentSelection(boot.projectedAgents, {
+        configKey: selected,
+        publicName: selected,
+      });
+
+      if (!agent) {
+        return;
+      }
+
+      bindings.set(input.sessionID, createSessionRuntimeBinding({
+        projection: boot.catalog,
+        sessionID: input.sessionID,
+        teamId: agent.teamId,
+        sourceAgentId: agent.sourceAgentId,
+        mode: DEFAULT_MODE,
+        source: input.agent ? "host-agent-selection" : "plugin-default",
+      }));
+    },
+    "experimental.chat.system.transform": async (input, output) => {
+      if (!input.sessionID) {
+        return;
+      }
+
+      const binding = bindings.get(input.sessionID);
+
+      if (!binding) {
+        return;
+      }
+
+      output.system.push([
+        "CrewBee runtime binding:",
+        `- Team: ${binding.teamId}`,
+        `- Entry Agent: ${binding.selectedAgentId}`,
+        `- Active Owner: ${binding.activeOwnerId}`,
+        `- Mode: ${binding.mode}`,
+      ].join("\n"));
+    },
   };
-}
+};
+
+export default OpenCodeCrewBeePlugin;

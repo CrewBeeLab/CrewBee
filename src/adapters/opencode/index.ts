@@ -10,10 +10,11 @@ export {
 export {
   createOpenCodeAdapterDefinition,
   createOpenCodeBootstrap,
-  type OpenCodeAdapterDefaults,
+  type OpenCodeBootstrapDefaults,
   type OpenCodeBootstrapInput,
   type OpenCodeBootstrapOutput,
-} from "./plugin";
+} from "./bootstrap";
+export { OpenCodeCrewBeePlugin } from "./plugin";
 export {
   createOpenCodeConfigKey,
   createOpenCodeAgentConfigPatch,
