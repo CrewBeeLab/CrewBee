@@ -55,8 +55,8 @@ CrewBee = Agent Team × Manager × Adapter
 | 宿主无关核心 | Team / Agent / Governance / Runtime Binding 先在核心层建模 | `src/core/index.ts` |
 | 混合 Team 来源 | 默认库 = 内置 `CodingTeam` + 文件型 `AgentTeams/*` | `src/agent-teams/library.ts` |
 | 结构化 Agent Profile | Agent 不再是一坨 prompt，而是结构化 Profile + 正文规则 | `src/agent-teams/parsers.ts` |
-| Team 投影到 OpenCode | Team-first 定义通过 Catalog Projection 转换为 Agent-first 宿主对象 | `src/runtime/assembler.ts`, `src/adapters/opencode/projection.ts` |
-| OpenCode 原生入口优先 | 用户继续用 OpenCode 的 agent/model/config 入口 | `src/adapters/opencode/plugin.ts` |
+| Team 投影到 OpenCode | Team-first 定义通过 Catalog Projection 转换为 Agent-first 宿主对象 | `src/runtime/catalog-projection.ts`, `src/adapters/opencode/projection.ts` |
+| OpenCode 原生入口优先 | 用户继续用 OpenCode 的 agent/model/config 入口 | `src/adapters/opencode/bootstrap.ts`, `src/adapters/opencode/plugin.ts` |
 | 共存而不依赖 OMO | 命名空间隔离、不改 foreign agents、不抢默认 agent | `src/adapters/opencode/coexistence.ts`, `src/adapters/opencode/config-merge.ts` |
 | 文档与代码同源 | 架构文档必须以已实现代码为准 | 本文档 |
 
@@ -466,7 +466,7 @@ sequenceDiagram
 
 ### 9.1 Catalog Projection
 
-`src/runtime/assembler.ts` 会把 `TeamLibrary` 展开成：
+`src/runtime/catalog-projection.ts` 会把 `TeamLibrary` 展开成：
 
 - `CatalogProjection`
 - `TeamCatalogProjection`
@@ -784,7 +784,7 @@ function createOpenCodePermissionRules(agent) {
 
 ### 12.7 Bootstrap 主流程
 
-`src/adapters/opencode/plugin.ts` 中的 `createOpenCodeBootstrap()` 是当前 OpenCode 适配的主入口。
+`src/adapters/opencode/bootstrap.ts` 中的 `createOpenCodeBootstrap()` 是当前 OpenCode 适配的主入口。
 
 主流程如下：
 
