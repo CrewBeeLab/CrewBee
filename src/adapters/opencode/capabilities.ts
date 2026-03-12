@@ -8,9 +8,9 @@ export function createOpenCodeCapabilityContract(): HostCapabilityContract {
     supportsNativeModelSelection: true,
     supportsCliOverrides: true,
     supportsSingleExecutorMode: true,
-    supportsTeamCollaboration: true,
+    supportsTeamCollaboration: false,
     supportsRuntimeEvents: true,
-    supportsToolDomainInjection: true,
-    supportsSessionLogExport: true,
+    supportsToolDomainInjection: false,
+    supportsSessionLogExport: false,
   };
 }
