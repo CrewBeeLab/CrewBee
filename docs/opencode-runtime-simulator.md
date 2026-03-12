@@ -132,6 +132,9 @@ Each run writes these files:
 - `plugin-load.json`: which plugin exports were loaded and which hooks each export returned
 - `config.before.json`: the host config before plugin mutation
 - `config.after.json`: the host config after plugin mutation
+- `agents/index.json`: index of per-agent output directories
+- `agents/<agent-key>/agent.json`: one OpenCode-visible agent config per agent, with prompt extracted out
+- `agents/<agent-key>/prompt.md`: the original prompt text with headings and line breaks preserved
 - `chat.message.input.json`: the simulated message hook input
 - `chat.message.output.json`: the resulting message hook output object
 - `system.input.json`: the simulated system transform input

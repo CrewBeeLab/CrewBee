@@ -62,6 +62,35 @@ function writeText(dir, name, value) {
   fs.writeFileSync(path.join(dir, name), value.endsWith("\n") ? value : `${value}\n`)
 }
 
+function writeAgentFiles(dir, cfg) {
+  const root = path.join(dir, "agents")
+  mkdir(root)
+
+  const index = []
+
+  for (const [key, value] of Object.entries(cfg.agent ?? {})) {
+    const agentDir = path.join(root, key)
+    const prompt = typeof value.prompt === "string" ? value.prompt : ""
+    const next = {
+      ...value,
+      prompt: undefined,
+      promptFile: prompt ? "prompt.md" : null,
+    }
+
+    mkdir(agentDir)
+    writeJson(agentDir, "agent.json", next)
+    if (prompt) writeText(agentDir, "prompt.md", prompt)
+
+    index.push({
+      key,
+      dir: path.relative(dir, agentDir).replaceAll("\\", "/"),
+      promptFile: prompt ? `${path.relative(dir, agentDir).replaceAll("\\", "/")}/prompt.md` : null,
+    })
+  }
+
+  writeJson(root, "index.json", index)
+}
+
 const logs = []
 const shell = () => {
   throw new Error("Shell access is not available in the simulator.")
@@ -264,6 +293,7 @@ const summary = createSummary(run)
 writeJson(outputDir, "plugin-load.json", loaded)
 writeJson(outputDir, "config.before.json", before)
 writeJson(outputDir, "config.after.json", cfg)
+writeAgentFiles(outputDir, cfg)
 writeJson(outputDir, "chat.message.input.json", message.input)
 writeJson(outputDir, "chat.message.output.json", message.output)
 writeJson(outputDir, "system.input.json", system.input)
