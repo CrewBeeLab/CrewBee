@@ -101,7 +101,7 @@ export const OpenCodeCrewBeePlugin: Plugin = async (ctx) => {
       }
 
       bindings.set(input.sessionID, createSessionRuntimeBinding({
-        projection: boot.catalog,
+        projection: boot.projection,
         sessionID: input.sessionID,
         teamId: agent.teamId,
         sourceAgentId: agent.sourceAgentId,

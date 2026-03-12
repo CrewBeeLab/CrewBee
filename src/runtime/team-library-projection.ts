@@ -7,11 +7,11 @@ import type {
 } from "../core";
 
 import type {
-  CatalogAgentProjection,
-  CatalogProjection,
+  ProjectedAgent,
+  ProjectedTeam,
   SessionBindingSource,
   SessionRuntimeBinding,
-  TeamCatalogProjection,
+  TeamLibraryProjection,
 } from "./types";
 
 function isLeaderAgent(team: AgentTeamDefinition, agent: AgentProfileSpec): boolean {
@@ -22,7 +22,7 @@ function getSurfaceLabel(agent: AgentProfileSpec): string {
   return agent.entryPoint?.selectionLabel ?? agent.metadata.id;
 }
 
-function getExposure(agent: AgentProfileSpec): CatalogAgentProjection["exposure"] {
+function getExposure(agent: AgentProfileSpec): ProjectedAgent["exposure"] {
   return agent.entryPoint?.exposure ?? "internal-only";
 }
 
@@ -30,10 +30,10 @@ function getProjectionDescription(agent: AgentProfileSpec): string {
   return agent.entryPoint?.selectionDescription ?? agent.responsibilityCore.description;
 }
 
-export function createCatalogAgentProjection(
+export function createProjectedAgent(
   team: AgentTeamDefinition,
   agent: AgentProfileSpec,
-): CatalogAgentProjection {
+): ProjectedAgent {
   const roleKind: TeamRoleKind = isLeaderAgent(team, agent) ? "leader" : "member";
 
   return {
@@ -49,8 +49,8 @@ export function createCatalogAgentProjection(
   };
 }
 
-export function createTeamCatalogProjection(team: AgentTeamDefinition): TeamCatalogProjection {
-  const agents = team.agents.map((agent) => createCatalogAgentProjection(team, agent));
+export function createProjectedTeam(team: AgentTeamDefinition): ProjectedTeam {
+  const agents = team.agents.map((agent) => createProjectedAgent(team, agent));
 
   return {
     team,
@@ -60,8 +60,8 @@ export function createTeamCatalogProjection(team: AgentTeamDefinition): TeamCata
   };
 }
 
-export function createCatalogProjection(library: TeamLibrary): CatalogProjection {
-  const teams = library.teams.map((team) => createTeamCatalogProjection(team));
+export function createTeamLibraryProjection(library: TeamLibrary): TeamLibraryProjection {
+  const teams = library.teams.map((team) => createProjectedTeam(team));
 
   return {
     library,
@@ -70,23 +70,23 @@ export function createCatalogProjection(library: TeamLibrary): CatalogProjection
   };
 }
 
-export function findCatalogAgent(
-  projection: CatalogProjection,
+export function findProjectedAgent(
+  projection: TeamLibraryProjection,
   teamId: string,
   sourceAgentId: string,
-): CatalogAgentProjection | undefined {
+): ProjectedAgent | undefined {
   return projection.agents.find((agent) => agent.teamId === teamId && agent.sourceAgentId === sourceAgentId);
 }
 
 export function createSessionRuntimeBinding(input: {
-  projection: CatalogProjection;
+  projection: TeamLibraryProjection;
   sessionID: string;
   teamId: string;
   sourceAgentId: string;
   mode: ExecutionMode;
   source: SessionBindingSource;
 }): SessionRuntimeBinding {
-  const selectedAgent = findCatalogAgent(input.projection, input.teamId, input.sourceAgentId);
+  const selectedAgent = findProjectedAgent(input.projection, input.teamId, input.sourceAgentId);
 
   if (!selectedAgent) {
     throw new Error(`Unknown projected agent ${input.teamId}/${input.sourceAgentId}.`);

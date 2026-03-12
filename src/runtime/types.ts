@@ -7,7 +7,7 @@ import type {
   TeamRoleKind,
 } from "../core";
 
-export interface CatalogAgentProjection {
+export interface ProjectedAgent {
   teamId: string;
   teamName: string;
   sourceTeam: AgentTeamDefinition;
@@ -19,17 +19,17 @@ export interface CatalogAgentProjection {
   sourceAgent: AgentProfileSpec;
 }
 
-export interface TeamCatalogProjection {
+export interface ProjectedTeam {
   team: AgentTeamDefinition;
-  agents: CatalogAgentProjection[];
-  userSelectableAgents: CatalogAgentProjection[];
-  internalAgents: CatalogAgentProjection[];
+  agents: ProjectedAgent[];
+  userSelectableAgents: ProjectedAgent[];
+  internalAgents: ProjectedAgent[];
 }
 
-export interface CatalogProjection {
+export interface TeamLibraryProjection {
   library: TeamLibrary;
-  teams: TeamCatalogProjection[];
-  agents: CatalogAgentProjection[];
+  teams: ProjectedTeam[];
+  agents: ProjectedAgent[];
 }
 
 export type SessionBindingSource = "host-agent-selection" | "host-cli" | "plugin-default";

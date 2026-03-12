@@ -1,5 +1,5 @@
 import type { AgentPermissionRule } from "../../core";
-import type { CatalogAgentProjection, CatalogProjection } from "../../runtime";
+import type { ProjectedAgent, TeamLibraryProjection } from "../../runtime";
 import {
   createAvailableToolContext,
   isAvailableTool,
@@ -50,8 +50,8 @@ export interface OpenCodeAgentMetadata {
   teamName: string;
   sourceAgentId: string;
   surfaceLabel: string;
-  roleKind: CatalogAgentProjection["roleKind"];
-  exposure: CatalogAgentProjection["exposure"];
+  roleKind: ProjectedAgent["roleKind"];
+  exposure: ProjectedAgent["exposure"];
 }
 
 export interface OpenCodeAgentConfig {
@@ -106,16 +106,16 @@ function sanitizeSegment(value: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-export function createOpenCodePublicAgentName(agent: CatalogAgentProjection): string {
+export function createOpenCodePublicAgentName(agent: ProjectedAgent): string {
   return `[${agent.teamName}]${agent.surfaceLabel}`;
 }
 
-export function createOpenCodeConfigKey(agent: CatalogAgentProjection): string {
+export function createOpenCodeConfigKey(agent: ProjectedAgent): string {
   return `crewbee.${sanitizeSegment(agent.teamId)}.${sanitizeSegment(agent.surfaceLabel)}`;
 }
 
-export function projectCatalogAgentToOpenCode(
-  agent: CatalogAgentProjection,
+export function createOpenCodeAgentConfig(
+  agent: ProjectedAgent,
   options: OpenCodeProjectionOptions = {},
 ): OpenCodeAgentConfig {
   const capabilities = agent.sourceAgent.capabilities;
@@ -177,11 +177,11 @@ export function projectCatalogAgentToOpenCode(
   };
 }
 
-export function projectCatalogToOpenCodeAgents(
-  catalog: CatalogProjection,
+export function createOpenCodeAgentConfigs(
+  projection: TeamLibraryProjection,
   options: OpenCodeProjectionOptions = {},
 ): OpenCodeAgentConfig[] {
-  return catalog.agents.map((agent) => projectCatalogAgentToOpenCode(agent, options));
+  return projection.agents.map((agent) => createOpenCodeAgentConfig(agent, options));
 }
 
 export function createOpenCodeAgentDefinition(agent: OpenCodeAgentConfig): OpenCodeAgentDefinition {

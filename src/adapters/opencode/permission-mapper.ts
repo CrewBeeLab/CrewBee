@@ -1,6 +1,6 @@
 import type { AgentPermissionRule } from "../../core";
 
-import type { CatalogAgentProjection } from "../../runtime";
+import type { ProjectedAgent } from "../../runtime";
 import { isAvailableTool, type AvailableToolContext } from "../../runtime/registries";
 
 export type OpenCodePermissionAction = "allow" | "deny" | "ask";
@@ -52,7 +52,7 @@ function mapPermissionRulesWithAvailability(
 }
 
 export function createOpenCodePermissionRules(
-  agent: CatalogAgentProjection,
+  agent: ProjectedAgent,
   availableTools?: AvailableToolContext,
 ): OpenCodePermissionRule[] {
   return mapPermissionRulesWithAvailability(agent.sourceAgent.capabilities.permission, availableTools);

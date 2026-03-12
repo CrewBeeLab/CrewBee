@@ -1,8 +1,8 @@
 import type { AgentProfileSpec, AgentTeamDefinition } from "../../core";
 
-import type { CatalogAgentProjection } from "../../runtime";
+import type { ProjectedAgent } from "../../runtime";
 
-function createPromptHeader(agent: CatalogAgentProjection): string[] {
+function createPromptHeader(agent: ProjectedAgent): string[] {
   return [
     `You are ${agent.surfaceLabel}, projected from CrewBee ${agent.teamName}.`,
     `Team ID: ${agent.teamId}`,
@@ -52,7 +52,7 @@ function createCapabilityContext(agent: AgentProfileSpec, requestedTools?: reado
   ];
 }
 
-export function createOpenCodeAgentPrompt(agent: CatalogAgentProjection, requestedTools?: readonly string[]): string {
+export function createOpenCodeAgentPrompt(agent: ProjectedAgent, requestedTools?: readonly string[]): string {
   return [
     ...createPromptHeader(agent),
     "",

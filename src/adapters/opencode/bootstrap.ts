@@ -2,11 +2,11 @@ import type { AdapterDefinition } from "../index";
 import type { ExecutionMode, TeamLibrary } from "../../core";
 import type { AvailableToolDefinition } from "../../runtime";
 import {
-  createCatalogProjection,
+  createTeamLibraryProjection,
   createSessionRuntimeBinding,
-  findCatalogAgent,
+  findProjectedAgent,
   pickDefaultUserSelectableAgent,
-  type CatalogProjection,
+  type TeamLibraryProjection,
   type SessionRuntimeBinding,
 } from "../../runtime";
 
@@ -18,9 +18,9 @@ import {
   type OpenCodeProjectionCollisionReport,
 } from "./coexistence";
 import {
+  createOpenCodeAgentConfigs,
   createOpenCodeAgentConfigPatch,
   type OpenCodeAgentConfig,
-  projectCatalogToOpenCodeAgents,
   resolveProjectedAgentSelection,
   type OpenCodeAgentConfigPatch,
 } from "./projection";
@@ -48,7 +48,7 @@ export interface OpenCodeBootstrapInput {
 
 export interface OpenCodeBootstrapOutput {
   adapter: AdapterDefinition;
-  catalog: CatalogProjection;
+  projection: TeamLibraryProjection;
   projectedAgents: OpenCodeAgentConfig[];
   toolDomainPlan: OpenCodeToolDomainPlan;
   configPatch: OpenCodeAgentConfigPatch;
@@ -87,7 +87,7 @@ export function createOpenCodeAdapterDefinition(): AdapterDefinition {
 function resolveBindingAgent(input: {
   projectedAgents: OpenCodeAgentConfig[];
   selectedHostAgent?: string;
-  catalog: CatalogProjection;
+  projection: TeamLibraryProjection;
   selectedTeamId?: string;
   selectedSourceAgentId?: string;
   defaults: OpenCodeBootstrapDefaults;
@@ -110,7 +110,7 @@ function resolveBindingAgent(input: {
   }
 
   if (input.selectedTeamId && input.selectedSourceAgentId) {
-    const explicit = findCatalogAgent(input.catalog, input.selectedTeamId, input.selectedSourceAgentId);
+    const explicit = findProjectedAgent(input.projection, input.selectedTeamId, input.selectedSourceAgentId);
     if (explicit) {
       return {
         teamId: explicit.teamId,
@@ -119,8 +119,8 @@ function resolveBindingAgent(input: {
     }
   }
 
-  const fallbackTeamId = input.defaults.defaultTeamId ?? input.catalog.teams[0]?.team.manifest.id;
-  const fallbackTeam = input.catalog.teams.find((team) => team.team.manifest.id === fallbackTeamId);
+  const fallbackTeamId = input.defaults.defaultTeamId ?? input.projection.teams[0]?.team.manifest.id;
+  const fallbackTeam = input.projection.teams.find((team) => team.team.manifest.id === fallbackTeamId);
   const fallbackAgent = fallbackTeam ? pickDefaultUserSelectableAgent(fallbackTeam.team) : undefined;
 
   if (!fallbackTeam || !fallbackAgent) {
@@ -210,9 +210,9 @@ function shouldSetDefaultAgent(input: {
 }
 
 export function createOpenCodeBootstrap(input: OpenCodeBootstrapInput): OpenCodeBootstrapOutput {
-  const catalog = createCatalogProjection(input.teamLibrary);
+  const projection = createTeamLibraryProjection(input.teamLibrary);
   const toolDomainPlan = createOpenCodeToolDomainPlan();
-  const projectedAgents = projectCatalogToOpenCodeAgents(catalog, {
+  const projectedAgents = createOpenCodeAgentConfigs(projection, {
     availableTools: input.availableTools,
   });
   const foreignCollisions = getForeignCollisionInputs({
@@ -233,7 +233,7 @@ export function createOpenCodeBootstrap(input: OpenCodeBootstrapInput): OpenCode
   const bindingAgent = resolveBindingAgent({
     projectedAgents: safeProjectedAgents,
     selectedHostAgent: input.selectedHostAgent,
-    catalog,
+    projection,
     selectedTeamId: input.selectedTeamId,
     selectedSourceAgentId: input.selectedSourceAgentId,
     defaults: input.defaults,
@@ -241,7 +241,7 @@ export function createOpenCodeBootstrap(input: OpenCodeBootstrapInput): OpenCode
 
   const sessionBinding = input.sessionID && bindingAgent
     ? createSessionRuntimeBinding({
-        projection: catalog,
+        projection,
         sessionID: input.sessionID,
         teamId: bindingAgent.teamId,
         sourceAgentId: bindingAgent.sourceAgentId,
@@ -268,7 +268,7 @@ export function createOpenCodeBootstrap(input: OpenCodeBootstrapInput): OpenCode
 
   return {
     adapter: createOpenCodeAdapterDefinition(),
-    catalog,
+    projection,
     projectedAgents: safeProjectedAgents,
     toolDomainPlan,
     configPatch,

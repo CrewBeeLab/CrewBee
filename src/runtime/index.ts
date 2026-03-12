@@ -1,18 +1,18 @@
 export {
-  createCatalogAgentProjection,
-  createCatalogProjection,
+  createProjectedAgent,
+  createTeamLibraryProjection,
   createSessionRuntimeBinding,
-  createTeamCatalogProjection,
-  findCatalogAgent,
+  createProjectedTeam,
+  findProjectedAgent,
   pickDefaultUserSelectableAgent,
-} from "./catalog-projection";
+} from "./team-library-projection";
 
 export type {
-  CatalogAgentProjection,
-  CatalogProjection,
+  ProjectedAgent,
+  ProjectedTeam,
   SessionBindingSource,
   SessionRuntimeBinding,
-  TeamCatalogProjection,
+  TeamLibraryProjection,
 } from "./types";
 
 export { createAvailableToolContext, isAvailableTool, listAvailableTools } from "./registries";

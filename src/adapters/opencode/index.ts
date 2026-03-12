@@ -16,14 +16,14 @@ export {
 } from "./bootstrap";
 export { OpenCodeCrewBeePlugin } from "./plugin";
 export {
+  createOpenCodeAgentConfig,
+  createOpenCodeAgentConfigs,
   createOpenCodeConfigKey,
   createOpenCodeAgentConfigPatch,
   createOpenCodeAgentDefinition,
   createOpenCodePublicAgentName,
   findProjectedAgentByConfigKey,
   findProjectedAgentByPublicName,
-  projectCatalogAgentToOpenCode,
-  projectCatalogToOpenCodeAgents,
   resolveProjectedAgentSelection,
   type OpenCodeAgentSelectionInput,
   type OpenCodeAgentConfigPatch,
