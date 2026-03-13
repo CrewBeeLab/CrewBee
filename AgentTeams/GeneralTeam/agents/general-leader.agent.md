@@ -43,8 +43,6 @@ collaboration:
   default_handoffs:
     - general-writer
     - general-operator
-  escalation_targets:
-    - user
 
 runtime_config:
   requested_tools:

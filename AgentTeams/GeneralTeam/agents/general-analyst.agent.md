@@ -39,8 +39,6 @@ collaboration:
     - general-researcher
   default_handoffs:
     - general-writer
-  escalation_targets:
-    - general-leader
 
 runtime_config:
   requested_tools:
