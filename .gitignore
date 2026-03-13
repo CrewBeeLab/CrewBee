@@ -7,5 +7,6 @@ coverage/
 simulators/runs/
 
 docs/internal
+AgentTeams/internal
 tmp/
 NUL
