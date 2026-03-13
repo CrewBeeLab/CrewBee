@@ -50,9 +50,6 @@ collaboration:
   default_handoffs:
     - agent_ref: executor
       description: Scoped execution owned by the leader.
-  escalation_targets:
-    - agent_ref: user
-      description: Escalate only when the task cannot move forward safely.
 
 runtime_config:
   requested_tools:

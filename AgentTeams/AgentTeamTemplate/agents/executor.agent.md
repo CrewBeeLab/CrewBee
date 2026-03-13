@@ -42,8 +42,6 @@ collaboration:
     - researcher
   default_handoffs:
     - leader
-  escalation_targets:
-    - leader
 
 runtime_config:
   requested_tools:

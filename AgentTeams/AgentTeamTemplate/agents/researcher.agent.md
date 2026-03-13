@@ -40,8 +40,6 @@ collaboration:
     - leader
   default_handoffs:
     - executor
-  escalation_targets:
-    - leader
 
 runtime_config:
   requested_tools:
