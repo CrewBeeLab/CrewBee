@@ -85,10 +85,6 @@ export function createCodebaseExplorerAgent(): AgentProfileSpec {
           binding("principal-advisor", "当搜索结果暴露复杂结构分歧，且需要更高层次技术判断时咨询"),
         ],
         defaultHandoffs: [],
-        escalationTargets: [
-          binding("principal-advisor", "当仓库内证据已找到，但其含义需要高阶判断时升级"),
-          binding("user", "当真实需求边界在穷尽仓库证据后仍不清晰时升级"),
-        ],
     },
     runtimeConfig: {
         requestedTools: ["read", "glob", "grep"],

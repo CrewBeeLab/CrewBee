@@ -95,7 +95,6 @@ export function createPrincipalAdvisorAgent(): AgentProfileSpec {
           binding("multimodal-looker", "图表、PDF、截图、界面与架构图解读"),
         ],
         defaultHandoffs: [],
-        escalationTargets: [binding("user", "关键信息缺失且继续回答会显著影响建议正确性时升级")],
       },
       runtimeConfig: {
         requestedTools: ["read", "glob", "grep", "webfetch", "websearch"],

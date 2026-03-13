@@ -84,10 +84,6 @@ export function createWebResearcherAgent(): AgentProfileSpec {
           binding("principal-advisor", "当研究结果需要升格为架构、安全、性能或复杂度决策时咨询"),
         ],
         defaultHandoffs: [],
-        escalationTargets: [
-          binding("principal-advisor", "当外部证据已充分，但其技术含义需要高阶判断时升级"),
-          binding("user", "当版本、目标库或研究边界存在关键歧义且显著影响结论时升级"),
-        ],
       },
       runtimeConfig: {
         requestedTools: ["read", "glob", "grep", "webfetch", "websearch"],

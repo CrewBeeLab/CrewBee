@@ -69,7 +69,6 @@ export function createMultimodalLookerAgent(): AgentProfileSpec {
       collaboration: {
         defaultConsults: [],
         defaultHandoffs: [],
-        escalationTargets: [binding("user", "当提取目标本身不清晰，或关键内容不可读且显著影响结果时升级")],
       },
       runtimeConfig: {
         requestedTools: ["read", "look_at"],
