@@ -43,8 +43,6 @@ collaboration:
     - wukong-wujing
   default_handoffs:
     - wukong-wujing
-  escalation_targets:
-    - user
 
 runtime_config:
   requested_tools:

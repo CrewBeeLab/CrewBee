@@ -39,8 +39,6 @@ collaboration:
     - wukong-leader
   default_handoffs:
     - wukong-leader
-  escalation_targets:
-    - wukong-leader
 
 runtime_config:
   requested_tools:
