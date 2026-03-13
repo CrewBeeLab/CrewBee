@@ -38,34 +38,6 @@ export interface TeamMemberRef {
   role: string;
 }
 
-export interface TeamOwnershipRouting {
-  defaultActiveOwner: string;
-  switchToManagementLeaderWhen: string[];
-}
-
-export interface TeamRoleBoundaries {
-  writeExecutionRoles: string[];
-  readOnlySupportRoles: string[];
-}
-
-export interface WorkingModeSpec {
-  humanToLeaderOnly: boolean;
-  leaderDrivenCoordination: boolean;
-  singleActiveContextOwner?: boolean;
-  agentCommunicationViaSessionContext: boolean;
-  explicitRoutingFilesRequired: boolean;
-  explicitContractFilesRequired: boolean;
-}
-
-export interface ImplementationBiasProfile {
-  namingMode: "responsibility-first" | "persona-first" | "hybrid";
-  routingPriority: "responsibility-first" | "persona-first" | "balanced";
-  promptEmphasis: string;
-  displayEmphasis: string;
-  personaVisibility: "high" | "balanced" | "low";
-  responsibilityVisibility: "high" | "balanced" | "low";
-}
-
 export interface AgentRuntimeModelConfig {
   provider: string;
   model: string;
@@ -83,7 +55,6 @@ export interface TeamGovernanceSpec {
   forbiddenActions: string[];
   qualityFloor: QualityFloor;
   workingRules: string[];
-  notes?: string[];
 }
 
 export interface TeamManifest {
@@ -98,13 +69,7 @@ export interface TeamManifest {
   scope: TeamScopeSpec;
   leader: TeamLeaderRef;
   members: TeamMemberRef[];
-  modes: ExecutionMode[];
-  workingMode: WorkingModeSpec;
   workflow: TeamWorkflowSpec;
-  implementationBias?: ImplementationBiasProfile;
-  ownershipRouting?: TeamOwnershipRouting;
-  roleBoundaries?: TeamRoleBoundaries;
-  structurePrinciples?: string[];
   governance: TeamGovernanceSpec;
   agentRuntime?: TeamAgentRuntimeMap;
   tags: string[];
@@ -133,7 +98,7 @@ export interface PersonaCore {
   communicationStyle: string;
   persistenceStyle: string;
   conflictStyle?: string;
-  defaultValues: string[];
+  decisionPriorities: string[];
 }
 
 export interface ResponsibilityCore {
@@ -152,7 +117,7 @@ export interface ResponsibilityCore {
 export interface CollaborationBinding {
   agentRef: string;
   description: string;
-  capabilities?: Partial<AgentCapabilities>;
+  runtimeConfig?: Partial<AgentRuntimeConfig>;
   workflowOverride?: WorkflowOverride;
   outputContract?: OutputContract;
 }
@@ -173,7 +138,7 @@ export interface AgentPermissionRule {
   pattern: string;
 }
 
-export interface AgentCapabilities {
+export interface AgentRuntimeConfig {
   requestedTools: string[];
   permission: AgentPermissionRule[];
   skills?: string[];
@@ -186,7 +151,6 @@ export interface AgentCapabilities {
 export interface WorkflowOverride {
   deviationsFromArchetypeOnly: {
     autonomyLevel?: string;
-    ambiguityPolicy?: string;
     stopConditions?: string[];
   };
 }
@@ -195,12 +159,6 @@ export interface OutputContract {
   tone: string;
   defaultFormat: string;
   updatePolicy: string;
-}
-
-export interface AgentOps {
-  evalTags?: string[];
-  metrics?: string[];
-  changeLog?: string;
 }
 
 export interface AgentExamples {
@@ -246,10 +204,9 @@ export interface AgentProfileSpec {
   personaCore: PersonaCore;
   responsibilityCore: ResponsibilityCore;
   collaboration: CollaborationSpec;
-  capabilities: AgentCapabilities;
+  runtimeConfig: AgentRuntimeConfig;
   workflowOverride?: WorkflowOverride;
   outputContract: OutputContract;
-  ops?: AgentOps;
   operations?: MinimalOperations;
   templates?: MinimalTemplates;
   guardrails?: AgentGuardrails;

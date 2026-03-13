@@ -24,53 +24,6 @@ export function validateTeamDefinition(team: AgentTeamDefinition): TeamValidatio
     }
   }
 
-  if (manifest.ownershipRouting && !agentIds.has(manifest.ownershipRouting.defaultActiveOwner)) {
-    issues.push({
-      level: "error",
-      message: `Ownership default active owner '${manifest.ownershipRouting.defaultActiveOwner}' is not defined in this Team.`,
-    });
-  }
-
-  for (const agentRef of manifest.roleBoundaries?.writeExecutionRoles ?? []) {
-    if (!agentIds.has(agentRef)) {
-      issues.push({
-        level: "error",
-        message: `Write execution role '${agentRef}' is not defined in this Team.`,
-      });
-    }
-  }
-
-  for (const agentRef of manifest.roleBoundaries?.readOnlySupportRoles ?? []) {
-    if (!agentIds.has(agentRef)) {
-      issues.push({
-        level: "error",
-        message: `Read-only support role '${agentRef}' is not defined in this Team.`,
-      });
-    }
-  }
-
-  const writeExecutionRoles = new Set(manifest.roleBoundaries?.writeExecutionRoles ?? []);
-  const readOnlySupportRoles = new Set(manifest.roleBoundaries?.readOnlySupportRoles ?? []);
-
-  for (const agentRef of writeExecutionRoles) {
-    if (readOnlySupportRoles.has(agentRef)) {
-      issues.push({
-        level: "error",
-        message: `Agent '${agentRef}' cannot be both a write execution role and a read-only support role.`,
-      });
-    }
-  }
-
-  if (
-    manifest.ownershipRouting?.defaultActiveOwner &&
-    readOnlySupportRoles.has(manifest.ownershipRouting.defaultActiveOwner)
-  ) {
-    issues.push({
-      level: "error",
-      message: `Default active owner '${manifest.ownershipRouting.defaultActiveOwner}' cannot be declared as read-only support.`,
-    });
-  }
-
   for (const [agentId] of Object.entries(manifest.agentRuntime ?? {})) {
     if (!agentIds.has(agentId)) {
       issues.push({
@@ -81,7 +34,7 @@ export function validateTeamDefinition(team: AgentTeamDefinition): TeamValidatio
   }
 
   for (const agent of team.agents) {
-    const requestedTools = new Set(agent.capabilities.requestedTools);
+    const requestedTools = new Set(agent.runtimeConfig.requestedTools);
 
     if (requestedTools.size === 0) {
       issues.push({
@@ -90,7 +43,7 @@ export function validateTeamDefinition(team: AgentTeamDefinition): TeamValidatio
       });
     }
 
-    if (agent.capabilities.permission.length === 0) {
+    if (agent.runtimeConfig.permission.length === 0) {
       issues.push({
         level: "error",
         message: `Agent '${agent.metadata.id}' must declare at least one permission rule.`,

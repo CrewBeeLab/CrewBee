@@ -17,7 +17,7 @@ import { createOpenCodeAgentPrompt } from "./prompt-builder";
 
 export type OpenCodeAgentMode = "primary" | "subagent";
 
-export interface OpenCodeAgentCapabilities {
+export interface OpenCodeAgentRuntimeConfig {
   requestedTools: string[];
   permission: AgentPermissionRule[];
   skills: string[];
@@ -64,7 +64,7 @@ export interface OpenCodeAgentConfig {
   description: string;
   prompt: string;
   permission: OpenCodePermissionRule[];
-  capabilities: OpenCodeAgentCapabilities;
+  runtimeConfig: OpenCodeAgentRuntimeConfig;
   resolvedModel?: OpenCodeResolvedModelConfig;
   resolvedTooling: OpenCodeResolvedToolConfig;
   metadata: OpenCodeAgentMetadata;
@@ -118,10 +118,10 @@ export function createOpenCodeAgentConfig(
   agent: ProjectedAgent,
   options: OpenCodeProjectionOptions = {},
 ): OpenCodeAgentConfig {
-  const capabilities = agent.sourceAgent.capabilities;
+  const runtimeConfig = agent.sourceAgent.runtimeConfig;
   const runtimeOverride = agent.sourceTeam.manifest.agentRuntime?.[agent.sourceAgentId];
   const availableToolContext = createAvailableToolContext(options.availableTools);
-  const requestedTools = mapOpenCodeToolNames(capabilities.requestedTools);
+  const requestedTools = mapOpenCodeToolNames(runtimeConfig.requestedTools);
   const availableTools = availableToolContext.hasExplicitTools
     ? requestedTools.filter((toolId) => isAvailableTool(toolId, availableToolContext))
     : [...requestedTools];
@@ -139,14 +139,14 @@ export function createOpenCodeAgentConfig(
     description: agent.description,
     prompt: createOpenCodeAgentPrompt(agent, requestedTools),
     permission: createOpenCodePermissionRules(agent, availableToolContext),
-    capabilities: {
+    runtimeConfig: {
       requestedTools,
-      permission: capabilities.permission,
-      skills: capabilities.skills ?? [],
-      instructions: capabilities.instructions ?? [],
-      mcpServers: capabilities.mcpServers ?? [],
-      memory: capabilities.memory,
-      hooks: capabilities.hooks,
+      permission: runtimeConfig.permission,
+      skills: runtimeConfig.skills ?? [],
+      instructions: runtimeConfig.instructions ?? [],
+      mcpServers: runtimeConfig.mcpServers ?? [],
+      memory: runtimeConfig.memory,
+      hooks: runtimeConfig.hooks,
     },
     resolvedModel: runtimeOverride
       ? {

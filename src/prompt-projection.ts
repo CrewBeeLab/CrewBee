@@ -8,6 +8,46 @@ function unique(values: readonly string[]): string[] {
   return [...new Set(values)];
 }
 
+const PROJECTABLE_TEAM_FIELDS = new Set<string>([
+  "id",
+  "kind",
+  "version",
+  "name",
+  "status",
+  "owner",
+  "description",
+  "mission",
+  "scope",
+  "leader",
+  "members",
+  "workflow",
+  "governance",
+  "agent_runtime",
+  "tags",
+]);
+
+const PROJECTABLE_AGENT_FIELDS = new Set<string>([
+  "id",
+  "kind",
+  "version",
+  "name",
+  "status",
+  "owner",
+  "tags",
+  "persona_core",
+  "responsibility_core",
+  "collaboration",
+  "workflow_override",
+  "output_contract",
+  "operations",
+  "templates",
+  "guardrails",
+  "heuristics",
+  "anti_patterns",
+  "examples",
+  "entry_point",
+]);
+
 const TEAM_FIELD_ALIASES: Record<string, string> = {
   id: "id",
   kind: "kind",
@@ -20,24 +60,11 @@ const TEAM_FIELD_ALIASES: Record<string, string> = {
   scope: "scope",
   leader: "leader",
   members: "members",
-  modes: "modes",
-  working_mode: "working_mode",
-  workingMode: "working_mode",
   workflow: "workflow",
-  implementation_bias: "implementation_bias",
-  implementationBias: "implementation_bias",
-  ownership_routing: "ownership_routing",
-  ownershipRouting: "ownership_routing",
-  role_boundaries: "role_boundaries",
-  roleBoundaries: "role_boundaries",
-  structure_principles: "structure_principles",
-  structurePrinciples: "structure_principles",
   governance: "governance",
   agent_runtime: "agent_runtime",
   agentRuntime: "agent_runtime",
   tags: "tags",
-  prompt_projection: "prompt_projection",
-  promptProjection: "prompt_projection",
 };
 
 const AGENT_FIELD_ALIASES: Record<string, string> = {
@@ -48,18 +75,15 @@ const AGENT_FIELD_ALIASES: Record<string, string> = {
   status: "status",
   owner: "owner",
   tags: "tags",
-  archetype: "archetype",
   persona_core: "persona_core",
   personaCore: "persona_core",
   responsibility_core: "responsibility_core",
   responsibilityCore: "responsibility_core",
   collaboration: "collaboration",
-  capabilities: "capabilities",
   workflow_override: "workflow_override",
   workflowOverride: "workflow_override",
   output_contract: "output_contract",
   outputContract: "output_contract",
-  ops: "ops",
   operations: "operations",
   templates: "templates",
   guardrails: "guardrails",
@@ -69,13 +93,13 @@ const AGENT_FIELD_ALIASES: Record<string, string> = {
   examples: "examples",
   entry_point: "entry_point",
   entryPoint: "entry_point",
-  prompt_projection: "prompt_projection",
-  promptProjection: "prompt_projection",
 };
 
 function normalizeProjectionList(
   values: readonly string[] | undefined,
   aliases: Record<string, string>,
+  supportedFields: ReadonlySet<string>,
+  label: string,
 ): string[] | undefined {
   if (!values || values.length === 0) {
     return undefined;
@@ -83,8 +107,19 @@ function normalizeProjectionList(
 
   const normalized = unique(
     values
-      .map((value) => aliases[value] ?? aliases[value.trim()] ?? value.trim())
-      .filter(present),
+      .map((value) => value.trim())
+      .filter(present)
+      .map((value) => {
+        const resolved = aliases[value] ?? value;
+
+        if (!supportedFields.has(resolved)) {
+          throw new Error(
+            `${label} contains non-projectable field '${value}'. Supported fields: ${[...supportedFields].join(", ")}.`,
+          );
+        }
+
+        return resolved;
+      }),
   );
 
   return normalized.length > 0 ? normalized : undefined;
@@ -93,13 +128,15 @@ function normalizeProjectionList(
 function normalizePromptProjection(
   spec: PromptProjectionSpec | undefined,
   aliases: Record<string, string>,
+  supportedFields: ReadonlySet<string>,
+  label: string,
 ): PromptProjectionSpec | undefined {
   if (!spec) {
     return undefined;
   }
 
-  const include = normalizeProjectionList(spec.include, aliases);
-  const exclude = normalizeProjectionList(spec.exclude, aliases);
+  const include = normalizeProjectionList(spec.include, aliases, supportedFields, `${label}.include`);
+  const exclude = normalizeProjectionList(spec.exclude, aliases, supportedFields, `${label}.exclude`);
 
   if (!include && !exclude) {
     return undefined;
@@ -111,13 +148,13 @@ function normalizePromptProjection(
 export function normalizeTeamPromptProjection(
   spec: PromptProjectionSpec | undefined,
 ): PromptProjectionSpec | undefined {
-  return normalizePromptProjection(spec, TEAM_FIELD_ALIASES);
+  return normalizePromptProjection(spec, TEAM_FIELD_ALIASES, PROJECTABLE_TEAM_FIELDS, "team.prompt_projection");
 }
 
 export function normalizeAgentPromptProjection(
   spec: PromptProjectionSpec | undefined,
 ): PromptProjectionSpec | undefined {
-  return normalizePromptProjection(spec, AGENT_FIELD_ALIASES);
+  return normalizePromptProjection(spec, AGENT_FIELD_ALIASES, PROJECTABLE_AGENT_FIELDS, "agent.prompt_projection");
 }
 
 export function shouldProjectField(

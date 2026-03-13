@@ -29,7 +29,7 @@ export {
   type OpenCodeAgentConfigPatch,
   type OpenCodeAgentDefinition,
   type OpenCodeAgentConfig,
-  type OpenCodeAgentCapabilities,
+  type OpenCodeAgentRuntimeConfig,
   type OpenCodeAgentMetadata,
   type OpenCodeAgentMode,
 } from "./projection";

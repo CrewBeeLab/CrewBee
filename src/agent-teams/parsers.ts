@@ -7,9 +7,8 @@ import type {
   AgentEntryPointSpec,
   AgentExamples,
   AgentGuardrails,
-  AgentOps,
   AgentPermissionAction,
-  AgentCapabilities,
+  AgentRuntimeConfig,
   AgentProfileSpec,
   CollaborationBindingInput,
   MinimalOperations,
@@ -81,6 +80,38 @@ function readTextFile(filePath: string): string {
 
 function parseYamlFile(filePath: string): UnknownRecord {
   return asRecord(parseYaml(readTextFile(filePath)), filePath);
+}
+
+function rejectRemovedTeamManifestFields(raw: UnknownRecord, filePath: string): void {
+  const removedFields = [
+    "modes",
+    "working_mode",
+    "workingMode",
+    "implementation_bias",
+    "implementationBias",
+    "ownership_routing",
+    "ownershipRouting",
+    "role_boundaries",
+    "roleBoundaries",
+    "structure_principles",
+    "structurePrinciples",
+  ];
+
+  for (const field of removedFields) {
+    if (raw[field] !== undefined) {
+      throw new Error(`${filePath} no longer supports team manifest field '${field}'. Remove legacy team-only structure fields from the manifest.`);
+    }
+  }
+}
+
+function rejectRemovedAgentProfileFields(data: UnknownRecord, filePath: string): void {
+  const removedFields = ["role_boundary", "roleBoundary"];
+
+  for (const field of removedFields) {
+    if (data[field] !== undefined) {
+      throw new Error(`${filePath} no longer supports agent profile field '${field}'. Remove stale role boundary metadata from the agent profile.`);
+    }
+  }
 }
 
 function parseFrontmatter(filePath: string): { data: UnknownRecord; body: string } {
@@ -169,7 +200,7 @@ function extractExamples(section?: string): AgentExamples | undefined {
   return { goodFit, badFit };
 }
 
-function mapCapabilities(raw: UnknownRecord | undefined): AgentCapabilities | undefined {
+function mapRuntimeConfig(raw: UnknownRecord | undefined): AgentRuntimeConfig | undefined {
   if (!raw) {
     return undefined;
   }
@@ -227,7 +258,6 @@ function mapWorkflowOverride(raw: UnknownRecord | undefined): WorkflowOverride |
   return {
     deviationsFromArchetypeOnly: {
       autonomyLevel: asOptionalString(deviations.autonomy_level ?? deviations.autonomyLevel),
-      ambiguityPolicy: asOptionalString(deviations.ambiguity_policy ?? deviations.ambiguityPolicy),
       stopConditions:
         deviations.stop_conditions ?? deviations.stopConditions
           ? asStringArray(deviations.stop_conditions ?? deviations.stopConditions, "stop_conditions")
@@ -258,7 +288,9 @@ function mapCollaborationBinding(entry: unknown): CollaborationBindingInput {
   return {
     agentRef: asString(record.agent_ref ?? record.agentRef, "agent_ref"),
     description: asString(record.description, "description"),
-    capabilities: mapCapabilities(asOptionalRecord(record.capabilities)),
+    runtimeConfig: mapRuntimeConfig(
+      asOptionalRecord(record.runtime_config ?? record.runtimeConfig ?? record.capabilities),
+    ),
     workflowOverride: mapWorkflowOverride(asOptionalRecord(record.workflow_override ?? record.workflowOverride)),
     outputContract: mapOutputContract(asOptionalRecord(record.output_contract ?? record.outputContract)),
   };
@@ -277,18 +309,6 @@ function mapCollaboration(raw: UnknownRecord): AgentProfileSpec["collaboration"]
     defaultConsults: mapList(raw.default_consults ?? raw.defaultConsults ?? [], "default_consults"),
     defaultHandoffs: mapList(raw.default_handoffs ?? raw.defaultHandoffs ?? [], "default_handoffs"),
     escalationTargets: mapList(raw.escalation_targets ?? raw.escalationTargets ?? [], "escalation_targets"),
-  };
-}
-
-function mapAgentOps(raw: UnknownRecord | undefined): AgentOps | undefined {
-  if (!raw) {
-    return undefined;
-  }
-
-  return {
-    evalTags: raw.eval_tags ?? raw.evalTags ? asStringArray(raw.eval_tags ?? raw.evalTags, "eval_tags") : undefined,
-    metrics: raw.metrics ? asStringArray(raw.metrics, "metrics") : undefined,
-    changeLog: asOptionalString(raw.change_log ?? raw.changeLog),
   };
 }
 
@@ -390,10 +410,11 @@ function mapAgentRuntime(raw: UnknownRecord | undefined): TeamAgentRuntimeMap | 
 
 export function mapAgentProfile(filePath: string): AgentProfileSpec {
   const { data, body } = parseFrontmatter(filePath);
+  rejectRemovedAgentProfileFields(data, filePath);
   const personaCore = asRecord(data.persona_core ?? data.personaCore, "persona_core");
   const responsibilityCore = asRecord(data.responsibility_core ?? data.responsibilityCore, "responsibility_core");
   const collaboration = asRecord(data.collaboration, "collaboration");
-  const capabilities = asRecord(data.capabilities, "capabilities");
+  const runtimeConfig = asRecord(data.runtime_config ?? data.runtimeConfig ?? data.capabilities, "runtime_config");
 
   return {
     metadata: {
@@ -413,7 +434,13 @@ export function mapAgentProfile(filePath: string): AgentProfileSpec {
       communicationStyle: asString(personaCore.communication_style ?? personaCore.communicationStyle, "persona_core.communication_style"),
       persistenceStyle: asString(personaCore.persistence_style ?? personaCore.persistenceStyle, "persona_core.persistence_style"),
       conflictStyle: asOptionalString(personaCore.conflict_style ?? personaCore.conflictStyle),
-      defaultValues: asStringArray(personaCore.default_values ?? personaCore.defaultValues, "persona_core.default_values"),
+      decisionPriorities: asStringArray(
+        personaCore.decision_priorities ??
+          personaCore.decisionPriorities ??
+          personaCore.default_values ??
+          personaCore.defaultValues,
+        "persona_core.decision_priorities",
+      ),
     },
     responsibilityCore: {
       description: asString(responsibilityCore.description, "responsibility_core.description"),
@@ -434,10 +461,9 @@ export function mapAgentProfile(filePath: string): AgentProfileSpec {
           : undefined,
     },
     collaboration: mapCollaboration(collaboration),
-    capabilities: mapCapabilities(capabilities) as AgentCapabilities,
+    runtimeConfig: mapRuntimeConfig(runtimeConfig) as AgentRuntimeConfig,
     workflowOverride: mapWorkflowOverride(asOptionalRecord(data.workflow_override ?? data.workflowOverride)),
     outputContract: mapOutputContract(asOptionalRecord(data.output_contract ?? data.outputContract)) as OutputContract,
-    ops: mapAgentOps(asOptionalRecord(data.ops)),
     operations: mapMinimalOperations(asOptionalRecord(data.operations), body),
     templates: mapMinimalTemplates(asOptionalRecord(data.templates), body),
     guardrails: mapGuardrails(asOptionalRecord(data.guardrails), body),
@@ -463,16 +489,13 @@ export function mapAgentProfile(filePath: string): AgentProfileSpec {
 
 export function mapTeamManifest(filePath: string): TeamManifest {
   const raw = parseYamlFile(filePath);
+  rejectRemovedTeamManifestFields(raw, filePath);
   const id = asString(raw.id, "id");
   const name = asString(raw.name, "name");
   const mission = asRecord(raw.mission, "mission");
   const scope = asRecord(raw.scope, "scope");
   const leader = asRecord(raw.leader, "leader");
-  const workingMode = asRecord(raw.working_mode ?? raw.workingMode, "working_mode");
   const workflow = asOptionalRecord(raw.workflow);
-  const implementationBias = asOptionalRecord(raw.implementation_bias ?? raw.implementationBias);
-  const ownershipRouting = asOptionalRecord(raw.ownership_routing ?? raw.ownershipRouting);
-  const roleBoundaries = asOptionalRecord(raw.role_boundaries ?? raw.roleBoundaries);
   const governance = asRecord(raw.governance, "governance");
   const governanceApprovalPolicy = asRecord(
     governance.approval_policy ?? governance.approvalPolicy,
@@ -520,91 +543,11 @@ export function mapTeamManifest(filePath: string): TeamManifest {
           };
         })
       : [],
-    modes: raw.modes
-      ? (asStringArray(raw.modes, "modes") as TeamManifest["modes"])
-      : ["single-executor", "team-collaboration"],
-    workingMode: {
-      humanToLeaderOnly: asBoolean(workingMode.human_to_leader_only ?? workingMode.humanToLeaderOnly, "working_mode.human_to_leader_only"),
-      leaderDrivenCoordination: asBoolean(
-        workingMode.leader_driven_coordination ?? workingMode.leaderDrivenCoordination,
-        "working_mode.leader_driven_coordination",
-      ),
-      singleActiveContextOwner: asOptionalBoolean(
-        workingMode.single_active_context_owner ?? workingMode.singleActiveContextOwner,
-      ),
-      agentCommunicationViaSessionContext: asBoolean(
-        workingMode.agent_communication_via_session_context ?? workingMode.agentCommunicationViaSessionContext,
-        "working_mode.agent_communication_via_session_context",
-      ),
-      explicitRoutingFilesRequired: asBoolean(
-        workingMode.explicit_routing_files_required ?? workingMode.explicitRoutingFilesRequired,
-        "working_mode.explicit_routing_files_required",
-      ),
-      explicitContractFilesRequired: asBoolean(
-        workingMode.explicit_contract_files_required ?? workingMode.explicitContractFilesRequired,
-        "working_mode.explicit_contract_files_required",
-      ),
-    },
     workflow: {
       id: workflow ? asString(workflow.id, "workflow.id") : `${id}-default`,
       name: workflow ? asString(workflow.name, "workflow.name") : `${name} default workflow`,
       stages: resolvedWorkflowStages,
     },
-    implementationBias: implementationBias
-      ? {
-          namingMode: asString(
-            implementationBias.naming_mode ?? implementationBias.namingMode,
-            "implementation_bias.naming_mode",
-          ) as NonNullable<TeamManifest["implementationBias"]>["namingMode"],
-          routingPriority: asString(
-            implementationBias.routing_priority ?? implementationBias.routingPriority,
-            "implementation_bias.routing_priority",
-          ) as NonNullable<TeamManifest["implementationBias"]>["routingPriority"],
-          promptEmphasis: asString(
-            implementationBias.prompt_emphasis ?? implementationBias.promptEmphasis,
-            "implementation_bias.prompt_emphasis",
-          ),
-          displayEmphasis: asString(
-            implementationBias.display_emphasis ?? implementationBias.displayEmphasis,
-            "implementation_bias.display_emphasis",
-          ),
-          personaVisibility: asString(
-            implementationBias.persona_visibility ?? implementationBias.personaVisibility,
-            "implementation_bias.persona_visibility",
-          ) as NonNullable<TeamManifest["implementationBias"]>["personaVisibility"],
-          responsibilityVisibility: asString(
-            implementationBias.responsibility_visibility ?? implementationBias.responsibilityVisibility,
-            "implementation_bias.responsibility_visibility",
-          ) as NonNullable<TeamManifest["implementationBias"]>["responsibilityVisibility"],
-        }
-      : undefined,
-    ownershipRouting: ownershipRouting
-      ? {
-          defaultActiveOwner: asString(
-            ownershipRouting.default_active_owner ?? ownershipRouting.defaultActiveOwner,
-            "ownership_routing.default_active_owner",
-          ),
-          switchToManagementLeaderWhen: asStringArray(
-            ownershipRouting.switch_to_management_leader_when ?? ownershipRouting.switchToManagementLeaderWhen,
-            "ownership_routing.switch_to_management_leader_when",
-          ),
-        }
-      : undefined,
-    roleBoundaries: roleBoundaries
-      ? {
-          writeExecutionRoles: asStringArray(
-            roleBoundaries.write_execution_roles ?? roleBoundaries.writeExecutionRoles,
-            "role_boundaries.write_execution_roles",
-          ),
-          readOnlySupportRoles: asStringArray(
-            roleBoundaries.read_only_support_roles ?? roleBoundaries.readOnlySupportRoles,
-            "role_boundaries.read_only_support_roles",
-          ),
-        }
-      : undefined,
-    structurePrinciples: raw.structure_principles ?? raw.structurePrinciples
-      ? asStringArray(raw.structure_principles ?? raw.structurePrinciples, "structure_principles")
-      : undefined,
     governance: {
       instructionPrecedence: asStringArray(
         governance.instruction_precedence ?? governance.instructionPrecedence,
@@ -638,7 +581,6 @@ export function mapTeamManifest(filePath: string): TeamManifest {
         governance.working_rules ?? governance.workingRules,
         "governance.working_rules",
       ),
-      notes: governance.notes ? asStringArray(governance.notes, "governance.notes") : undefined,
     },
     agentRuntime: mapAgentRuntime(agentRuntime),
     tags: raw.tags ? asStringArray(raw.tags, "tags") : [],

@@ -85,7 +85,7 @@ export function createExecutionPlan(state: ManagerState): TeamExecutionPlan | nu
       mode: state.selectedMode,
     },
     teamName: manifest.name,
-    activeOwnerId: manifest.ownershipRouting?.defaultActiveOwner ?? manifest.leader.agentRef,
+    activeOwnerId: manifest.leader.agentRef,
     stage: manifest.workflow.stages[0] ?? "intake",
     delegatedByLeader: false,
   };
