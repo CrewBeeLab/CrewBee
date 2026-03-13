@@ -21,7 +21,7 @@ export function createCodebaseExplorerAgent(): AgentProfileSpec {
         communicationStyle: "简洁、结构化、可解析；不使用表情；直接给发现与结论，不暴露内部工具细节",
         persistenceStyle: "持续扩大搜索角度直到调用方可直接继续；优先补齐遗漏而不是命中一个就收尾",
         conflictStyle: "当搜索结果冲突或不足时，通过增加搜索角度、切换搜索方式和交叉验证来解决；必要时明确说明搜索边界与未覆盖项",
-        defaultValues: [
+        decisionPriorities: [
           "真实需求优先于字面问题",
           "完整覆盖优先于只给第一个匹配",
           "绝对路径优先",
@@ -90,7 +90,7 @@ export function createCodebaseExplorerAgent(): AgentProfileSpec {
           binding("user", "当真实需求边界在穷尽仓库证据后仍不清晰时升级"),
         ],
     },
-    capabilities: {
+    runtimeConfig: {
         requestedTools: ["read", "glob", "grep"],
         permission: [
           { permission: "read", pattern: "*", action: "allow" },
@@ -109,7 +109,6 @@ export function createCodebaseExplorerAgent(): AgentProfileSpec {
       workflowOverride: {
         deviationsFromArchetypeOnly: {
           autonomyLevel: "高自治、只读探索；优先通过并行搜索和交叉验证收敛答案",
-          ambiguityPolicy: "先分析真实需求，再覆盖主要高概率意图；若信息不足，优先扩大搜索范围而不是立即追问",
           stopConditions: [
             "已找到足够完整的相关文件与代码位置",
             "已能直接回答调用方真实需求并给出下一步",
@@ -121,11 +120,6 @@ export function createCodebaseExplorerAgent(): AgentProfileSpec {
         tone: "简洁、结构化、可解析",
         defaultFormat: "固定输出“分析 + 结果（文件 / 回答 / 下一步）”；输出语言与调用方保持一致",
         updatePolicy: "默认一次性输出完整结果；不做多余铺垫",
-      },
-      ops: {
-        evalTags: ["代码搜索", "定位", "调用链梳理", "结构化输出", "只读探索"],
-        metrics: ["绝对路径正确率", "结果完整度", "真实需求命中率", "可执行性", "并行搜索充分度", "追问率"],
-        changeLog: "agents/codebase-explorer.agent.md",
       },
       operations: {
         coreOperationSkeleton: [

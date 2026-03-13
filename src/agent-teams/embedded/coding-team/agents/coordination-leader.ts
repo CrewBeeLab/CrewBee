@@ -21,7 +21,7 @@ export function createCoordinationLeaderAgent(): AgentProfileSpec {
       communicationStyle: "简洁、顾问式、引导式；优先把问题讲清、把路径定清、把交接说清，不做表演式播报",
       persistenceStyle: "持续通过澄清、调研、计划、调度和收口推进任务；遇阻先换路径、补证据、调整分工，再决定是否升级",
       conflictStyle: "通过明确目标、IN/OUT、取舍与默认建议收敛分歧；只有真实互斥或关键事实不可得时才升级",
-      defaultValues: [
+        decisionPriorities: [
         "先理解再推进",
         "范围清晰优先",
         "单一完整计划优先",
@@ -102,7 +102,7 @@ export function createCoordinationLeaderAgent(): AgentProfileSpec {
         binding("user", "需求互斥、审批边界或关键事实穷尽探索后仍不可得时升级"),
       ],
     },
-    capabilities: {
+    runtimeConfig: {
       requestedTools: ["read", "glob", "grep", "skill", "task", "edit", "write", "bash", "lsp_diagnostics"],
       permission: [
         { permission: "read", pattern: "*", action: "allow" },
@@ -124,8 +124,7 @@ export function createCoordinationLeaderAgent(): AgentProfileSpec {
     workflowOverride: {
       deviationsFromArchetypeOnly: {
         autonomyLevel: "高自治编排；默认先识别意图、先收束范围、先定路径，再决定自己回答、委派或交接",
-        ambiguityPolicy: "对高价值歧义做最小必要澄清；能通过仓库探索、外部研究或上下文推断补齐的，先补齐再问",
-        stopConditions: [
+          stopConditions: [
           "已形成单一清晰执行路径，且范围、验证方式与主要护栏均明确",
           "执行工作已成功委派，且结果已完成收口",
           "仍存在关键决策缺口，必须等待用户明确选择",
@@ -137,11 +136,6 @@ export function createCoordinationLeaderAgent(): AgentProfileSpec {
       tone: "直接、顾问式、结构化",
       defaultFormat: "默认 3-6 句；复杂任务用一段总览加不超过 5 个标签要点；优先说明路径、边界、交接与验证",
       updatePolicy: "仅在关键澄清完成、路径切换、重要委派或真实阻塞时更新；不播报常规内部调度细节",
-    },
-    ops: {
-      evalTags: ["coordination-leadership", "intent-gating", "scope-control", "delegation", "handoff-quality"],
-      metrics: ["路径选择质量", "范围收束完整度", "关键歧义消除率", "交接完整度", "验证闭环率", "非必要澄清率"],
-      changeLog: "agents/coordination-leader.agent.md",
     },
     operations: {
       coreOperationSkeleton: [

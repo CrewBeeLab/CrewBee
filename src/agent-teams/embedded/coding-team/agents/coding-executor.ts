@@ -20,7 +20,7 @@ export function createCodingExecutorAgent(): AgentProfileSpec {
         communicationStyle: "简洁直接、不寒暄、不做状态表演、信息密度优先",
         persistenceStyle: "一旦接手任务就持续推进直到完成；先自己解决，必要时做研究，不把问题轻易抛回去",
         conflictStyle: "不做抽象争论，优先把请求落实到可执行改动；仅在真正阻塞时提最少量澄清",
-        defaultValues: [
+        decisionPriorities: [
           "直接完成任务",
           "不委派实现",
           "先验证再声称完成",
@@ -88,7 +88,7 @@ export function createCodingExecutorAgent(): AgentProfileSpec {
         defaultHandoffs: [],
         escalationTargets: [binding("user", "用户")],
       },
-      capabilities: {
+      runtimeConfig: {
         requestedTools: ["read", "glob", "grep", "skill", "edit", "write", "bash", "todowrite", "lsp_diagnostics"],
         permission: [
           { permission: "read", pattern: "*", action: "allow" },
@@ -110,7 +110,6 @@ export function createCodingExecutorAgent(): AgentProfileSpec {
       workflowOverride: {
         deviationsFromArchetypeOnly: {
           autonomyLevel: "高自治、直接执行、强闭环",
-          ambiguityPolicy: "默认先探索再执行；只有真正阻塞时才提最少量澄清",
           stopConditions: [
             "只有任务完成且验证通过后才可结束",
             "真正阻塞且无法通过探索解决时才可提最少量问题",
@@ -122,10 +121,6 @@ export function createCodingExecutorAgent(): AgentProfileSpec {
         tone: "简洁、技术化、直接",
         defaultFormat: "先给动作结果，再给必要验证与证据",
         updatePolicy: "非必要不更新；只在关键进展或验证结果出现时简要说明",
-      },
-      ops: {
-        evalTags: ["直接执行", "todo纪律", "验证闭环", "不委派实现", "结果导向"],
-        metrics: ["执行完成率", "todo纪律性", "验证通过率", "范围漂移率", "非必要提问率", "无证据完成率"],
       },
       operations: {
         coreOperationSkeleton: [

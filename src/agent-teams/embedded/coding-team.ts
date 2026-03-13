@@ -58,46 +58,11 @@ export function createEmbeddedCodingTeam(): AgentTeamDefinition {
       { agentRef: "principal-advisor", role: "高风险架构、安全、性能与复杂技术决策顾问" },
       { agentRef: "multimodal-looker", role: "多模态材料解读与定向提取" },
     ],
-    modes: ["single-executor", "team-collaboration"],
-    workingMode: {
-      humanToLeaderOnly: true,
-      leaderDrivenCoordination: true,
-      singleActiveContextOwner: true,
-      agentCommunicationViaSessionContext: true,
-      explicitRoutingFilesRequired: false,
-      explicitContractFilesRequired: false,
-    },
     workflow: {
       id: "coding-default",
       name: "Coding default workflow",
       stages: ["接单", "代码定位与证据收集", "轻量计划或按需分派", "实现", "评审", "验证", "总结"],
     },
-    implementationBias: {
-      namingMode: "responsibility-first",
-      routingPriority: "responsibility-first",
-      promptEmphasis: "responsibility-high / persona-low",
-      displayEmphasis: "responsibility-high",
-      personaVisibility: "low",
-      responsibilityVisibility: "high",
-    },
-    ownershipRouting: {
-      defaultActiveOwner: "coding-leader",
-      switchToManagementLeaderWhen: [
-        "任务核心仍是范围收束、路径判断或多子任务编排",
-        "尚未形成单一可执行路径或明确验收口径",
-      ],
-    },
-    roleBoundaries: {
-      writeExecutionRoles: ["coding-leader", "coding-executor"],
-      readOnlySupportRoles: ["codebase-explorer", "web-researcher", "reviewer", "principal-advisor"],
-    },
-    structurePrinciples: [
-      "Coding Team 不采用常驻的 Orchestrator、Planner、Executor 三权平分结构",
-      "以主执行 owner 为中心，其他角色按需支撑",
-      "规划能力尽量内化到主执行链路",
-      "Reviewer 的独立性高于独立 Planner",
-      "仓库内研究与外部研究必须分离",
-    ],
     governance: {
       instructionPrecedence: ["平台规则", "仓库规则", "团队规则", "Agent 规则", "任务规则"],
       approvalPolicy: {
@@ -125,10 +90,6 @@ export function createEmbeddedCodingTeam(): AgentTeamDefinition {
         "叶子执行者必须自行验证；最终收口由 owner 统一完成",
         "仓库内研究与外部研究必须分离",
       ],
-      notes: [
-        "CodingTeam 的治理规则以 manifest.governance 为单一事实来源。",
-        "当前仓库尚未定义 task-orchestrator 内置 agent，因此 embedded CodingTeam 暂未把它加入强校验成员列表。",
-      ],
     },
     agentRuntime: {
       "coding-leader": { provider: "openai", model: "gpt-5.4", temperature: 0.2, topP: 0.85, variant: "long-context" },
@@ -142,8 +103,7 @@ export function createEmbeddedCodingTeam(): AgentTeamDefinition {
     },
     tags: ["代码", "leader驱动", "上下文连续性", "主执行者中心", "评审中心", "证据驱动"],
     promptProjection: {
-      include: ["mission", "scope", "leader", "working_mode", "workflow", "governance"],
-      exclude: ["version", "status", "owner", "tags", "agent_runtime"],
+      include: ["mission", "workflow", "governance"],
     },
   };
 

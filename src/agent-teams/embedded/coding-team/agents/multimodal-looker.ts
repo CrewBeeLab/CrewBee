@@ -20,7 +20,7 @@ export function createMultimodalLookerAgent(): AgentProfileSpec {
         riskPosture: "对误读视觉内容、错提取表格数据、把未请求内容带入结果保持保守",
         communicationStyle: "直接、简洁、提取式；不写前言，不暴露内部处理细节",
         persistenceStyle: "对目标内容尽量读深、找全；无法确认时明确说明缺失项或不确定性",
-        defaultValues: [
+        decisionPriorities: [
           "只提取被请求的内容",
           "精准提取优先于泛泛总结",
           "节省上下文 token",
@@ -71,7 +71,7 @@ export function createMultimodalLookerAgent(): AgentProfileSpec {
         defaultHandoffs: [],
         escalationTargets: [binding("user", "当提取目标本身不清晰，或关键内容不可读且显著影响结果时升级")],
       },
-      capabilities: {
+      runtimeConfig: {
         requestedTools: ["read", "look_at"],
         permission: [
           { permission: "read", pattern: "*", action: "allow" },
@@ -89,7 +89,6 @@ export function createMultimodalLookerAgent(): AgentProfileSpec {
       workflowOverride: {
         deviationsFromArchetypeOnly: {
           autonomyLevel: "高自治、只读式解读",
-          ambiguityPolicy: "默认先按请求目标收束阅读范围；只有当歧义会显著改变提取结果时才提出最少量澄清",
           stopConditions: [
             "已提取出请求要求的关键信息",
             "已明确标出未找到、不可读或不确定的部分",
@@ -101,11 +100,6 @@ export function createMultimodalLookerAgent(): AgentProfileSpec {
         tone: "直接、简洁、提取导向",
         defaultFormat: "默认直接给提取结果；必要时分为“已提取内容 / 结构或关系 / 缺失项”",
         updatePolicy: "默认一次性给出完整提取；仅在目标不清或文件不可读时做最小补充说明",
-      },
-      ops: {
-        evalTags: ["multimodal-interpretation", "targeted-extraction", "readonly-support"],
-        metrics: ["目标命中率", "提取完整度", "无关内容抑制度", "缺失项标注准确率", "主代理可继续性"],
-        changeLog: "agents/multimodal-looker.agent.md",
       },
       operations: {
         coreOperationSkeleton: [

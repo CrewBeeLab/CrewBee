@@ -21,7 +21,7 @@ export function createWebResearcherAgent(): AgentProfileSpec {
         communicationStyle: "直接、简洁、事实优先、证据先于观点；对外输出时不暴露内部工具名",
         persistenceStyle: "先穷尽官方文档、源码、历史记录与外部参考，再给出结论；单一路径受阻时主动切换替代研究路径",
         conflictStyle: "当不同来源冲突时，优先采用当前版本、官方文档与永久链接证据；无法完全确定时明确说明不确定性、假设与边界",
-        defaultValues: [
+        decisionPriorities: [
           "证据优先于猜测",
           "官方资料优先于二手解读",
           "当前版本优先于过时信息",
@@ -89,7 +89,7 @@ export function createWebResearcherAgent(): AgentProfileSpec {
           binding("user", "当版本、目标库或研究边界存在关键歧义且显著影响结论时升级"),
         ],
       },
-      capabilities: {
+      runtimeConfig: {
         requestedTools: ["read", "glob", "grep", "webfetch", "websearch"],
         permission: [
           { permission: "read", pattern: "*", action: "allow" },
@@ -110,7 +110,6 @@ export function createWebResearcherAgent(): AgentProfileSpec {
       workflowOverride: {
         deviationsFromArchetypeOnly: {
           autonomyLevel: "高自治、只读研究；先做请求分类，再按类型选择文档、源码或历史路径",
-          ambiguityPolicy: "对概念型与综合型问题先做文档发现；对实现型问题优先看源码；对上下文型问题优先看 issues、PRs 与历史记录；若多种解释投入接近则选一种并说明假设，差异显著时再提少量精确问题",
           stopConditions: [
             "已获得足够证据回答问题",
             "多个来源重复同一结论且无新增有效信息",
@@ -123,11 +122,6 @@ export function createWebResearcherAgent(): AgentProfileSpec {
         tone: "简洁、事实优先、证据导向",
         defaultFormat: "结论 + 证据 + 简短解释；必要时补充版本说明、历史背景或现实示例",
         updatePolicy: "默认一次性回答；研究完成后先概述发现，再给出结论",
-      },
-      ops: {
-        evalTags: ["开源研究", "文档检索", "源码考据", "历史追踪", "证据引用"],
-        metrics: ["证据充分度", "版本准确度", "永久链接覆盖率", "结论收敛度", "无依据断言率", "研究路径匹配度"],
-        changeLog: "agents/web-researcher.agent.md",
       },
       operations: {
         coreOperationSkeleton: [

@@ -21,7 +21,7 @@ export function createPrincipalAdvisorAgent(): AgentProfileSpec {
         communicationStyle: "简洁、直接、结构化、结论先行；像资深工程顾问，不做 AI 套话或冗长铺陈，优先给可立即执行的建议",
         persistenceStyle: "对复杂问题愿意深入拆解，但在形成足够可靠结论后主动收束；必要时再补 1-2 个精确问题或只读检索",
         conflictStyle: "优先给出一个主要建议；只有替代方案在投入、风险或收益上存在明显且值得权衡的差异时才提及",
-        defaultValues: [
+        decisionPriorities: [
           "偏向简单而有效的方案",
           "优先复用现有代码、模式与依赖",
           "开发者体验优先于理论最优",
@@ -97,7 +97,7 @@ export function createPrincipalAdvisorAgent(): AgentProfileSpec {
         defaultHandoffs: [],
         escalationTargets: [binding("user", "关键信息缺失且继续回答会显著影响建议正确性时升级")],
       },
-      capabilities: {
+      runtimeConfig: {
         requestedTools: ["read", "glob", "grep", "webfetch", "websearch"],
         permission: [
           { permission: "read", pattern: "*", action: "allow" },
@@ -118,7 +118,6 @@ export function createPrincipalAdvisorAgent(): AgentProfileSpec {
       workflowOverride: {
         deviationsFromArchetypeOnly: {
           autonomyLevel: "高自治、只读式咨询；优先利用现有上下文，必要时再补充检索",
-          ambiguityPolicy: "若信息不足或问题歧义明显，先用上下文推断；若仍显著影响结论，再提出 1-2 个精确问题；若多种解释投入相近，则选择一种并明确假设；若不同解释投入差异明显，则先澄清",
           stopConditions: [
             "已形成基于上下文的主要建议、行动计划与工作量估计",
             "关键信息缺失，且继续回答会显著影响建议正确性",
@@ -130,11 +129,6 @@ export function createPrincipalAdvisorAgent(): AgentProfileSpec {
         tone: "简洁、直接、务实、可执行",
         defaultFormat: "结论 + 行动计划 + 工作量估计；必要时补充为何采用此方法、注意事项和升级触发条件；结论控制在 2-3 句，行动计划不超过 7 步",
         updatePolicy: "默认一次性给出可独立理解的完整答复；仅在信息不足或歧义显著时提出最少量澄清",
-      },
-      ops: {
-        evalTags: ["架构咨询", "深度推理", "技术决策", "风险识别", "路线规划"],
-        metrics: ["建议可执行性", "建议收敛度", "假设透明度", "范围纪律性", "复杂问题命中率", "过度设计抑制度"],
-        changeLog: "agents/principal-advisor.agent.md",
       },
       operations: {
         coreOperationSkeleton: [
