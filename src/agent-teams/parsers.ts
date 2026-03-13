@@ -16,6 +16,7 @@ import type {
   OutputContract,
   PromptProjectionSpec,
   TeamManifest,
+  TeamMemberMap,
   TeamAgentRuntimeMap,
   WorkflowOverride,
 } from "../core";
@@ -80,6 +81,55 @@ function readTextFile(filePath: string): string {
 
 function parseYamlFile(filePath: string): UnknownRecord {
   return asRecord(parseYaml(readTextFile(filePath)), filePath);
+}
+
+function mapLegacyTeamMembers(rawMembers: unknown): TeamMemberMap {
+  if (!Array.isArray(rawMembers)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    rawMembers.map((entry, index) => {
+      const member = asRecord(entry, `members[${index}]`);
+      const agentRef = asString(member.agent_ref ?? member.agentRef, `members[${index}].agent_ref`);
+
+      return [
+        agentRef,
+        {
+          responsibility: asString(member.role, `members[${index}].role`),
+          delegateWhen: "",
+          delegateMode: "",
+        },
+      ];
+    }),
+  );
+}
+
+function mapTeamMembers(rawMembers: unknown): TeamMemberMap {
+  if (!rawMembers) {
+    return {};
+  }
+
+  if (Array.isArray(rawMembers)) {
+    return mapLegacyTeamMembers(rawMembers);
+  }
+
+  const members = asRecord(rawMembers, "members");
+
+  return Object.fromEntries(
+    Object.entries(members).map(([agentRef, value]) => {
+      const member = asRecord(value, `members.${agentRef}`);
+
+      return [
+        agentRef,
+        {
+          responsibility: asString(member.responsibility, `members.${agentRef}.responsibility`),
+          delegateWhen: asString(member.delegate_when ?? member.delegateWhen, `members.${agentRef}.delegate_when`),
+          delegateMode: asString(member.delegate_mode ?? member.delegateMode, `members.${agentRef}.delegate_mode`),
+        },
+      ];
+    }),
+  );
 }
 
 function rejectRemovedTeamManifestFields(raw: UnknownRecord, filePath: string): void {
@@ -308,7 +358,6 @@ function mapCollaboration(raw: UnknownRecord): AgentProfileSpec["collaboration"]
   return {
     defaultConsults: mapList(raw.default_consults ?? raw.defaultConsults ?? [], "default_consults"),
     defaultHandoffs: mapList(raw.default_handoffs ?? raw.defaultHandoffs ?? [], "default_handoffs"),
-    escalationTargets: mapList(raw.escalation_targets ?? raw.escalationTargets ?? [], "escalation_targets"),
   };
 }
 
@@ -534,15 +583,7 @@ export function mapTeamManifest(filePath: string): TeamManifest {
       agentRef: asString(leader.agent_ref ?? leader.agentRef, "leader.agent_ref"),
       responsibilities: asStringArray(leader.responsibilities, "leader.responsibilities"),
     },
-    members: Array.isArray(raw.members)
-      ? raw.members.map((entry, index) => {
-          const member = asRecord(entry, `members[${index}]`);
-          return {
-            agentRef: asString(member.agent_ref ?? member.agentRef, `members[${index}].agent_ref`),
-            role: asString(member.role, `members[${index}].role`),
-          };
-        })
-      : [],
+    members: mapTeamMembers(raw.members),
     workflow: {
       id: workflow ? asString(workflow.id, "workflow.id") : `${id}-default`,
       name: workflow ? asString(workflow.name, "workflow.name") : `${name} default workflow`,

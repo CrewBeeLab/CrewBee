@@ -1,7 +1,11 @@
-import type { AgentTeamDefinition, TeamLibrary } from "../core";
+import type { AgentTeamDefinition, CollaborationBindingInput, TeamLibrary } from "../core";
 
 import { EMBEDDED_TEAM_IDS } from "./constants";
 import type { TeamValidationIssue } from "./types";
+
+function getBindingAgentRef(binding: CollaborationBindingInput): string {
+  return typeof binding === "string" ? binding : binding.agentRef;
+}
 
 export function validateTeamDefinition(team: AgentTeamDefinition): TeamValidationIssue[] {
   const issues: TeamValidationIssue[] = [];
@@ -15,11 +19,11 @@ export function validateTeamDefinition(team: AgentTeamDefinition): TeamValidatio
     });
   }
 
-  for (const member of manifest.members) {
-    if (!agentIds.has(member.agentRef)) {
+  for (const agentRef of Object.keys(manifest.members)) {
+    if (!agentIds.has(agentRef)) {
       issues.push({
         level: "error",
-        message: `Member agent '${member.agentRef}' is not defined in this Team.`,
+        message: `Member agent '${agentRef}' is not defined in this Team.`,
       });
     }
   }
@@ -35,6 +39,10 @@ export function validateTeamDefinition(team: AgentTeamDefinition): TeamValidatio
 
   for (const agent of team.agents) {
     const requestedTools = new Set(agent.runtimeConfig.requestedTools);
+    const collaborationTargets = [
+      ...agent.collaboration.defaultConsults,
+      ...agent.collaboration.defaultHandoffs,
+    ].map(getBindingAgentRef);
 
     if (requestedTools.size === 0) {
       issues.push({
@@ -48,6 +56,23 @@ export function validateTeamDefinition(team: AgentTeamDefinition): TeamValidatio
         level: "error",
         message: `Agent '${agent.metadata.id}' must declare at least one permission rule.`,
       });
+    }
+
+    for (const targetAgentRef of collaborationTargets) {
+      if (!agentIds.has(targetAgentRef)) {
+        issues.push({
+          level: "error",
+          message: `Agent '${agent.metadata.id}' references unknown collaboration target '${targetAgentRef}'.`,
+        });
+        continue;
+      }
+
+      if (targetAgentRef !== manifest.leader.agentRef && !manifest.members[targetAgentRef]) {
+        issues.push({
+          level: "error",
+          message: `Agent '${agent.metadata.id}' references collaboration target '${targetAgentRef}' without manifest member guidance.`,
+        });
+      }
     }
   }
 

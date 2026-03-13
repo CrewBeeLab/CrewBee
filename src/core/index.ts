@@ -33,10 +33,13 @@ export interface TeamLeaderRef {
   responsibilities: string[];
 }
 
-export interface TeamMemberRef {
-  agentRef: string;
-  role: string;
+export interface TeamMemberGuidance {
+  responsibility: string;
+  delegateWhen: string;
+  delegateMode: string;
 }
+
+export type TeamMemberMap = Record<string, TeamMemberGuidance>;
 
 export interface AgentRuntimeModelConfig {
   provider: string;
@@ -68,7 +71,7 @@ export interface TeamManifest {
   mission: TeamMissionSpec;
   scope: TeamScopeSpec;
   leader: TeamLeaderRef;
-  members: TeamMemberRef[];
+  members: TeamMemberMap;
   workflow: TeamWorkflowSpec;
   governance: TeamGovernanceSpec;
   agentRuntime?: TeamAgentRuntimeMap;
@@ -127,7 +130,6 @@ export type CollaborationBindingInput = string | CollaborationBinding;
 export interface CollaborationSpec {
   defaultConsults: CollaborationBindingInput[];
   defaultHandoffs: CollaborationBindingInput[];
-  escalationTargets: CollaborationBindingInput[];
 }
 
 export type AgentPermissionAction = "allow" | "deny" | "ask";
