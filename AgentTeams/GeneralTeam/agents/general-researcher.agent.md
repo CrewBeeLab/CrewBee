@@ -40,8 +40,6 @@ collaboration:
   default_handoffs:
     - general-analyst
     - general-writer
-  escalation_targets:
-    - general-leader
 
 runtime_config:
   requested_tools:

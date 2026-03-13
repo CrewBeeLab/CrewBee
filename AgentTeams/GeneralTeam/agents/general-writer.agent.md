@@ -38,8 +38,6 @@ collaboration:
     - general-analyst
   default_handoffs:
     - general-editor
-  escalation_targets:
-    - general-leader
 
 runtime_config:
   requested_tools:
