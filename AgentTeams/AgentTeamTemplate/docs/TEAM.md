@@ -28,6 +28,7 @@ AgentTeams/<YourTeam>/
 Required top-level blocks:
 
 - `id`
+- `kind`
 - `version`
 - `name`
 - `status`
@@ -36,20 +37,17 @@ Required top-level blocks:
 - `mission`
 - `scope`
 - `leader`
-- `working_mode`
-- `workflow` with a non-empty `stages` list
+- `members`
+- `workflow`
 - `governance`
 
 Recommended optional blocks that keep the file-based template aligned with current `coding-team` conventions:
 
-- `modes`
-- `ownership_routing`
-- `role_boundaries`
-- `structure_principles`
-- `implementation_bias`
 - `agent_runtime`
 - `tags`
 - `prompt_projection`
+
+`working_mode` and `structure_principles` are no longer part of the Team manifest schema. Put that design-time guidance in `docs/TEAM.md`, `TEAM.md`, or `README.md` instead.
 
 ## Agent Profile Rules
 
@@ -65,7 +63,7 @@ archetype: orchestrator
 persona_core: ...
 responsibility_core: ...
 collaboration: ...
-capabilities: ...
+runtime_config: ...
 ---
 ```
 
@@ -79,13 +77,12 @@ Required frontmatter blocks:
 - `persona_core`
 - `responsibility_core`
 - `collaboration`
-- `capabilities`
+- `runtime_config`
 
 Recommended optional blocks for parity with current `coding-team` profiles:
 
 - `workflow_override`
 - `output_contract`
-- `ops`
 - `operations`
 - `templates`
 - `guardrails`
@@ -105,14 +102,8 @@ Example in `team.manifest.yaml`:
 prompt_projection:
   include:
     - mission
-    - scope
-    - leader
-    - working_mode
-  exclude:
-    - version
-    - status
-    - owner
-    - tags
+    - workflow
+    - governance
 ```
 
 Example in `*.agent.md` frontmatter:
@@ -130,7 +121,6 @@ prompt_projection:
     - status
     - owner
     - tags
-    - ops
 ```
 
 Current semantics are intentionally narrow:
@@ -159,6 +149,23 @@ Any other heading names are documentation-only and will not be parsed into struc
 - Prefer responsibility-first naming and routing.
 - Separate research/support roles from write-execution roles unless a single owner can safely absorb both.
 - Make verification, evidence, and closure expectations explicit in both Team and agent files.
+
+## Suggested Design Notes
+
+Document team-shaping guidance here instead of encoding it in `team.manifest.yaml`.
+
+### Working Mode
+
+- Human requests normally enter through the leader.
+- Coordination stays leader-driven unless the Team explicitly documents another practice.
+- Session Context is the default collaboration channel.
+- Explicit routing or contract files should be documented here only when the Team intentionally adopts them.
+
+### Structure Principles
+
+- Keep one active owner on the main context chain at a time.
+- Explain how specialists support the main owner without fragmenting execution.
+- Record stable team-structure rules here instead of adding more manifest fields.
 
 ## Usage
 

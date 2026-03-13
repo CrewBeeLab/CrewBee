@@ -38,18 +38,6 @@ members:
   - agent_ref: executor
     role: delivery and verification
 
-modes:
-  - single-executor
-  - team-collaboration
-
-working_mode:
-  human_to_leader_only: true
-  leader_driven_coordination: true
-  single_active_context_owner: true
-  agent_communication_via_session_context: true
-  explicit_routing_files_required: false
-  explicit_contract_files_required: false
-
 workflow:
   id: template-default
   name: Template default workflow
@@ -59,24 +47,6 @@ workflow:
     - delegate-or-execute
     - verify
     - summarize
-
-ownership_routing:
-  default_active_owner: leader
-  switch_to_management_leader_when:
-    - the task is still primarily about scope shaping or routing decisions
-    - there is not yet a single executable path with clear acceptance
-
-role_boundaries:
-  write_execution_roles:
-    - leader
-    - executor
-  read_only_support_roles:
-    - researcher
-
-structure_principles:
-  - keep one active owner on the main context chain
-  - delegate specialists on demand instead of fragmenting the main path
-  - keep research separate from execution when both are needed
 
 governance:
   instruction_precedence:
@@ -109,17 +79,6 @@ governance:
     - support agents report back to the leader or active owner
     - delegation and consultation must carry goal, scope, constraints, deliverable, and verification expectations
     - final user-facing convergence comes from the role holding closure responsibility
-  notes:
-    - Session Context is the default collaboration channel.
-    - Explicit routing and contract files are intentionally out of the starter scope.
-
-implementation_bias:
-  naming_mode: responsibility-first
-  routing_priority: responsibility-first
-  prompt_emphasis: responsibility-high / persona-balanced
-  display_emphasis: balanced
-  persona_visibility: balanced
-  responsibility_visibility: high
 
 agent_runtime:
   leader:
@@ -140,14 +99,5 @@ tags:
 prompt_projection:
   include:
     - mission
-    - scope
-    - leader
-    - working_mode
     - workflow
     - governance
-  exclude:
-    - version
-    - status
-    - owner
-    - tags
-    - agent_runtime

@@ -12,7 +12,7 @@ persona_core:
   risk_posture: controlled
   communication_style: terse-direct
   persistence_style: high
-  default_values:
+  decision_priorities:
     - correctness
     - completion
     - minimality
@@ -45,7 +45,7 @@ collaboration:
   escalation_targets:
     - leader
 
-capabilities:
+runtime_config:
   requested_tools:
     - read
     - glob
@@ -89,19 +89,9 @@ output_contract:
 workflow_override:
   deviations_from_archetype_only:
     autonomy_level: high
-    ambiguity_policy: execute-directly-once-path-is-clear-and-escalate-on-material-unknowns
     stop_conditions:
       - The requested path conflicts with higher-priority rules or approvals.
       - Three materially different approaches fail to reach a verified outcome.
-
-ops:
-  eval_tags:
-    - execution
-    - verification
-  metrics:
-    - verification_pass_rate
-    - change_minimality
-  change_log: agents/executor.agent.md
 
 operations:
   core_operation_skeleton:

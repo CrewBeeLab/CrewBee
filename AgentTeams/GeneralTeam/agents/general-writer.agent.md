@@ -12,7 +12,7 @@ persona_core:
   risk_posture: low
   communication_style: direct-readable
   persistence_style: medium
-  default_values:
+  decision_priorities:
     - readability
     - signal
 
@@ -41,7 +41,7 @@ collaboration:
   escalation_targets:
     - general-leader
 
-capabilities:
+runtime_config:
   requested_tools:
     - read
     - glob
@@ -83,19 +83,9 @@ output_contract:
 workflow_override:
   deviations_from_archetype_only:
     autonomy_level: medium
-    ambiguity_policy: 只在材料缺口影响成稿准确性时回退给 leader 或 analyst
     stop_conditions:
       - 核心事实或论证仍不完整，无法负责任起草
       - 任务已变成纯润色，不再需要 writer 主导
-
-ops:
-  eval_tags:
-    - drafting
-    - response-assembly
-  metrics:
-    - draft-usability
-    - rewrite-rate
-  change_log: agents/general-writer.agent.md
 
 operations:
   core_operation_skeleton:

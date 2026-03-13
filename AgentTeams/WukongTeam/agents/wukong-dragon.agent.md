@@ -12,7 +12,7 @@ persona_core:
   risk_posture: low
   communication_style: compact-status
   persistence_style: high
-  default_values:
+  decision_priorities:
     - continuity
     - reliability
 
@@ -42,7 +42,7 @@ collaboration:
   escalation_targets:
     - wukong-leader
 
-capabilities:
+runtime_config:
   requested_tools:
     - read
     - glob
@@ -84,19 +84,9 @@ output_contract:
 workflow_override:
   deviations_from_archetype_only:
     autonomy_level: medium-high
-    ambiguity_policy: 以保持上下文连续性为主，出现主路径变化时及时交回 leader
     stop_conditions:
       - 当前任务已是一轮性工作，不再需要续航支撑
       - 关键上下文来源不完整，无法建立可靠 continuity 记录
-
-ops:
-  eval_tags:
-    - context-continuity
-    - handoff-readiness
-  metrics:
-    - context-loss-prevention
-    - handoff-clarity
-  change_log: agents/wukong-dragon.agent.md
 
 operations:
   core_operation_skeleton:

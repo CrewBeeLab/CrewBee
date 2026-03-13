@@ -12,7 +12,7 @@ persona_core:
   risk_posture: controlled
   communication_style: status-compact
   persistence_style: high
-  default_values:
+  decision_priorities:
     - completion
     - reliability
 
@@ -42,7 +42,7 @@ collaboration:
   escalation_targets:
     - general-leader
 
-capabilities:
+runtime_config:
   requested_tools:
     - read
     - glob
@@ -84,19 +84,9 @@ output_contract:
 workflow_override:
   deviations_from_archetype_only:
     autonomy_level: medium-high
-    ambiguity_policy: 步骤已明确时直接推进；若流程仍未定型则回到 leader
     stop_conditions:
       - 关键执行步骤缺少前置条件
       - 任务已偏离程序性执行，转成分析或写作问题
-
-ops:
-  eval_tags:
-    - task-execution
-    - follow-through
-  metrics:
-    - checklist-completion
-    - status-clarity
-  change_log: agents/general-operator.agent.md
 
 operations:
   core_operation_skeleton:

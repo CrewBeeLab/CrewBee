@@ -12,7 +12,7 @@ persona_core:
   risk_posture: low
   communication_style: source-forward
   persistence_style: medium
-  default_values:
+  decision_priorities:
     - evidence
     - coverage
 
@@ -43,7 +43,7 @@ collaboration:
   escalation_targets:
     - general-leader
 
-capabilities:
+runtime_config:
   requested_tools:
     - read
     - glob
@@ -77,19 +77,9 @@ output_contract:
 workflow_override:
   deviations_from_archetype_only:
     autonomy_level: medium
-    ambiguity_policy: 先补齐事实，再把未解问题交回 leader
     stop_conditions:
       - 现有来源无法支撑关键结论
       - 继续搜索已无法带来新的有效信息
-
-ops:
-  eval_tags:
-    - general-research
-    - source-coverage
-  metrics:
-    - source-quality
-    - finding-relevance
-  change_log: agents/general-researcher.agent.md
 
 operations:
   core_operation_skeleton:

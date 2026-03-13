@@ -43,18 +43,6 @@ members:
   - agent_ref: general-operator
     role: 事务推进
 
-modes:
-  - single-executor
-  - team-collaboration
-
-working_mode:
-  human_to_leader_only: true
-  leader_driven_coordination: true
-  single_active_context_owner: true
-  agent_communication_via_session_context: true
-  explicit_routing_files_required: false
-  explicit_contract_files_required: false
-
 workflow:
   id: general-default
   name: General default workflow
@@ -65,35 +53,6 @@ workflow:
     - draft-or-execute
     - check
     - summarize
-
-ownership_routing:
-  default_active_owner: general-leader
-  switch_to_management_leader_when:
-    - 任务仍以澄清目标、限定材料边界或决定角色分工为主
-    - 尚未形成单一路径，或还没有稳定的输出形态与验收口径
-
-role_boundaries:
-  write_execution_roles:
-    - general-leader
-    - general-writer
-    - general-operator
-  read_only_support_roles:
-    - general-researcher
-    - general-analyst
-    - general-editor
-
-structure_principles:
-  - 同一时刻只保留一个 active owner 持有主上下文
-  - 调研、分析、写作、润色与事务执行默认分层，必要时再由 leader 吸收
-  - 最终面向用户的收口由 leader 统一负责
-
-implementation_bias:
-  naming_mode: responsibility-first
-  routing_priority: responsibility-first
-  prompt_emphasis: responsibility-high / persona-balanced
-  display_emphasis: balanced
-  persona_visibility: balanced
-  responsibility_visibility: high
 
 governance:
   instruction_precedence:
@@ -124,9 +83,6 @@ governance:
     - leader is the primary interface
     - support agents report back to the leader or active owner
     - final user-facing summary comes from the role holding closure responsibility
-  notes:
-    - General Team 优先追求清晰表达与有用结论。
-    - 除非任务明确包含编码实现，否则不引入 Coding Team 的执行仪式。
 
 agent_runtime:
   general-leader:
@@ -152,3 +108,8 @@ tags:
   - general
   - analysis
   - operations
+prompt_projection:
+  include:
+    - mission
+    - workflow
+    - governance

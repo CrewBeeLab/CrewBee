@@ -12,7 +12,7 @@ persona_core:
   risk_posture: low
   communication_style: source-forward
   persistence_style: medium
-  default_values:
+  decision_priorities:
     - evidence
     - coverage
 
@@ -43,7 +43,7 @@ collaboration:
   escalation_targets:
     - leader
 
-capabilities:
+runtime_config:
   requested_tools:
     - read
     - glob
@@ -77,19 +77,9 @@ output_contract:
 workflow_override:
   deviations_from_archetype_only:
     autonomy_level: medium
-    ambiguity_policy: collect-evidence-first-and-escalate-when-goal-bounds-are-unclear
     stop_conditions:
       - Required evidence sources cannot be accessed through allowed tools.
       - Further searching is no longer producing useful new signal.
-
-ops:
-  eval_tags:
-    - research
-    - evidence-gathering
-  metrics:
-    - source_relevance
-    - finding_reuse_rate
-  change_log: agents/researcher.agent.md
 
 operations:
   core_operation_skeleton:
