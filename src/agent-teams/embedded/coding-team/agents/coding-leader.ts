@@ -99,12 +99,6 @@ export function createCodingLeaderAgent(): AgentProfileSpec {
       ],
       defaultHandoffs: [
         binding("coding-executor", "边界清晰、无需复杂编排的叶子实现、修复、调试与局部重构"),
-        binding("task-orchestrator", "大型计划、多波次任务或统一 QA 编排"),
-      ],
-      escalationTargets: [
-        binding("principal-advisor", "高代价、高不确定性或多轮失败后的升级咨询"),
-        binding("coordination-leader", "当任务仍处于高模糊、多子任务、范围收束优先阶段时，可转为其主导开局"),
-        binding("user", "真实互斥需求、审批边界或穷尽探索后仍缺关键事实时升级"),
       ],
     },
     runtimeConfig: {

@@ -86,7 +86,6 @@ export function createCodingExecutorAgent(): AgentProfileSpec {
           binding("web-researcher", "在线研究者"),
         ],
         defaultHandoffs: [],
-        escalationTargets: [binding("user", "用户")],
       },
       runtimeConfig: {
         requestedTools: ["read", "glob", "grep", "skill", "edit", "write", "bash", "todowrite", "lsp_diagnostics"],

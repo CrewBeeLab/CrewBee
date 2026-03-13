@@ -95,11 +95,6 @@ export function createCoordinationLeaderAgent(): AgentProfileSpec {
       ],
       defaultHandoffs: [
         binding("coding-executor", "边界清晰或已收束的实现、修复、调试与局部重构执行者"),
-        binding("task-orchestrator", "大型计划、多波次任务或统一 QA 编排"),
-      ],
-      escalationTargets: [
-        binding("principal-advisor", "高代价、不确定性高或多轮失败后的升级咨询"),
-        binding("user", "需求互斥、审批边界或关键事实穷尽探索后仍不可得时升级"),
       ],
     },
     runtimeConfig: {

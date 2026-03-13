@@ -96,10 +96,6 @@ export function createReviewerAgent(): AgentProfileSpec {
         binding("multimodal-looker", "图表、PDF、截图、界面与架构图解读"),
       ],
       defaultHandoffs: [],
-      escalationTargets: [
-        binding("principal-advisor", "当阻塞问题涉及高代价架构或复杂技术判断时升级咨询"),
-        binding("user", "当关键验收标准或目标本身存在实质冲突且无法靠上下文判断时升级"),
-      ],
     },
     runtimeConfig: {
       requestedTools: ["read", "glob", "grep", "task"],
