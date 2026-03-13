@@ -43,21 +43,48 @@ export function createEmbeddedCodingTeam(): AgentTeamDefinition {
         "对实现、评审、验证与最终汇报负责",
       ],
     },
-    members: [
-      {
-        agentRef: "coordination-leader",
-        role: "第二 Leader 风格；用于高模糊、多子任务、范围收束优先的开局；执行工作委托给 coding-executor",
+    members: {
+      "coding-leader": {
+        responsibility: "默认主执行 owner；持有主上下文，推进从定位、实现到评审、验证和收口。",
+        delegateWhen: "绝大多数中高复杂度 coding 任务；尤其是多文件、跨模块、需要上下文连续性和最终闭环时。",
+        delegateMode: "设为当前 active owner；主链路自己推进，只分出专项研究、叶子实现、评审和顾问咨询，最后统一验证与对外汇报。",
       },
-      {
-        agentRef: "coding-executor",
-        role: "纯执行叶子角色；用于边界清晰、无需复杂编排的实现、修复、调试与局部重构",
+      "coordination-leader": {
+        responsibility: "管理型开局 owner；负责澄清意图、收束范围、形成路径、拆任务和调度协作。",
+        delegateWhen: "需求高模糊、多约束、多子任务，或需要先确定范围、计划、交接和验证策略时。",
+        delegateMode: "先切给它做开局 owner；让它组织探索与调研，形成单一路径后把实现统一交给 coding-executor，自己负责收口。",
       },
-      { agentRef: "codebase-explorer", role: "仓库内代码定位、调用链、模式与历史线索探索" },
-      { agentRef: "web-researcher", role: "外部文档、开源实现、版本与历史研究" },
-      { agentRef: "reviewer", role: "独立评审与质量刹车" },
-      { agentRef: "principal-advisor", role: "高风险架构、安全、性能与复杂技术决策顾问" },
-      { agentRef: "multimodal-looker", role: "多模态材料解读与定向提取" },
-    ],
+      "coding-executor": {
+        responsibility: "纯执行叶子角色；负责明确实现、修复、调试、局部重构和自验证。",
+        delegateWhen: "目标、范围、相关文件或入口、验收口径已经足够清晰，需要专注做完而不是再规划时。",
+        delegateMode: "叶子实现委派；必须写清目标、范围、相关上下文、禁止项和验证标准；不要求它再做路由判断，也不允许它继续委派实现。",
+      },
+      "codebase-explorer": {
+        responsibility: "仓库内只读定位者；负责找实现位置、调用链、入口、模式和历史线索。",
+        delegateWhen: "需要回答“在哪里实现 / 哪里调用 / 哪些文件相关 / 调用链是什么”这类仓库内定位问题时。",
+        delegateMode: "只读咨询式委派；给明确定位目标，要求返回绝对路径、关键链路、相关模式和可继续执行的下一步。",
+      },
+      "web-researcher": {
+        responsibility: "外部只读研究者；负责查官方文档、开源源码、版本差异、issues / PRs / releases 等外部证据。",
+        delegateWhen: "问题涉及外部库、框架、API 行为、版本变化、最佳实践或开源实现依据时。",
+        delegateMode: "只读咨询式委派；给明确研究问题和版本上下文，要求返回结论、证据链接和关键源码 / 永久链接，不让它写代码。",
+      },
+      reviewer: {
+        responsibility: "独立评审者；负责判断计划、实现结果或完成声明是否足够可靠继续推进或宣告完成。",
+        delegateWhen: "非琐碎任务在进入执行前、实现完成后、或对外宣称完成前，需要独立质量刹车时。",
+        delegateMode: "评审式委派；提交 Plan / Implementation / Completion 及关键证据，只要求它给 OKAY / REJECT 和最多 3 个阻塞项。",
+      },
+      "principal-advisor": {
+        responsibility: "高阶只读顾问；负责复杂架构、安全、性能、复杂度和多路径取舍问题的主判断。",
+        delegateWhen: "高代价决策、陌生模式、多轮失败、系统级风险，或需要一条明确主建议而不是平铺选项时。",
+        delegateMode: "高阶咨询式委派；给当前代码上下文、问题、候选路径或风险点，要求返回一条主建议、最短行动路径和工作量估计。",
+      },
+      "multimodal-looker": {
+        responsibility: "多模态只读解读者；负责从 PDF、截图、图表、界面图、架构图中提取所需信息。",
+        delegateWhen: "普通文本读取不够，或需要从媒体材料提取文本、表格、数据、布局或结构关系时。",
+        delegateMode: "提取式委派；给清提取目标、文件范围和输出口径，要求只返回相关内容、关系和缺失项。",
+      },
+    },
     workflow: {
       id: "coding-default",
       name: "Coding default workflow",

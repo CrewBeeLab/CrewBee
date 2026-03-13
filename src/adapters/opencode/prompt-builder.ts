@@ -2,6 +2,7 @@ import type {
   AgentProfileSpec,
   AgentTeamDefinition,
   CollaborationBindingInput,
+  TeamMemberGuidance,
   TeamManifest,
 } from "../../core";
 
@@ -82,6 +83,63 @@ function renderBindings(bindings: readonly CollaborationBindingInput[]): string[
   return bulletList(bindings.map(renderBinding));
 }
 
+function renderMemberGuidance(agentRef: string, member: TeamMemberGuidance): string {
+  const parts = [
+    `agent_ref=${agentRef}`,
+    `responsibility=${member.responsibility}`,
+  ];
+
+  if (present(member.delegateWhen)) {
+    parts.push(`delegate_when=${member.delegateWhen}`);
+  }
+
+  if (present(member.delegateMode)) {
+    parts.push(`delegate_mode=${member.delegateMode}`);
+  }
+
+  return parts.join("; ");
+}
+
+function renderLeaderGuidance(manifest: TeamManifest): string {
+  return [
+    `agent_ref=${manifest.leader.agentRef}`,
+    `responsibility=${manifest.leader.responsibilities.join(" / ")}`,
+  ].join("; ");
+}
+
+function getBindingAgentRef(binding: CollaborationBindingInput): string {
+  return typeof binding === "string" ? binding : binding.agentRef;
+}
+
+function renderGuidanceBinding(manifest: TeamManifest, binding: CollaborationBindingInput): string | undefined {
+  const agentRef = getBindingAgentRef(binding);
+  const parts = [
+    manifest.members[agentRef]
+      ? renderMemberGuidance(agentRef, manifest.members[agentRef])
+      : agentRef === manifest.leader.agentRef
+        ? renderLeaderGuidance(manifest)
+        : undefined,
+  ].filter((value): value is string => Boolean(value));
+
+  if (parts.length === 0) {
+    return undefined;
+  }
+
+  if (typeof binding !== "string" && present(binding.description)) {
+    parts.push(`collaboration_goal=${binding.description}`);
+  }
+
+  return parts.join("; ");
+}
+
+function renderGuidanceBindings(manifest: TeamManifest, bindings: readonly CollaborationBindingInput[]): string[] {
+  return bulletList(
+    bindings
+      .map((binding) => renderGuidanceBinding(manifest, binding))
+      .filter((value): value is string => Boolean(value)),
+  );
+}
+
 function createPromptHeader(agent: ProjectedAgent): string[] {
   return [
     `host.surface_label: ${agent.surfaceLabel}`,
@@ -126,7 +184,9 @@ function renderTeamField(manifest: TeamManifest, field: (typeof TEAM_FIELD_ORDER
     case "members":
       return fieldBlock(
         "team.members",
-        bulletList(manifest.members.map((member) => `agent_ref=${member.agentRef}; role=${member.role}`)),
+        bulletList(
+          Object.entries(manifest.members).map(([agentRef, member]) => renderMemberGuidance(agentRef, member)),
+        ),
       );
     case "workflow":
       return fieldBlock("team.workflow", [
@@ -209,7 +269,6 @@ function renderAgentField(agent: AgentProfileSpec, field: (typeof AGENT_FIELD_OR
       return fieldBlock("agent.collaboration", [
         ...nestedBlock("default_consults", renderBindings(agent.collaboration.defaultConsults)),
         ...nestedBlock("default_handoffs", renderBindings(agent.collaboration.defaultHandoffs)),
-        ...nestedBlock("escalation_targets", renderBindings(agent.collaboration.escalationTargets)),
       ]);
     case "workflow_override": {
       const override = agent.workflowOverride?.deviationsFromArchetypeOnly;
@@ -281,6 +340,19 @@ function createAgentBlocks(agent: AgentProfileSpec): string[][] {
     .map((field) => renderAgentField(agent, field));
 }
 
+function createCollaborationGuidanceBlock(agent: ProjectedAgent): string[] {
+  return fieldBlock("agent.collaboration_guidance", [
+    ...nestedBlock(
+      "consult_targets",
+      renderGuidanceBindings(agent.sourceTeam.manifest, agent.sourceAgent.collaboration.defaultConsults),
+    ),
+    ...nestedBlock(
+      "handoff_targets",
+      renderGuidanceBindings(agent.sourceTeam.manifest, agent.sourceAgent.collaboration.defaultHandoffs),
+    ),
+  ]);
+}
+
 function joinBlocks(blocks: string[][]): string {
   return blocks
     .filter((block) => block.length > 0)
@@ -293,5 +365,6 @@ export function createOpenCodeAgentPrompt(agent: ProjectedAgent, _requestedTools
     createPromptHeader(agent),
     ...createTeamBlocks(agent.sourceTeam),
     ...createAgentBlocks(agent.sourceAgent),
+    createCollaborationGuidanceBlock(agent),
   ]);
 }
