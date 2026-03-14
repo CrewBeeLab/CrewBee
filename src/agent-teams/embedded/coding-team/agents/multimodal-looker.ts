@@ -82,22 +82,18 @@ export function createMultimodalLookerAgent(): AgentProfileSpec {
         instructions: ["team-governance", "repo-policy"],
         mcpServers: [],
       },
-      workflowOverride: {
-        deviationsFromArchetypeOnly: {
-          autonomyLevel: "高自治、只读式解读",
-          stopConditions: [
-            "已提取出请求要求的关键信息",
-            "已明确标出未找到、不可读或不确定的部分",
-            "输出已足够让主代理继续，而无需再读取原始文件",
-          ],
-        },
-      },
       outputContract: {
         tone: "直接、简洁、提取导向",
         defaultFormat: "默认直接给提取结果；必要时分为“已提取内容 / 结构或关系 / 缺失项”",
         updatePolicy: "默认一次性给出完整提取；仅在目标不清或文件不可读时做最小补充说明",
       },
       operations: {
+        autonomyLevel: "高自治、只读式解读",
+        stopConditions: [
+          "已提取出请求要求的关键信息",
+          "已明确标出未找到、不可读或不确定的部分",
+          "输出已足够让主代理继续，而无需再读取原始文件",
+        ],
         coreOperationSkeleton: [
           "先确定提取目标。",
           "深入阅读文件中与目标直接相关的部分。",

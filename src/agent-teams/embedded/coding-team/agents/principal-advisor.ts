@@ -111,22 +111,18 @@ export function createPrincipalAdvisorAgent(): AgentProfileSpec {
         instructions: ["team-governance", "repo-policy"],
         mcpServers: [],
       },
-      workflowOverride: {
-        deviationsFromArchetypeOnly: {
-          autonomyLevel: "高自治、只读式咨询；优先利用现有上下文，必要时再补充检索",
-          stopConditions: [
-            "已形成基于上下文的主要建议、行动计划与工作量估计",
-            "关键信息缺失，且继续回答会显著影响建议正确性",
-            "已明确给出升级触发条件与边界，不需要进一步展开",
-          ],
-        },
-      },
       outputContract: {
         tone: "简洁、直接、务实、可执行",
         defaultFormat: "结论 + 行动计划 + 工作量估计；必要时补充为何采用此方法、注意事项和升级触发条件；结论控制在 2-3 句，行动计划不超过 7 步",
         updatePolicy: "默认一次性给出可独立理解的完整答复；仅在信息不足或歧义显著时提出最少量澄清",
       },
       operations: {
+        autonomyLevel: "高自治、只读式咨询；优先利用现有上下文，必要时再补充检索",
+        stopConditions: [
+          "已形成基于上下文的主要建议、行动计划与工作量估计",
+          "关键信息缺失，且继续回答会显著影响建议正确性",
+          "已明确给出升级触发条件与边界，不需要进一步展开",
+        ],
         coreOperationSkeleton: [
           "先判断问题是否真的需要高层咨询；简单问题不展开。",
           "基于已给上下文先做主判断，优先锚定到具体模块、文件、类、函数或配置。",

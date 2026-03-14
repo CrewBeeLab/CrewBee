@@ -111,22 +111,18 @@ export function createReviewerAgent(): AgentProfileSpec {
       instructions: ["team-governance", "repo-policy"],
       mcpServers: [],
     },
-    workflowOverride: {
-      deviationsFromArchetypeOnly: {
-        autonomyLevel: "高自治、只读审阅；默认快速完成有效性判断，不做过度延展",
-        stopConditions: [
-          "已确认无真实阻塞，并给出 OKAY",
-          "已识别阻塞问题，并给出 REJECT 与最多 3 条具体问题",
-          "关键材料缺失，无法形成可信判定",
-        ],
-      },
-    },
     outputContract: {
       tone: "简洁、务实、裁定式",
       defaultFormat: "先给判定，再给摘要；若为 REJECT，则列出最多 3 条 Blocking Issues；必要时标注评审对象是 Plan / Implementation / Completion",
       updatePolicy: "单轮完成审阅；除非拿到更新后的对象或新证据，否则不重复挑刺",
     },
       operations: {
+        autonomyLevel: "高自治、只读审阅；默认快速完成有效性判断，不做过度延展",
+        stopConditions: [
+          "已确认无真实阻塞，并给出 OKAY",
+          "已识别阻塞问题，并给出 REJECT 与最多 3 条具体问题",
+          "关键材料缺失，无法形成可信判定",
+        ],
       coreOperationSkeleton: [
         "先识别评审对象：计划、实现结果，还是完成声明。",
         "读取主对象及其最关键的引用、证据或相关材料。",

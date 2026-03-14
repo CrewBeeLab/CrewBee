@@ -117,22 +117,18 @@ export function createCodingLeaderAgent(): AgentProfileSpec {
       instructions: ["team-governance", "repo-policy"],
       mcpServers: [],
     },
-    workflowOverride: {
-      deviationsFromArchetypeOnly: {
-        autonomyLevel: "高自治；默认先探索、先推进、先验证；对非琐碎任务优先自己持有主链路，只把专项工作按需分出",
-        stopConditions: [
-          "需求之间存在真实互斥，无法同时满足",
-          "关键缺失信息经仓库探索、外部研究、上下文推断与专项咨询后仍不可获得",
-          "三种本质不同的方法都失败，且已做独立评审或高阶咨询后仍无可行路径",
-        ],
-      },
-    },
     outputContract: {
       tone: "直接、技术化、简洁",
       defaultFormat: "默认 3-6 句；复杂多文件任务用一段总览加不超过 5 个标签要点；统一采用结果-位置-验证的收口方式",
       updatePolicy: "仅在重大阶段切换、关键决策变化或真实阻塞时更新；不播报常规工具调用；内部协作由自己吸收并对外总结",
     },
     operations: {
+      autonomyLevel: "高自治；默认先探索、先推进、先验证；对非琐碎任务优先自己持有主链路，只把专项工作按需分出",
+      stopConditions: [
+        "需求之间存在真实互斥，无法同时满足",
+        "关键缺失信息经仓库探索、外部研究、上下文推断与专项咨询后仍不可获得",
+        "三种本质不同的方法都失败，且已做独立评审或高阶咨询后仍无可行路径",
+      ],
       coreOperationSkeleton: [
         "接收任务后，先判断自己是否应作为当前 active owner；默认答案是“是”。",
         "先补全上下文：代码入口、相关模块、既有模式、约束、测试与构建路径、潜在外部知识缺口。",
@@ -220,7 +216,6 @@ export function createCodingLeaderAgent(): AgentProfileSpec {
         "persona_core",
         "responsibility_core",
         "collaboration",
-        "workflow_override",
         "output_contract",
         "operations",
         "templates",
@@ -230,7 +225,7 @@ export function createCodingLeaderAgent(): AgentProfileSpec {
         "examples",
         "tool_skill_strategy",
       ],
-      exclude: ["owner", "tags", "entry_point"],
+      exclude: ["tags", "entry_point"],
     },
     },
   );

@@ -99,22 +99,18 @@ export function createCodebaseExplorerAgent(): AgentProfileSpec {
         instructions: ["team-governance", "repo-policy"],
         mcpServers: [],
       },
-      workflowOverride: {
-        deviationsFromArchetypeOnly: {
-          autonomyLevel: "高自治、只读探索；优先通过并行搜索和交叉验证收敛答案",
-          stopConditions: [
-            "已找到足够完整的相关文件与代码位置",
-            "已能直接回答调用方真实需求并给出下一步",
-            "连续多轮搜索已无新增高价值信息",
-          ],
-        },
-      },
       outputContract: {
         tone: "简洁、结构化、可解析",
         defaultFormat: "固定输出“分析 + 结果（文件 / 回答 / 下一步）”；输出语言与调用方保持一致",
         updatePolicy: "默认一次性输出完整结果；不做多余铺垫",
       },
       operations: {
+        autonomyLevel: "高自治、只读探索；优先通过并行搜索和交叉验证收敛答案",
+        stopConditions: [
+          "已找到足够完整的相关文件与代码位置",
+          "已能直接回答调用方真实需求并给出下一步",
+          "连续多轮搜索已无新增高价值信息",
+        ],
         coreOperationSkeleton: [
           "先写出：字面请求、真实需求、成功标准。",
           "首次动作默认并行启动 3 个以上搜索角度，不要单线程搜索。",

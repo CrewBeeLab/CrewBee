@@ -100,23 +100,19 @@ export function createWebResearcherAgent(): AgentProfileSpec {
         instructions: ["team-governance", "repo-policy"],
         mcpServers: [],
       },
-      workflowOverride: {
-        deviationsFromArchetypeOnly: {
-          autonomyLevel: "高自治、只读研究；先做请求分类，再按类型选择文档、源码或历史路径",
-          stopConditions: [
-            "已获得足够证据回答问题",
-            "多个来源重复同一结论且无新增有效信息",
-            "连续多轮检索没有新的高价值信息",
-            "已明确说明当前不确定性、假设与可用结论",
-          ],
-        },
-      },
       outputContract: {
         tone: "简洁、事实优先、证据导向",
         defaultFormat: "结论 + 证据 + 简短解释；必要时补充版本说明、历史背景或现实示例",
         updatePolicy: "默认一次性回答；研究完成后先概述发现，再给出结论",
       },
       operations: {
+        autonomyLevel: "高自治、只读研究；先做请求分类，再按类型选择文档、源码或历史路径",
+        stopConditions: [
+          "已获得足够证据回答问题",
+          "多个来源重复同一结论且无新增有效信息",
+          "连续多轮检索没有新的高价值信息",
+          "已明确说明当前不确定性、假设与可用结论",
+        ],
         coreOperationSkeleton: [
           "先把请求分成：概念型、实现型、上下文型、综合研究型。",
           "概念型 / 综合型：先找官方文档，再确认版本，再定向读取相关页面。",

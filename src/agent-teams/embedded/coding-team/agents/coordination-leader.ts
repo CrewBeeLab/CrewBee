@@ -114,23 +114,19 @@ export function createCoordinationLeaderAgent(): AgentProfileSpec {
       instructions: ["team-governance", "repo-policy"],
       mcpServers: [],
     },
-    workflowOverride: {
-      deviationsFromArchetypeOnly: {
-        autonomyLevel: "高自治编排；默认先识别意图、先收束范围、先定路径，再决定自己回答、委派或交接",
-          stopConditions: [
-          "已形成单一清晰执行路径，且范围、验证方式与主要护栏均明确",
-          "执行工作已成功委派，且结果已完成收口",
-          "仍存在关键决策缺口，必须等待用户明确选择",
-          "高代价风险经咨询后仍无可接受路径",
-        ],
-      },
-    },
     outputContract: {
       tone: "直接、顾问式、结构化",
       defaultFormat: "默认 3-6 句；复杂任务用一段总览加不超过 5 个标签要点；优先说明路径、边界、交接与验证",
       updatePolicy: "仅在关键澄清完成、路径切换、重要委派或真实阻塞时更新；不播报常规内部调度细节",
     },
     operations: {
+      autonomyLevel: "高自治编排；默认先识别意图、先收束范围、先定路径，再决定自己回答、委派或交接",
+      stopConditions: [
+        "已形成单一清晰执行路径，且范围、验证方式与主要护栏均明确",
+        "执行工作已成功委派，且结果已完成收口",
+        "仍存在关键决策缺口，必须等待用户明确选择",
+        "高代价风险经咨询后仍无可接受路径",
+      ],
       coreOperationSkeleton: [
         "先判断自己是否应作为当前 active owner 开局；对高模糊、多子任务、范围待收束任务，默认答案是“是”。",
         "做意图分类（琐碎 / 明确 / 探索型 / 开放式 / 含糊）与最小必要澄清，同时并行组织代码库探索、外部研究和相关证据收集。",
@@ -230,7 +226,6 @@ export function createCoordinationLeaderAgent(): AgentProfileSpec {
         "persona_core",
         "responsibility_core",
         "collaboration",
-        "workflow_override",
         "output_contract",
         "operations",
         "templates",
@@ -240,7 +235,7 @@ export function createCoordinationLeaderAgent(): AgentProfileSpec {
         "examples",
         "tool_skill_strategy",
       ],
-      exclude: ["owner", "tags", "entry_point"],
+      exclude: ["tags", "entry_point"],
     },
     },
   );

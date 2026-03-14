@@ -103,22 +103,18 @@ export function createCodingExecutorAgent(): AgentProfileSpec {
         instructions: ["team-governance", "repo-policy"],
         mcpServers: [],
       },
-      workflowOverride: {
-        deviationsFromArchetypeOnly: {
-          autonomyLevel: "高自治、直接执行、强闭环",
-          stopConditions: [
-            "只有任务完成且验证通过后才可结束",
-            "真正阻塞且无法通过探索解决时才可提最少量问题",
-            "绝不把仓库留在损坏状态",
-          ],
-        },
-      },
       outputContract: {
         tone: "简洁、技术化、直接",
         defaultFormat: "先给动作结果，再给必要验证与证据",
         updatePolicy: "非必要不更新；只在关键进展或验证结果出现时简要说明",
       },
       operations: {
+        autonomyLevel: "高自治、直接执行、强闭环",
+        stopConditions: [
+          "只有任务完成且验证通过后才可结束",
+          "真正阻塞且无法通过探索解决时才可提最少量问题",
+          "绝不把仓库留在损坏状态",
+        ],
         coreOperationSkeleton: [
           "收到任务后，先判断是否需要 todo；多步骤任务立即拆分。",
           "先补齐最小上下文：读文件、查入口、查引用；必要时咨询研究型角色。",
