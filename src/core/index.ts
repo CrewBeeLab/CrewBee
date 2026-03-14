@@ -116,7 +116,6 @@ export interface CollaborationBinding {
   agentRef: string;
   description: string;
   runtimeConfig?: Partial<AgentRuntimeConfig>;
-  workflowOverride?: WorkflowOverride;
   outputContract?: OutputContract;
 }
 
@@ -145,13 +144,6 @@ export interface AgentRuntimeConfig {
   mcpServers?: string[];
 }
 
-export interface WorkflowOverride {
-  deviationsFromArchetypeOnly: {
-    autonomyLevel?: string;
-    stopConditions?: string[];
-  };
-}
-
 export interface OutputContract {
   tone: string;
   defaultFormat: string;
@@ -164,6 +156,8 @@ export interface AgentExamples {
 }
 
 export interface MinimalOperations {
+  autonomyLevel?: string;
+  stopConditions?: string[];
   coreOperationSkeleton?: string[];
 }
 
@@ -210,7 +204,6 @@ export interface AgentProfileSpec {
   responsibilityCore: ResponsibilityCore;
   collaboration: CollaborationSpec;
   runtimeConfig: AgentRuntimeConfig;
-  workflowOverride?: WorkflowOverride;
   outputContract: OutputContract;
   operations?: MinimalOperations;
   templates?: MinimalTemplates;

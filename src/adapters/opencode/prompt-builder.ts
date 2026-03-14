@@ -14,11 +14,10 @@ import {
 import type { ProjectedAgent } from "../../runtime";
 
 const TEAM_SECTION_TITLES = {
-  context: "Context",
   mission: "Mission",
-  scope: "Scope",
-  workflow: "Workflow",
-  governance: "Governance",
+  workingRules: "Working Rules",
+  approvalSafety: "Approval & Safety",
+  requiredChecks: "Required Checks",
 } as const;
 
 const AGENT_SECTION_TITLES = {
@@ -28,7 +27,6 @@ const AGENT_SECTION_TITLES = {
   boundaries: "Boundaries",
   workingStyle: "Working Style",
   collaboration: "Collaboration",
-  workflow: "Workflow",
   operatingProcedure: "Operating Procedure",
   output: "Output",
   toolSkillStrategy: "Tool & Skill Strategy",
@@ -37,7 +35,6 @@ const AGENT_SECTION_TITLES = {
   heuristics: "Heuristics",
   antiPatterns: "Anti-patterns",
   examples: "Examples",
-  entryPoint: "Entry Point",
 } as const;
 
 type TeamSectionKey = keyof typeof TEAM_SECTION_TITLES;
@@ -205,40 +202,16 @@ function renderTeamField(
   const team = ctx.team;
 
   switch (field) {
-    case "description":
-      acc.addBullet("context", team.description);
-      return;
     case "mission":
       acc.addKeyValue("mission", "Objective", team.mission.objective);
       acc.addList("mission", "Success definition", team.mission.successDefinition);
       return;
-    case "scope":
-      acc.addList("scope", "In scope", team.scope.inScope);
-      acc.addList("scope", "Out of scope", team.scope.outOfScope);
-      return;
-    case "workflow":
-      acc.addList("workflow", "Stages", team.workflow.stages);
-      return;
     case "governance":
-      acc.addList("governance", "Instruction precedence", team.governance.instructionPrecedence);
-      acc.addList("governance", "Approval required for", team.governance.approvalPolicy.requiredFor);
-      acc.addList("governance", "Allow assume for", team.governance.approvalPolicy.allowAssumeFor);
-      acc.addList("governance", "Forbidden actions", team.governance.forbiddenActions);
-      acc.addList("governance", "Required checks", team.governance.qualityFloor.requiredChecks);
-      acc.addKeyValue("governance", "Evidence required", team.governance.qualityFloor.evidenceRequired);
-      acc.addList("governance", "Working rules", team.governance.workingRules);
-      return;
-    case "id":
-      acc.addKeyValue("context", "Team ID", team.id);
-      return;
-    case "name":
-      acc.addKeyValue("context", "Team name", team.name);
-      return;
-    case "version":
-      acc.addKeyValue("context", "Team version", team.version);
-      return;
-    case "tags":
-      acc.addList("context", "Team tags", team.tags);
+      acc.addList("workingRules", "Working rules", team.governance.workingRules);
+      acc.addList("approvalSafety", "Approval required for", team.governance.approvalPolicy.requiredFor);
+      acc.addList("approvalSafety", "Forbidden actions", team.governance.forbiddenActions);
+      acc.addList("requiredChecks", "Required checks", team.governance.qualityFloor.requiredChecks);
+      acc.addKeyValue("requiredChecks", "Evidence required", team.governance.qualityFloor.evidenceRequired);
       return;
   }
 }
@@ -283,18 +256,14 @@ function renderAgentField(
         agent.collaboration.defaultHandoffs.map((binding) => ctx.renderBindingWithGuidance(binding)),
       );
       return;
-    case "workflow_override": {
-      const override = agent.workflowOverride?.deviationsFromArchetypeOnly;
-      acc.addKeyValue("workflow", "Autonomy level", override?.autonomyLevel);
-      acc.addList("workflow", "Stop conditions", override?.stopConditions);
-      return;
-    }
     case "output_contract":
       acc.addKeyValue("output", "Tone", agent.outputContract.tone);
       acc.addKeyValue("output", "Default format", agent.outputContract.defaultFormat);
       acc.addKeyValue("output", "Update policy", agent.outputContract.updatePolicy);
       return;
     case "operations":
+      acc.addKeyValue("operatingProcedure", "Autonomy level", agent.operations?.autonomyLevel);
+      acc.addList("operatingProcedure", "Stop conditions", agent.operations?.stopConditions);
       acc.addList("operatingProcedure", "Core operation skeleton", agent.operations?.coreOperationSkeleton);
       return;
     case "templates":
@@ -322,9 +291,9 @@ function renderAgentField(
       acc.addList("toolSkillStrategy", "Notes", agent.toolSkillStrategy?.notes);
       return;
     case "entry_point":
-      acc.addKeyValue("entryPoint", "Exposure", agent.entryPoint?.exposure);
-      acc.addKeyValue("entryPoint", "Selection label", agent.entryPoint?.selectionLabel);
-      acc.addKeyValue("entryPoint", "Selection description", agent.entryPoint?.selectionDescription);
+      acc.addKeyValue("role", "Exposure", agent.entryPoint?.exposure);
+      acc.addKeyValue("role", "Selection label", agent.entryPoint?.selectionLabel);
+      acc.addKeyValue("role", "Selection description", agent.entryPoint?.selectionDescription);
       return;
     case "id":
       acc.addKeyValue("role", "Agent ID", agent.metadata.id);

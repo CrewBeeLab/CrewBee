@@ -9,22 +9,14 @@ function unique(values: readonly string[]): string[] {
 }
 
 export const TEAM_PROJECTABLE_FIELDS = [
-  "description",
   "mission",
-  "scope",
-  "workflow",
   "governance",
-  "id",
-  "name",
-  "version",
-  "tags",
 ] as const;
 
 export const AGENT_PROJECTABLE_FIELDS = [
   "responsibility_core",
   "persona_core",
   "collaboration",
-  "workflow_override",
   "output_contract",
   "operations",
   "templates",

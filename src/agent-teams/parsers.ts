@@ -19,7 +19,6 @@ import type {
   TeamMemberMap,
   TeamAgentRuntimeMap,
   ToolSkillStrategySpec,
-  WorkflowOverride,
 } from "../core";
 import {
   normalizeAgentPromptProjection,
@@ -171,11 +170,20 @@ function rejectRemovedWorkflowFields(workflow: UnknownRecord | undefined, filePa
 }
 
 function rejectRemovedAgentProfileFields(data: UnknownRecord, filePath: string): void {
-  const removedFields = ["role_boundary", "roleBoundary"];
+  const removedFields = [
+    "role_boundary",
+    "roleBoundary",
+    "workflow_override",
+    "workflowOverride",
+    "autonomy_level",
+    "autonomyLevel",
+    "stop_conditions",
+    "stopConditions",
+  ];
 
   for (const field of removedFields) {
     if (data[field] !== undefined) {
-      throw new Error(`${filePath} no longer supports agent profile field '${field}'. Remove stale role boundary metadata from the agent profile.`);
+      throw new Error(`${filePath} no longer supports agent profile field '${field}'. Remove legacy agent-structure fields from the profile.`);
     }
   }
 }
@@ -310,28 +318,6 @@ function mapRuntimeConfig(raw: UnknownRecord | undefined): AgentRuntimeConfig | 
   };
 }
 
-function mapWorkflowOverride(raw: UnknownRecord | undefined): WorkflowOverride | undefined {
-  if (!raw) {
-    return undefined;
-  }
-
-  const deviations = asOptionalRecord(raw.deviations_from_archetype_only ?? raw.deviationsFromArchetypeOnly);
-
-  if (!deviations) {
-    return undefined;
-  }
-
-  return {
-    deviationsFromArchetypeOnly: {
-      autonomyLevel: asOptionalString(deviations.autonomy_level ?? deviations.autonomyLevel),
-      stopConditions:
-        deviations.stop_conditions ?? deviations.stopConditions
-          ? asStringArray(deviations.stop_conditions ?? deviations.stopConditions, "stop_conditions")
-          : undefined,
-    },
-  };
-}
-
 function mapOutputContract(raw: UnknownRecord | undefined): OutputContract | undefined {
   if (!raw) {
     return undefined;
@@ -357,7 +343,6 @@ function mapCollaborationBinding(entry: unknown): CollaborationBindingInput {
     runtimeConfig: mapRuntimeConfig(
       asOptionalRecord(record.runtime_config ?? record.runtimeConfig ?? record.capabilities),
     ),
-    workflowOverride: mapWorkflowOverride(asOptionalRecord(record.workflow_override ?? record.workflowOverride)),
     outputContract: mapOutputContract(asOptionalRecord(record.output_contract ?? record.outputContract)),
   };
 }
@@ -381,15 +366,20 @@ function mapMinimalOperations(raw: UnknownRecord | undefined, body: string): Min
   const bodySection = extractSection(body, "Minimal Operations");
   const bodySkeleton = extractNumbered(extractSubsection(bodySection ?? "", "Core Operation Skeleton"));
   const frontmatterSkeleton = raw?.core_operation_skeleton ?? raw?.coreOperationSkeleton;
+  const autonomyLevel = asOptionalString(raw?.autonomy_level ?? raw?.autonomyLevel);
+  const stopConditions =
+    raw?.stop_conditions ?? raw?.stopConditions
+      ? asStringArray(raw.stop_conditions ?? raw.stopConditions, "operations.stop_conditions")
+      : undefined;
   const coreOperationSkeleton = frontmatterSkeleton
     ? asStringArray(frontmatterSkeleton, "core_operation_skeleton")
     : bodySkeleton;
 
-  if (coreOperationSkeleton.length === 0) {
+  if (!autonomyLevel && !stopConditions && coreOperationSkeleton.length === 0) {
     return undefined;
   }
 
-  return { coreOperationSkeleton };
+  return { autonomyLevel, stopConditions, coreOperationSkeleton };
 }
 
 function mapMinimalTemplates(raw: UnknownRecord | undefined, body: string): MinimalTemplates | undefined {
@@ -549,7 +539,6 @@ export function mapAgentProfile(filePath: string): AgentProfileSpec {
     },
     collaboration: mapCollaboration(collaboration),
     runtimeConfig: mapRuntimeConfig(runtimeConfig) as AgentRuntimeConfig,
-    workflowOverride: mapWorkflowOverride(asOptionalRecord(data.workflow_override ?? data.workflowOverride)),
     outputContract: mapOutputContract(asOptionalRecord(data.output_contract ?? data.outputContract)) as OutputContract,
     operations: mapMinimalOperations(asOptionalRecord(data.operations), body),
     templates: mapMinimalTemplates(asOptionalRecord(data.templates), body),
