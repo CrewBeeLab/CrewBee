@@ -6,10 +6,7 @@ export function createMultimodalLookerAgent(): AgentProfileSpec {
   return createAgent(
     {
       id: "multimodal-looker",
-      kind: "agent",
-      version: "1.0.0",
       name: "MultimodalLooker",
-      status: "active",
       archetype: "interpreter",
       tags: ["multimodal", "readonly", "extraction-first", "support-role"],
     },

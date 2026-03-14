@@ -6,10 +6,7 @@ export function createCodebaseExplorerAgent(): AgentProfileSpec {
   return createAgent(
     {
       id: "codebase-explorer",
-      kind: "agent",
-      version: "1.0.0",
       name: "代码库探索者",
-      status: "active",
       archetype: "researcher",
       tags: ["coding", "researcher", "repo-search", "readonly", "parallel-search", "executable-results"],
     },

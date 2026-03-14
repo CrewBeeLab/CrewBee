@@ -6,10 +6,7 @@ export function createWebResearcherAgent(): AgentProfileSpec {
   return createAgent(
     {
       id: "web-researcher",
-      kind: "agent",
-      version: "1.0.0",
       name: "在线研究者",
-      status: "active",
       archetype: "researcher",
       tags: ["coding", "researcher", "external-research", "docs-first", "source-backed", "version-aware"],
     },

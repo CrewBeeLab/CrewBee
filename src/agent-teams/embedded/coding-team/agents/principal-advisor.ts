@@ -6,10 +6,7 @@ export function createPrincipalAdvisorAgent(): AgentProfileSpec {
   return createAgent(
     {
       id: "principal-advisor",
-      kind: "agent",
-      version: "1.0.0",
       name: "首席顾问",
-      status: "active",
       archetype: "advisor",
       tags: ["coding", "advisor", "principal", "decision-focused", "risk-sensitive", "pragmatic-minimalism"],
     },
