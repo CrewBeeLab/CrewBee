@@ -1,9 +1,6 @@
 ---
 id: general-operator
-kind: agent
-version: 1.0.0
 name: Operator
-status: active
 archetype: operator
 
 persona_core:

@@ -1,9 +1,6 @@
 ---
 id: general-researcher
-kind: agent
-version: 1.0.0
 name: Researcher
-status: active
 archetype: researcher
 
 persona_core:

@@ -1,9 +1,6 @@
 ---
 id: general-writer
-kind: agent
-version: 1.0.0
 name: Writer
-status: active
 archetype: executor
 
 persona_core:
