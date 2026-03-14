@@ -1,6 +1,5 @@
 export type ExecutionMode = "single-executor" | "team-collaboration";
 
-export type AgentStatus = "active" | "draft" | "deprecated";
 export type TeamRoleKind = "leader" | "member";
 export type AgentArchetype =
   | "orchestrator"
@@ -14,8 +13,6 @@ export type AgentArchetype =
   | "operator";
 
 export interface TeamWorkflowSpec {
-  id: string;
-  name: string;
   stages: string[];
 }
 
@@ -63,11 +60,8 @@ export interface TeamGovernanceSpec {
 
 export interface TeamManifest {
   id: string;
-  kind: "agent-team";
   version: string;
   name: string;
-  status: AgentStatus;
-  owner: string;
   description: string;
   mission: TeamMissionSpec;
   scope: TeamScopeSpec;
@@ -179,6 +173,17 @@ export interface MinimalTemplates {
   finalReport?: string[];
 }
 
+// Prompt-only guidance for how an agent should prioritize direct tools, skills,
+// and delegated help. This does not register or enable capabilities at runtime;
+// runtimeConfig.requestedTools and runtimeConfig.skills remain the source of
+// truth for actual host/runtime availability.
+export interface ToolSkillStrategySpec {
+  principles?: string[];
+  preferredOrder?: string[];
+  avoid?: string[];
+  notes?: string[];
+}
+
 export interface AgentGuardrails {
   critical?: string[];
 }
@@ -213,6 +218,9 @@ export interface AgentProfileSpec {
   heuristics?: string[];
   antiPatterns?: string[];
   examples?: AgentExamples;
+  // Prompt-only strategy text. It must stay consistent with the real runtime
+  // capability set declared under runtimeConfig.
+  toolSkillStrategy?: ToolSkillStrategySpec;
   entryPoint?: AgentEntryPointSpec;
   promptProjection?: PromptProjectionSpec;
 }

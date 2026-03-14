@@ -18,6 +18,7 @@ import type {
   TeamManifest,
   TeamMemberMap,
   TeamAgentRuntimeMap,
+  ToolSkillStrategySpec,
   WorkflowOverride,
 } from "../core";
 import {
@@ -134,6 +135,9 @@ function mapTeamMembers(rawMembers: unknown): TeamMemberMap {
 
 function rejectRemovedTeamManifestFields(raw: UnknownRecord, filePath: string): void {
   const removedFields = [
+    "kind",
+    "status",
+    "owner",
     "modes",
     "working_mode",
     "workingMode",
@@ -150,6 +154,18 @@ function rejectRemovedTeamManifestFields(raw: UnknownRecord, filePath: string): 
   for (const field of removedFields) {
     if (raw[field] !== undefined) {
       throw new Error(`${filePath} no longer supports team manifest field '${field}'. Remove legacy team-only structure fields from the manifest.`);
+    }
+  }
+}
+
+function rejectRemovedWorkflowFields(workflow: UnknownRecord | undefined, filePath: string): void {
+  if (!workflow) {
+    return;
+  }
+
+  for (const field of ["id", "name"]) {
+    if (workflow[field] !== undefined) {
+      throw new Error(`${filePath} no longer supports workflow field '${field}'. Keep only workflow.stages in Team manifests.`);
     }
   }
 }
@@ -406,6 +422,31 @@ function mapGuardrails(raw: UnknownRecord | undefined, body: string): AgentGuard
   return { critical };
 }
 
+function mapToolSkillStrategy(raw: UnknownRecord | undefined): ToolSkillStrategySpec | undefined {
+  if (!raw) {
+    return undefined;
+  }
+
+  const principles = raw.principles ? asStringArray(raw.principles, "tool_skill_strategy.principles") : undefined;
+  const preferredOrder =
+    raw.preferred_order ?? raw.preferredOrder
+      ? asStringArray(raw.preferred_order ?? raw.preferredOrder, "tool_skill_strategy.preferred_order")
+      : undefined;
+  const avoid = raw.avoid ? asStringArray(raw.avoid, "tool_skill_strategy.avoid") : undefined;
+  const notes = raw.notes ? asStringArray(raw.notes, "tool_skill_strategy.notes") : undefined;
+
+  if (!principles && !preferredOrder && !avoid && !notes) {
+    return undefined;
+  }
+
+  return {
+    principles,
+    preferredOrder,
+    avoid,
+    notes,
+  };
+}
+
 function mapEntryPoint(raw: UnknownRecord | undefined): AgentEntryPointSpec | undefined {
   if (!raw) {
     return undefined;
@@ -526,6 +567,9 @@ export function mapAgentProfile(filePath: string): AgentProfileSpec {
             badFit: asStringArray(asRecord(data.examples, "examples").bad_fit ?? asRecord(data.examples, "examples").badFit ?? [], "examples.bad_fit"),
           }
         : extractExamples(extractSection(body, "Examples")),
+    toolSkillStrategy: mapToolSkillStrategy(
+      asOptionalRecord(data.tool_skill_strategy ?? data.toolSkillStrategy),
+    ),
     entryPoint: mapEntryPoint(asOptionalRecord(data.entry_point ?? data.entryPoint)),
     promptProjection: normalizeAgentPromptProjection(
       mapPromptProjection(asOptionalRecord(data.prompt_projection ?? data.promptProjection)),
@@ -542,6 +586,7 @@ export function mapTeamManifest(filePath: string): TeamManifest {
   const scope = asRecord(raw.scope, "scope");
   const leader = asRecord(raw.leader, "leader");
   const workflow = asOptionalRecord(raw.workflow);
+  rejectRemovedWorkflowFields(workflow, filePath);
   const governance = asRecord(raw.governance, "governance");
   const governanceApprovalPolicy = asRecord(
     governance.approval_policy ?? governance.approvalPolicy,
@@ -562,11 +607,8 @@ export function mapTeamManifest(filePath: string): TeamManifest {
 
   return {
     id,
-    kind: "agent-team",
     version: asString(raw.version, "version"),
     name,
-    status: asString(raw.status, "status") as TeamManifest["status"],
-    owner: asString(raw.owner, "owner"),
     description: asString(raw.description, "description"),
     mission: {
       objective: asString(mission.objective, "mission.objective"),
@@ -582,8 +624,6 @@ export function mapTeamManifest(filePath: string): TeamManifest {
     },
     members: mapTeamMembers(raw.members),
     workflow: {
-      id: workflow ? asString(workflow.id, "workflow.id") : `${id}-default`,
-      name: workflow ? asString(workflow.name, "workflow.name") : `${name} default workflow`,
       stages: resolvedWorkflowStages,
     },
     governance: {
