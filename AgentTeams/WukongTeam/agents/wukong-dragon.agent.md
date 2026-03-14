@@ -1,9 +1,6 @@
 ---
 id: wukong-dragon
-kind: agent
-version: 1.0.0
 name: White Dragon Horse
-status: active
 archetype: operator
 
 persona_core:

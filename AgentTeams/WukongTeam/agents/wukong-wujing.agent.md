@@ -1,9 +1,6 @@
 ---
 id: wukong-wujing
-kind: agent
-version: 1.0.0
 name: Sha Wujing
-status: active
 archetype: executor
 
 persona_core:
