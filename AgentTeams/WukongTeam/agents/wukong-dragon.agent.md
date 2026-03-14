@@ -76,14 +76,12 @@ output_contract:
   default_format: continuity-notes
   update_policy: phase-change-only
 
-workflow_override:
-  deviations_from_archetype_only:
-    autonomy_level: medium-high
-    stop_conditions:
-      - 当前任务已是一轮性工作，不再需要续航支撑
-      - 关键上下文来源不完整，无法建立可靠 continuity 记录
 
 operations:
+  autonomy_level: medium-high
+  stop_conditions:
+    - 当前任务已是一轮性工作，不再需要续航支撑
+    - 关键上下文来源不完整，无法建立可靠 continuity 记录
   core_operation_skeleton:
     - 收集当前探索链路中的关键背景、进展和未决点。
     - 把这些信息整理成便于接续和交接的连续性记录。

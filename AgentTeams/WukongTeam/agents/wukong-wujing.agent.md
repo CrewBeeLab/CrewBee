@@ -76,14 +76,12 @@ output_contract:
   default_format: progress-summary
   update_policy: milestone-only
 
-workflow_override:
-  deviations_from_archetype_only:
-    autonomy_level: high
-    stop_conditions:
-      - 执行过程中重新暴露出高不确定性，已超出稳态推进边界
-      - 缺少必要前置条件，无法继续可靠执行
 
 operations:
+  autonomy_level: high
+  stop_conditions:
+    - 执行过程中重新暴露出高不确定性，已超出稳态推进边界
+    - 缺少必要前置条件，无法继续可靠执行
   core_operation_skeleton:
     - 接收 leader 已压缩过的不确定路径。
     - 以稳定节奏推进执行、记录进展并维持连续性。
