@@ -23,16 +23,13 @@ AgentTeams/<YourTeam>/
 
 ## Manifest Rules
 
-`team.manifest.yaml` should use snake_case keys for the file-based form, even though the parser accepts some camelCase aliases.
+`team.manifest.yaml` should use snake_case keys for the file-based form. `prompt_projection.include` / `exclude` must use canonical field names only.
 
 Required top-level blocks:
 
 - `id`
-- `kind`
 - `version`
 - `name`
-- `status`
-- `owner`
 - `description`
 - `mission`
 - `scope`
@@ -85,6 +82,7 @@ Recommended optional blocks for parity with current `coding-team` profiles:
 - `heuristics`
 - `anti_patterns`
 - `examples`
+- `tool_skill_strategy`
 - `entry_point`
 - `prompt_projection`
 
@@ -92,32 +90,73 @@ Recommended optional blocks for parity with current `coding-team` profiles:
 
 Use `prompt_projection` inside `team.manifest.yaml` and `agents/*.agent.md` to control exactly which schema fields are allowed to enter the final prompt.
 
+Supported Team fields:
+
+- `description`
+- `mission`
+- `scope`
+- `workflow`
+- `governance`
+- `id`
+- `name`
+- `version`
+- `tags`
+
+Supported Agent fields:
+
+- `responsibility_core`
+- `persona_core`
+- `collaboration`
+- `workflow_override`
+- `output_contract`
+- `operations`
+- `templates`
+- `guardrails`
+- `heuristics`
+- `anti_patterns`
+- `examples`
+- `tool_skill_strategy`
+- `entry_point`
+- `id`
+- `name`
+- `owner`
+- `tags`
+
 Example in `team.manifest.yaml`:
 
 ```yaml
 prompt_projection:
   include:
+    - description
     - mission
+    - scope
     - workflow
     - governance
 ```
+
+For Team manifests, `kind`, `status`, `owner`, `workflow.id`, and `workflow.name` are no longer part of the schema. Keep only `workflow.stages`.
 
 Example in `*.agent.md` frontmatter:
 
 ```yaml
 prompt_projection:
   include:
-    - persona_core
     - responsibility_core
+    - persona_core
     - collaboration
     - workflow_override
     - output_contract
+    - tool_skill_strategy
   exclude:
     - owner
     - tags
 ```
 
 `archetype` remains valid in agent profiles as design-time metadata, but it is intentionally hidden from final prompt projection.
+
+OpenCode prompt rendering no longer dumps raw YAML-style config. The final prompt is rendered as semi-structured markdown with exactly two parts: `## Team Contract` and `## Agent Contract`.
+
+`tool_skill_strategy` is prompt-only guidance about how the agent should prioritize direct tools, skills, and delegation. It does not register capabilities. The real runtime capability set still comes from `runtime_config.requested_tools` and `runtime_config.skills`.
 
 Current semantics are intentionally narrow:
 
