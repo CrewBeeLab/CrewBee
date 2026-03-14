@@ -1,9 +1,6 @@
 ---
 id: leader
-kind: agent
-version: 1.0.0
 name: Leader
-status: active
 archetype: orchestrator
 
 persona_core:
@@ -143,8 +140,6 @@ prompt_projection:
     - anti_patterns
     - examples
   exclude:
-    - version
-    - status
     - owner
     - tags
     - entry_point

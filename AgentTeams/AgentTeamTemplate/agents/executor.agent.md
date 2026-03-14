@@ -1,9 +1,6 @@
 ---
 id: executor
-kind: agent
-version: 1.0.0
 name: Executor
-status: active
 archetype: executor
 
 persona_core:
