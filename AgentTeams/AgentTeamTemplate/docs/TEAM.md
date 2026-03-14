@@ -56,9 +56,7 @@ Each `agents/*.agent.md` file must start with YAML frontmatter:
 ```md
 ---
 id: leader
-version: 1.0.0
 name: Leader
-status: active
 archetype: orchestrator
 persona_core: ...
 responsibility_core: ...
@@ -70,9 +68,7 @@ runtime_config: ...
 Required frontmatter blocks:
 
 - `id`
-- `version`
 - `name`
-- `status`
 - `archetype`
 - `persona_core`
 - `responsibility_core`
@@ -117,11 +113,11 @@ prompt_projection:
     - workflow_override
     - output_contract
   exclude:
-    - version
-    - status
     - owner
     - tags
 ```
+
+`archetype` remains valid in agent profiles as design-time metadata, but it is intentionally hidden from final prompt projection.
 
 Current semantics are intentionally narrow:
 
