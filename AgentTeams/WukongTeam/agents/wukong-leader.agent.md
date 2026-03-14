@@ -1,9 +1,6 @@
 ---
 id: wukong-leader
-kind: agent
-version: 1.0.0
 name: Sun Wukong
-status: active
 archetype: orchestrator
 
 persona_core:

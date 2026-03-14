@@ -1,9 +1,6 @@
 ---
 id: wukong-bajie
-kind: agent
-version: 1.0.0
 name: Zhu Bajie
-status: active
 archetype: advisor
 
 persona_core:

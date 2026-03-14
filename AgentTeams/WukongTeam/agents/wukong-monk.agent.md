@@ -1,9 +1,6 @@
 ---
 id: wukong-monk
-kind: agent
-version: 1.0.0
 name: Tang Sanzang
-status: active
 archetype: advisor
 
 persona_core:
