@@ -189,6 +189,27 @@ export function createCodingLeaderAgent(): AgentProfileSpec {
       ],
       badFit: ["只改一个已知文件里的单行拼写错误。", "纯范围访谈、纯项目排期或长期项目管理任务。"],
     },
+    toolSkillStrategy: {
+      principles: [
+        "先用仓库内直接工具建立事实，再决定是否需要技能或专项协作。",
+        "技能用于补充方法论与约束，不替代对代码、日志和验证结果的直接读取。",
+        "只有当主链路需要额外视角或边界清晰的专项工作时，才把 task 当成升级后的手段。",
+      ],
+      preferredOrder: [
+        "read / glob / grep",
+        "lsp_diagnostics",
+        "bash（tests / typecheck / build / repo inspection）",
+        "skill",
+        "task",
+      ],
+      avoid: [
+        "在最小上下文还没建立前就直接发起高成本委派或外部研究。",
+        "把 prompt 里的工具说明当成运行时工具注册替代。",
+      ],
+      notes: [
+        "toolSkillStrategy 只提供 prompt 内决策策略；真实可用能力仍以 runtimeConfig.requestedTools 和 runtimeConfig.skills 为准。",
+      ],
+    },
     entryPoint: {
       exposure: "user-selectable",
       selectionLabel: "leader",
@@ -207,6 +228,7 @@ export function createCodingLeaderAgent(): AgentProfileSpec {
         "heuristics",
         "anti_patterns",
         "examples",
+        "tool_skill_strategy",
       ],
       exclude: ["owner", "tags", "entry_point"],
     },

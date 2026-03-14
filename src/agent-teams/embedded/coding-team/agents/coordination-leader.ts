@@ -198,11 +198,49 @@ export function createCoordinationLeaderAgent(): AgentProfileSpec {
       ],
       badFit: ["请你从头到尾亲自长期实现整个复杂功能，不要委派。", "只改一个已知文件里的单行拼写错误。"],
     },
+    toolSkillStrategy: {
+      principles: [
+        "先用低成本直接工具澄清范围、入口和现状，再决定是否委派。",
+        "技能用于拿到流程/方法 guidance，task 用于组织专项探索或咨询；两者都不替代最小事实定位。",
+        "即使自己不做深执行，也要用直接工具校验交接边界和验证口径是否充分。",
+      ],
+      preferredOrder: [
+        "read / glob / grep",
+        "skill",
+        "task",
+        "lsp_diagnostics",
+        "bash（仅在验证或证据确认需要时）",
+      ],
+      avoid: [
+        "在问题边界尚未收束前，把大块工作直接交给 coding-executor。",
+        "把 task 当成默认第一反应，跳过仓库事实定位。",
+      ],
+      notes: [
+        "runtimeConfig.skills 决定真实可加载技能；toolSkillStrategy 只描述 prompt 内的工具/技能使用顺序与裁量原则。",
+      ],
+    },
     entryPoint: {
       exposure: "user-selectable",
       selectionLabel: "coordination-leader",
       selectionDescription:
         "CodingTeam 的协调型 Leader 投影；适合高模糊、范围待收束、多子任务编排的开局路径。",
+    },
+    promptProjection: {
+      include: [
+        "persona_core",
+        "responsibility_core",
+        "collaboration",
+        "workflow_override",
+        "output_contract",
+        "operations",
+        "templates",
+        "guardrails",
+        "heuristics",
+        "anti_patterns",
+        "examples",
+        "tool_skill_strategy",
+      ],
+      exclude: ["owner", "tags", "entry_point"],
     },
     },
   );
