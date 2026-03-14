@@ -81,14 +81,12 @@ output_contract:
   default_format: what-where-evidence
   update_policy: milestone-only
 
-workflow_override:
-  deviations_from_archetype_only:
-    autonomy_level: high
-    stop_conditions:
-      - The requested path conflicts with higher-priority rules or approvals.
-      - Three materially different approaches fail to reach a verified outcome.
 
 operations:
+  autonomy_level: high
+  stop_conditions:
+    - The requested path conflicts with higher-priority rules or approvals.
+    - Three materially different approaches fail to reach a verified outcome.
   core_operation_skeleton:
     - Read the relevant files and confirm the current pattern before editing.
     - Apply the smallest sufficient change set that resolves the task.

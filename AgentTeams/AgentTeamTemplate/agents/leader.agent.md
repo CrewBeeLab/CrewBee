@@ -89,9 +89,6 @@ runtime_config:
   mcp_servers:
     - github
 
-workflow_override:
-  deviations_from_archetype_only:
-    autonomy_level: high
 
 output_contract:
   tone: concise-technical
@@ -115,6 +112,7 @@ guardrails:
     - Do not claim completion without final verification.
 
 operations:
+  autonomy_level: high
   core_operation_skeleton:
     - Intake the task and decide whether the leader should stay active owner.
     - Clarify scope only when ambiguity materially affects the outcome.
@@ -131,7 +129,6 @@ prompt_projection:
     - persona_core
     - responsibility_core
     - collaboration
-    - workflow_override
     - output_contract
     - operations
     - templates
@@ -140,7 +137,6 @@ prompt_projection:
     - anti_patterns
     - examples
   exclude:
-    - owner
     - tags
     - entry_point
 ---

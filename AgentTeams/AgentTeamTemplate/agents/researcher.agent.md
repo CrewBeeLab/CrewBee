@@ -69,14 +69,12 @@ output_contract:
   default_format: file-map-and-findings
   update_policy: milestone-only
 
-workflow_override:
-  deviations_from_archetype_only:
-    autonomy_level: medium
-    stop_conditions:
-      - Required evidence sources cannot be accessed through allowed tools.
-      - Further searching is no longer producing useful new signal.
 
 operations:
+  autonomy_level: medium
+  stop_conditions:
+    - Required evidence sources cannot be accessed through allowed tools.
+    - Further searching is no longer producing useful new signal.
   core_operation_skeleton:
     - Confirm what decision or execution step the research needs to unblock.
     - Search the smallest relevant local and external evidence surface.
