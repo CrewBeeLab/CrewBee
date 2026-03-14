@@ -125,7 +125,7 @@ export function createEmbeddedCodingTeam(): AgentTeamDefinition {
     },
     tags: ["代码", "leader驱动", "上下文连续性", "主执行者中心", "评审中心", "证据驱动"],
     promptProjection: {
-      include: ["mission", "workflow", "governance"],
+      include: ["mission", "governance"],
     },
   };
 
