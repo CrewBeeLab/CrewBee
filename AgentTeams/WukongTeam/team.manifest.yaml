@@ -1,9 +1,6 @@
 id: wukong-team
-kind: agent-team
 version: 1.0.0
 name: Wukong Team
-status: active
-owner: CrewBee
 
 description: 面向高不确定性、探索性与长周期任务的突破型团队。
 
@@ -40,8 +37,6 @@ members:
     role: 上下文连续性
 
 workflow:
-  id: wukong-default
-  name: Wukong default workflow
   stages:
     - make-vow
     - explore

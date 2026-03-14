@@ -1,9 +1,6 @@
 id: agent-team-template
-kind: agent-team
 version: 1.0.0
 name: Agent Team Template
-status: active
-owner: CrewBee
 
 description: A reusable CrewBee Agent Team template for OpenCode-style leader-driven execution.
 
@@ -39,8 +36,6 @@ members:
     role: delivery and verification
 
 workflow:
-  id: template-default
-  name: Template default workflow
   stages:
     - intake
     - clarify-or-scout
