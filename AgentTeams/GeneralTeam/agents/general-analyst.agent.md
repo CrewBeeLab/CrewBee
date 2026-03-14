@@ -60,14 +60,12 @@ output_contract:
   default_format: comparison-summary
   update_policy: phase-change-only
 
-workflow_override:
-  deviations_from_archetype_only:
-    autonomy_level: medium
-    stop_conditions:
-      - 关键选项缺少足够证据，无法做负责任比较
-      - 任务已转成纯写作或纯执行，不再需要分析主导
 
 operations:
+  autonomy_level: medium
+  stop_conditions:
+    - 关键选项缺少足够证据，无法做负责任比较
+    - 任务已转成纯写作或纯执行，不再需要分析主导
   core_operation_skeleton:
     - 读取 research 结果与任务目标，确认需要比较或判断的对象。
     - 提炼选项、利弊、约束和判断框架。

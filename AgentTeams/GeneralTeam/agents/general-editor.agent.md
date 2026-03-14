@@ -60,14 +60,12 @@ output_contract:
   default_format: polish-notes
   update_policy: milestone-only
 
-workflow_override:
-  deviations_from_archetype_only:
-    autonomy_level: low-medium
-    stop_conditions:
-      - 还没有可编辑的草稿
-      - 需要新增事实或重做分析，超出 editor 边界
 
 operations:
+  autonomy_level: low-medium
+  stop_conditions:
+    - 还没有可编辑的草稿
+    - 需要新增事实或重做分析，超出 editor 边界
   core_operation_skeleton:
     - 接收已有草稿，确认原始意图与目标受众。
     - 压缩冗余、改善结构和可读性，但不改写核心判断。

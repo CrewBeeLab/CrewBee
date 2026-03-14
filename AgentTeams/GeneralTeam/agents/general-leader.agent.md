@@ -81,14 +81,12 @@ output_contract:
   default_format: result-summary
   update_policy: milestone-only
 
-workflow_override:
-  deviations_from_archetype_only:
-    autonomy_level: high
-    stop_conditions:
-      - 任务目标与更高优先级规则冲突
-      - 缺少关键事实且通过现有资料与协作角色仍无法补齐
 
 operations:
+  autonomy_level: high
+  stop_conditions:
+    - 任务目标与更高优先级规则冲突
+    - 缺少关键事实且通过现有资料与协作角色仍无法补齐
   core_operation_skeleton:
     - 接收任务后先判断是否需要澄清、调研、分析、起草或事务执行。
     - 保持自己为 active owner，按需把子任务拆给研究、分析、写作、润色或执行角色。
