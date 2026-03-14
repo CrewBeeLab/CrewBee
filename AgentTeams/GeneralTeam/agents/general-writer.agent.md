@@ -75,14 +75,12 @@ output_contract:
   default_format: user-facing-draft
   update_policy: milestone-only
 
-workflow_override:
-  deviations_from_archetype_only:
-    autonomy_level: medium
-    stop_conditions:
-      - 核心事实或论证仍不完整，无法负责任起草
-      - 任务已变成纯润色，不再需要 writer 主导
 
 operations:
+  autonomy_level: medium
+  stop_conditions:
+    - 核心事实或论证仍不完整，无法负责任起草
+    - 任务已变成纯润色，不再需要 writer 主导
   core_operation_skeleton:
     - 消化 research 和 analysis 结果，确认草稿目标与受众。
     - 先搭输出结构，再填入结论、依据和行动项。

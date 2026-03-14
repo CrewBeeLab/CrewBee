@@ -76,14 +76,12 @@ output_contract:
   default_format: checklist-status
   update_policy: phase-change-only
 
-workflow_override:
-  deviations_from_archetype_only:
-    autonomy_level: medium-high
-    stop_conditions:
-      - 关键执行步骤缺少前置条件
-      - 任务已偏离程序性执行，转成分析或写作问题
 
 operations:
+  autonomy_level: medium-high
+  stop_conditions:
+    - 关键执行步骤缺少前置条件
+    - 任务已偏离程序性执行，转成分析或写作问题
   core_operation_skeleton:
     - 把 leader 给出的步骤、顺序和完成标准转成可执行 checklist。
     - 逐项推进并记录状态、阻塞和结果。

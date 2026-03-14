@@ -69,14 +69,12 @@ output_contract:
   default_format: sources-and-findings
   update_policy: milestone-only
 
-workflow_override:
-  deviations_from_archetype_only:
-    autonomy_level: medium
-    stop_conditions:
-      - 现有来源无法支撑关键结论
-      - 继续搜索已无法带来新的有效信息
 
 operations:
+  autonomy_level: medium
+  stop_conditions:
+    - 现有来源无法支撑关键结论
+    - 继续搜索已无法带来新的有效信息
   core_operation_skeleton:
     - 明确要为哪一个下游结论或草稿补充材料。
     - 收集最相关的资料、事实和上下文证据。
