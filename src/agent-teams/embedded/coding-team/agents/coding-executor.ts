@@ -6,10 +6,7 @@ export function createCodingExecutorAgent(): AgentProfileSpec {
   return createAgent(
     {
       id: "coding-executor",
-      kind: "agent",
-      version: "1.0.0",
       name: "编码执行者",
-      status: "active",
       archetype: "executor",
     },
     {

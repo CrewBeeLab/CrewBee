@@ -6,10 +6,7 @@ export function createReviewerAgent(): AgentProfileSpec {
   return createAgent(
     {
       id: "reviewer",
-      kind: "agent",
-      version: "1.0.0",
       name: "评审者",
-      status: "active",
       archetype: "reviewer",
       tags: ["coding", "reviewer", "default-approve", "blocker-oriented", "execution-readiness", "completion-gate"],
     },

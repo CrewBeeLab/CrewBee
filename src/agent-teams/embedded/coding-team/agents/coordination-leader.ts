@@ -6,10 +6,7 @@ export function createCoordinationLeaderAgent(): AgentProfileSpec {
   return createAgent(
     {
       id: "coordination-leader",
-      kind: "agent",
-      version: "1.0.0",
       name: "管理型组长",
-      status: "active",
       archetype: "orchestrator",
       tags: ["coding", "leader", "coordination", "plan-first", "delegate-first", "scope-control"],
     },

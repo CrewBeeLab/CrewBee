@@ -6,11 +6,8 @@ export function createCodingLeaderAgent(): AgentProfileSpec {
   return createAgent(
     {
       id: "coding-leader",
-      kind: "agent",
-      version: "1.0.0",
       name: "CodingLeader",
-      status: "active",
-      archetype: "executor",
+      archetype: "executor+orchestrator",
       tags: ["coding", "leader", "execution-first", "context-owner", "verification-closure"],
     },
     {
@@ -211,7 +208,7 @@ export function createCodingLeaderAgent(): AgentProfileSpec {
         "anti_patterns",
         "examples",
       ],
-      exclude: ["version", "status", "owner", "tags", "entry_point"],
+      exclude: ["owner", "tags", "entry_point"],
     },
     },
   );
