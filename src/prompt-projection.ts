@@ -28,10 +28,7 @@ const PROJECTABLE_TEAM_FIELDS = new Set<string>([
 
 const PROJECTABLE_AGENT_FIELDS = new Set<string>([
   "id",
-  "kind",
-  "version",
   "name",
-  "status",
   "owner",
   "tags",
   "persona_core",
@@ -69,10 +66,7 @@ const TEAM_FIELD_ALIASES: Record<string, string> = {
 
 const AGENT_FIELD_ALIASES: Record<string, string> = {
   id: "id",
-  kind: "kind",
-  version: "version",
   name: "name",
-  status: "status",
   owner: "owner",
   tags: "tags",
   persona_core: "persona_core",

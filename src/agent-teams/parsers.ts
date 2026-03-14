@@ -468,10 +468,7 @@ export function mapAgentProfile(filePath: string): AgentProfileSpec {
   return {
     metadata: {
       id: asString(data.id, "id"),
-      kind: "agent",
-      version: asString(data.version, "version"),
       name: asString(data.name, "name"),
-      status: asString(data.status, "status") as AgentProfileSpec["metadata"]["status"],
       archetype: asString(data.archetype, "archetype") as AgentProfileSpec["metadata"]["archetype"],
       owner: asOptionalString(data.owner),
       tags: data.tags ? asStringArray(data.tags, "tags") : undefined,

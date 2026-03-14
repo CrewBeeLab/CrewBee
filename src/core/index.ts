@@ -6,6 +6,7 @@ export type AgentArchetype =
   | "orchestrator"
   | "planner"
   | "executor"
+  | "executor+orchestrator"
   | "researcher"
   | "advisor"
   | "reviewer"
@@ -184,10 +185,7 @@ export interface AgentGuardrails {
 
 export interface AgentMetadata {
   id: string;
-  kind: "agent";
-  version: string;
   name: string;
-  status: AgentStatus;
   archetype: AgentArchetype;
   owner?: string;
   tags?: string[];
