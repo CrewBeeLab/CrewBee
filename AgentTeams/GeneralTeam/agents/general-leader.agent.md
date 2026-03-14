@@ -1,9 +1,6 @@
 ---
 id: general-leader
-kind: agent
-version: 1.0.0
 name: Task Lead
-status: active
 archetype: orchestrator
 
 persona_core:

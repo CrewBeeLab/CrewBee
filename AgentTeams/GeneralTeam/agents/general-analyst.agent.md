@@ -1,9 +1,6 @@
 ---
 id: general-analyst
-kind: agent
-version: 1.0.0
 name: Analyst
-status: active
 archetype: advisor
 
 persona_core:

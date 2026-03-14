@@ -1,9 +1,6 @@
 ---
 id: general-editor
-kind: agent
-version: 1.0.0
 name: Editor
-status: active
 archetype: reviewer
 
 persona_core:
