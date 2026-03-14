@@ -38,6 +38,12 @@ Required top-level blocks:
 - `workflow`
 - `governance`
 
+`members` should be a keyed map by `agent_ref`, not a list. Each member entry should define:
+
+- `responsibility`
+- `delegate_when`
+- `delegate_mode`
+
 Recommended optional blocks that keep the file-based template aligned with current `coding-team` conventions:
 
 - `agent_runtime`
@@ -74,7 +80,6 @@ Required frontmatter blocks:
 
 Recommended optional blocks for parity with current `coding-team` profiles:
 
-- `workflow_override`
 - `output_contract`
 - `operations`
 - `templates`
@@ -92,22 +97,14 @@ Use `prompt_projection` inside `team.manifest.yaml` and `agents/*.agent.md` to c
 
 Supported Team fields:
 
-- `description`
 - `mission`
-- `scope`
-- `workflow`
 - `governance`
-- `id`
-- `name`
-- `version`
-- `tags`
 
 Supported Agent fields:
 
 - `responsibility_core`
 - `persona_core`
 - `collaboration`
-- `workflow_override`
 - `output_contract`
 - `operations`
 - `templates`
@@ -127,14 +124,11 @@ Example in `team.manifest.yaml`:
 ```yaml
 prompt_projection:
   include:
-    - description
     - mission
-    - scope
-    - workflow
     - governance
 ```
 
-For Team manifests, `kind`, `status`, `owner`, `workflow.id`, and `workflow.name` are no longer part of the schema. Keep only `workflow.stages`.
+For Team manifests, `kind`, `status`, `owner`, `workflow.id`, and `workflow.name` are no longer part of the schema. Keep only `workflow.stages`. `workflow` remains part of Team config for manager/UI/runtime use, but it is no longer prompt-projectable.
 
 Example in `*.agent.md` frontmatter:
 
@@ -144,17 +138,24 @@ prompt_projection:
     - responsibility_core
     - persona_core
     - collaboration
-    - workflow_override
     - output_contract
+    - operations
+    - templates
+    - guardrails
+    - heuristics
+    - anti_patterns
+    - examples
     - tool_skill_strategy
   exclude:
-    - owner
     - tags
+    - entry_point
 ```
 
 `archetype` remains valid in agent profiles as design-time metadata, but it is intentionally hidden from final prompt projection.
 
 OpenCode prompt rendering no longer dumps raw YAML-style config. The final prompt is rendered as semi-structured markdown with exactly two parts: `## Team Contract` and `## Agent Contract`.
+
+`workflow_override` has been removed from the Agent profile schema. Put `autonomy_level`, `stop_conditions`, and `core_operation_skeleton` under `operations` instead.
 
 `tool_skill_strategy` is prompt-only guidance about how the agent should prioritize direct tools, skills, and delegation. It does not register capabilities. The real runtime capability set still comes from `runtime_config.requested_tools` and `runtime_config.skills`.
 
