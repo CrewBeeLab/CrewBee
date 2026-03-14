@@ -29,10 +29,7 @@ const TEAM_FIELD_ORDER = [
 
 const AGENT_FIELD_ORDER = [
   "id",
-  "kind",
-  "version",
   "name",
-  "status",
   "owner",
   "tags",
   "persona_core",
@@ -123,10 +120,6 @@ function renderGuidanceBinding(manifest: TeamManifest, binding: CollaborationBin
 
   if (parts.length === 0) {
     return undefined;
-  }
-
-  if (typeof binding !== "string" && present(binding.description)) {
-    parts.push(`collaboration_goal=${binding.description}`);
   }
 
   return parts.join("; ");
@@ -232,14 +225,8 @@ function renderAgentField(agent: AgentProfileSpec, field: (typeof AGENT_FIELD_OR
   switch (field) {
     case "id":
       return scalarLine("agent.id", agent.metadata.id);
-    case "kind":
-      return scalarLine("agent.kind", agent.metadata.kind);
-    case "version":
-      return scalarLine("agent.version", agent.metadata.version);
     case "name":
       return scalarLine("agent.name", agent.metadata.name);
-    case "status":
-      return scalarLine("agent.status", agent.metadata.status);
     case "owner":
       return scalarLine("agent.owner", agent.metadata.owner);
     case "tags":
