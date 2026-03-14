@@ -29,16 +29,26 @@ leader:
     - 汇总最终结果并对外输出。
 
 members:
-  - agent_ref: general-researcher
-    role: 信息收集
-  - agent_ref: general-analyst
-    role: 结构化分析
-  - agent_ref: general-writer
-    role: 起草输出
-  - agent_ref: general-editor
-    role: 压缩与润色
-  - agent_ref: general-operator
-    role: 事务推进
+  general-researcher:
+    responsibility: 信息收集
+    delegate_when: 需要先补齐外部或上下文事实，再进入分析、写作或执行时。
+    delegate_mode: 只读调研式委派；明确问题、范围与所需证据，返回可直接供下游使用的事实与来源。
+  general-analyst:
+    responsibility: 结构化分析
+    delegate_when: 事实已基本齐备，但还需要收束问题、拆解结构、比较方案或提炼判断时。
+    delegate_mode: 分析式委派；给定问题和已有材料，要求输出结构化判断、框架或比较结论。
+  general-writer:
+    responsibility: 起草输出
+    delegate_when: 已有明确目标、材料和结论，需要组织成面向用户或外部受众的成稿时。
+    delegate_mode: 写作式委派；提供受众、语气、篇幅和核心信息，要求产出可直接交付的草稿。
+  general-editor:
+    responsibility: 压缩与润色
+    delegate_when: 已有草稿，但还需要压缩、重写、提高清晰度或统一表达质量时。
+    delegate_mode: 编辑式委派；提供现有稿件和目标风格，要求保留核心意思并优化成品质量。
+  general-operator:
+    responsibility: 事务推进
+    delegate_when: 任务需要按既定步骤执行、跟进、整理或推动落地，而不是继续分析或写作时。
+    delegate_mode: 执行式委派；给明确步骤、边界、完成标准与回报格式，要求推进到可核验状态。
 
 workflow:
   stages:
@@ -106,5 +116,4 @@ tags:
 prompt_projection:
   include:
     - mission
-    - workflow
     - governance
