@@ -60,14 +60,12 @@ output_contract:
   default_format: intent-check
   update_policy: phase-change-only
 
-workflow_override:
-  deviations_from_archetype_only:
-    autonomy_level: medium
-    stop_conditions:
-      - 当前工作已不再需要使命锚定支持
-      - 没有足够上下文判断团队是否偏航
 
 operations:
+  autonomy_level: medium
+  stop_conditions:
+    - 当前工作已不再需要使命锚定支持
+    - 没有足够上下文判断团队是否偏航
   core_operation_skeleton:
     - 读取当前探索目标与已有路径。
     - 判断团队是否在探索过程中偏离真实任务意图。

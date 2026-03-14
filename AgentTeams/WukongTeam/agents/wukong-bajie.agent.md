@@ -60,14 +60,12 @@ output_contract:
   default_format: tradeoff-list
   update_policy: phase-change-only
 
-workflow_override:
-  deviations_from_archetype_only:
-    autonomy_level: medium
-    stop_conditions:
-      - 当前方案已经有足够约束说明，不再需要额外压力测试
-      - 自己掌握的信息不足以做有价值的 tradeoff 判断
 
 operations:
+  autonomy_level: medium
+  stop_conditions:
+    - 当前方案已经有足够约束说明，不再需要额外压力测试
+    - 自己掌握的信息不足以做有价值的 tradeoff 判断
   core_operation_skeleton:
     - 读取当前方案、目标和前提假设。
     - 从成本、复杂度、风险和现实约束角度施压测试。

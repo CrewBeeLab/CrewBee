@@ -81,14 +81,12 @@ output_contract:
   default_format: progress-and-paths
   update_policy: milestone-only
 
-workflow_override:
-  deviations_from_archetype_only:
-    autonomy_level: high
-    stop_conditions:
-      - 高不确定性已经被压缩到普通执行路径，应交还给更稳定的执行链路
-      - 关键事实经探路与借力后仍不可得，继续推进只会扩大代价
 
 operations:
+  autonomy_level: high
+  stop_conditions:
+    - 高不确定性已经被压缩到普通执行路径，应交还给更稳定的执行链路
+    - 关键事实经探路与借力后仍不可得，继续推进只会扩大代价
   core_operation_skeleton:
     - 接收高不确定性任务，先判断真正的阻塞点与未知面。
     - 通过探路、重构问题和借力来打开一条可继续推进的路径。
