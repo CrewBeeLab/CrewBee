@@ -8,28 +8,62 @@ function unique(values: readonly string[]): string[] {
   return [...new Set(values)];
 }
 
-export const TEAM_PROJECTABLE_FIELDS = [
-  "mission",
-  "governance",
-] as const;
+export const TEAM_PROJECTABLE_FIELDS = ["mission", "governance"] as const;
 
 export const AGENT_PROJECTABLE_FIELDS = [
-  "responsibility_core",
   "persona_core",
+  "responsibility_core",
+  "responsibility_core.description",
+  "responsibility_core.objective",
+  "responsibility_core.authority",
+  "responsibility_core.output_preference",
+  "responsibility_core.use_when",
+  "responsibility_core.avoid_when",
+  "responsibility_core.success_definition",
+  "responsibility_core.non_goals",
+  "responsibility_core.in_scope",
+  "responsibility_core.out_of_scope",
+  "execution_policy",
+  "execution_policy.ambiguity_policy",
+  "execution_policy.task_triage",
+  "execution_policy.delegation_policy",
+  "execution_policy.review_policy",
+  "execution_policy.todo_discipline",
+  "execution_policy.completion_gate",
+  "execution_policy.failure_recovery",
   "collaboration",
   "output_contract",
   "operations",
+  "operations.autonomy_level",
+  "operations.stop_conditions",
+  "operations.core_operation_skeleton",
   "templates",
+  "templates.exploration_checklist",
+  "templates.execution_plan",
+  "templates.final_report",
   "guardrails",
+  "guardrails.critical",
   "heuristics",
   "anti_patterns",
   "examples",
+  "examples.fit",
+  "examples.fit.good_fit",
+  "examples.fit.bad_fit",
+  "examples.micro",
+  "examples.micro.ambiguity_resolution",
+  "examples.micro.final_closure",
   "tool_skill_strategy",
+  "tool_skill_strategy.principles",
+  "tool_skill_strategy.preferred_order",
+  "tool_skill_strategy.avoid",
+  "tool_skill_strategy.notes",
   "entry_point",
   "id",
   "name",
   "owner",
   "tags",
+  "archetype",
+  "runtime_config",
 ] as const;
 
 export type TeamProjectableField = (typeof TEAM_PROJECTABLE_FIELDS)[number];
@@ -95,6 +129,10 @@ export function normalizeAgentPromptProjection(
   return normalizePromptProjection(spec, AGENT_PROJECTABLE_FIELDS, "agent.prompt_projection");
 }
 
+function matchesProjectionPath(selectedPath: string, field: string): boolean {
+  return selectedPath === field || field.startsWith(`${selectedPath}.`);
+}
+
 export function shouldProjectField(
   spec: PromptProjectionSpec | undefined,
   field: string,
@@ -103,14 +141,14 @@ export function shouldProjectField(
     return true;
   }
 
-  const include = new Set(spec.include ?? []);
-  const exclude = new Set(spec.exclude ?? []);
+  const include = spec.include ?? [];
+  const exclude = spec.exclude ?? [];
 
-  if (include.size > 0 && !include.has(field)) {
+  if (include.length > 0 && !include.some((selectedPath) => matchesProjectionPath(selectedPath, field))) {
     return false;
   }
 
-  if (exclude.has(field)) {
+  if (exclude.some((selectedPath) => matchesProjectionPath(selectedPath, field))) {
     return false;
   }
 

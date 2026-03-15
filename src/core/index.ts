@@ -150,9 +150,43 @@ export interface OutputContract {
   updatePolicy: string;
 }
 
+export interface AgentFitExamples {
+  goodFit?: string[];
+  badFit?: string[];
+}
+
+export interface AgentMicroExamples {
+  ambiguityResolution?: string[];
+  finalClosure?: string[];
+}
+
 export interface AgentExamples {
-  goodFit: string[];
-  badFit: string[];
+  fit?: AgentFitExamples;
+  micro?: AgentMicroExamples;
+  goodFit?: string[];
+  badFit?: string[];
+}
+
+export interface ExecutionPolicyTriageBucket {
+  signals?: string[];
+  defaultAction?: string;
+}
+
+export interface ExecutionPolicyTaskTriage {
+  trivial?: ExecutionPolicyTriageBucket;
+  explicit?: ExecutionPolicyTriageBucket;
+  nonTrivial?: ExecutionPolicyTriageBucket;
+  ambiguous?: ExecutionPolicyTriageBucket;
+}
+
+export interface ExecutionPolicySpec {
+  ambiguityPolicy?: string[];
+  taskTriage?: ExecutionPolicyTaskTriage;
+  delegationPolicy?: string[];
+  reviewPolicy?: string[];
+  todoDiscipline?: string[];
+  completionGate?: string[];
+  failureRecovery?: string[];
 }
 
 export interface MinimalOperations {
@@ -205,6 +239,7 @@ export interface AgentProfileSpec {
   collaboration: CollaborationSpec;
   runtimeConfig: AgentRuntimeConfig;
   outputContract: OutputContract;
+  executionPolicy?: ExecutionPolicySpec;
   operations?: MinimalOperations;
   templates?: MinimalTemplates;
   guardrails?: AgentGuardrails;

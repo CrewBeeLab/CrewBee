@@ -11,6 +11,7 @@ import type {
   AgentRuntimeConfig,
   AgentProfileSpec,
   CollaborationBindingInput,
+  ExecutionPolicySpec,
   MinimalOperations,
   MinimalTemplates,
   OutputContract,
@@ -271,7 +272,89 @@ function extractExamples(section?: string): AgentExamples | undefined {
     return undefined;
   }
 
-  return { goodFit, badFit };
+  return {
+    fit: {
+      goodFit,
+      badFit,
+    },
+  };
+}
+
+function mapExecutionPolicyTriageBucket(
+  raw: UnknownRecord | undefined,
+  label: string,
+): { signals?: string[]; defaultAction?: string } | undefined {
+  if (!raw) {
+    return undefined;
+  }
+
+  const signals = raw.signals ? asStringArray(raw.signals, `${label}.signals`) : undefined;
+  const defaultAction = asOptionalString(raw.default_action ?? raw.defaultAction);
+
+  if (!signals && !defaultAction) {
+    return undefined;
+  }
+
+  return {
+    signals,
+    defaultAction,
+  };
+}
+
+function mapExecutionPolicy(raw: UnknownRecord | undefined): ExecutionPolicySpec | undefined {
+  if (!raw) {
+    return undefined;
+  }
+
+  const taskTriageRaw = asOptionalRecord(raw.task_triage ?? raw.taskTriage);
+  const taskTriage = taskTriageRaw
+    ? {
+        trivial: mapExecutionPolicyTriageBucket(asOptionalRecord(taskTriageRaw.trivial), "execution_policy.task_triage.trivial"),
+        explicit: mapExecutionPolicyTriageBucket(asOptionalRecord(taskTriageRaw.explicit), "execution_policy.task_triage.explicit"),
+        nonTrivial: mapExecutionPolicyTriageBucket(
+          asOptionalRecord(taskTriageRaw.non_trivial ?? taskTriageRaw.nonTrivial),
+          "execution_policy.task_triage.non_trivial",
+        ),
+        ambiguous: mapExecutionPolicyTriageBucket(asOptionalRecord(taskTriageRaw.ambiguous), "execution_policy.task_triage.ambiguous"),
+      }
+    : undefined;
+
+  const executionPolicy: ExecutionPolicySpec = {
+    ambiguityPolicy:
+      raw.ambiguity_policy ?? raw.ambiguityPolicy
+        ? asStringArray(raw.ambiguity_policy ?? raw.ambiguityPolicy, "execution_policy.ambiguity_policy")
+        : undefined,
+    taskTriage:
+      taskTriage && Object.values(taskTriage).some(Boolean)
+        ? taskTriage
+        : undefined,
+    delegationPolicy:
+      raw.delegation_policy ?? raw.delegationPolicy
+        ? asStringArray(raw.delegation_policy ?? raw.delegationPolicy, "execution_policy.delegation_policy")
+        : undefined,
+    reviewPolicy:
+      raw.review_policy ?? raw.reviewPolicy
+        ? asStringArray(raw.review_policy ?? raw.reviewPolicy, "execution_policy.review_policy")
+        : undefined,
+    todoDiscipline:
+      raw.todo_discipline ?? raw.todoDiscipline
+        ? asStringArray(raw.todo_discipline ?? raw.todoDiscipline, "execution_policy.todo_discipline")
+        : undefined,
+    completionGate:
+      raw.completion_gate ?? raw.completionGate
+        ? asStringArray(raw.completion_gate ?? raw.completionGate, "execution_policy.completion_gate")
+        : undefined,
+    failureRecovery:
+      raw.failure_recovery ?? raw.failureRecovery
+        ? asStringArray(raw.failure_recovery ?? raw.failureRecovery, "execution_policy.failure_recovery")
+        : undefined,
+  };
+
+  if (!Object.values(executionPolicy).some(Boolean)) {
+    return undefined;
+  }
+
+  return executionPolicy;
 }
 
 function mapRuntimeConfig(raw: UnknownRecord | undefined): AgentRuntimeConfig | undefined {
@@ -437,6 +520,60 @@ function mapToolSkillStrategy(raw: UnknownRecord | undefined): ToolSkillStrategy
   };
 }
 
+function mapExamples(raw: UnknownRecord | undefined, body: string): AgentExamples | undefined {
+  if (!raw) {
+    return extractExamples(extractSection(body, "Examples"));
+  }
+
+  const fit = asOptionalRecord(raw.fit);
+  const micro = asOptionalRecord(raw.micro);
+
+  if (fit || micro) {
+    return {
+      fit: fit
+        ? {
+            goodFit:
+              fit.good_fit ?? fit.goodFit
+                ? asStringArray(fit.good_fit ?? fit.goodFit, "examples.fit.good_fit")
+                : undefined,
+            badFit:
+              fit.bad_fit ?? fit.badFit
+                ? asStringArray(fit.bad_fit ?? fit.badFit, "examples.fit.bad_fit")
+                : undefined,
+          }
+        : undefined,
+      micro: micro
+        ? {
+            ambiguityResolution:
+              micro.ambiguity_resolution ?? micro.ambiguityResolution
+                ? asStringArray(
+                    micro.ambiguity_resolution ?? micro.ambiguityResolution,
+                    "examples.micro.ambiguity_resolution",
+                  )
+                : undefined,
+            finalClosure:
+              micro.final_closure ?? micro.finalClosure
+                ? asStringArray(micro.final_closure ?? micro.finalClosure, "examples.micro.final_closure")
+                : undefined,
+          }
+        : undefined,
+    };
+  }
+
+  return {
+    fit: {
+      goodFit:
+        raw.good_fit ?? raw.goodFit
+          ? asStringArray(raw.good_fit ?? raw.goodFit, "examples.good_fit")
+          : undefined,
+      badFit:
+        raw.bad_fit ?? raw.badFit
+          ? asStringArray(raw.bad_fit ?? raw.badFit, "examples.bad_fit")
+          : undefined,
+    },
+  };
+}
+
 function mapEntryPoint(raw: UnknownRecord | undefined): AgentEntryPointSpec | undefined {
   if (!raw) {
     return undefined;
@@ -540,6 +677,9 @@ export function mapAgentProfile(filePath: string): AgentProfileSpec {
     collaboration: mapCollaboration(collaboration),
     runtimeConfig: mapRuntimeConfig(runtimeConfig) as AgentRuntimeConfig,
     outputContract: mapOutputContract(asOptionalRecord(data.output_contract ?? data.outputContract)) as OutputContract,
+    executionPolicy: mapExecutionPolicy(
+      asOptionalRecord(data.execution_policy ?? data.executionPolicy),
+    ),
     operations: mapMinimalOperations(asOptionalRecord(data.operations), body),
     templates: mapMinimalTemplates(asOptionalRecord(data.templates), body),
     guardrails: mapGuardrails(asOptionalRecord(data.guardrails), body),
@@ -549,13 +689,7 @@ export function mapAgentProfile(filePath: string): AgentProfileSpec {
       data.anti_patterns ?? data.antiPatterns
         ? asStringArray(data.anti_patterns ?? data.antiPatterns, "anti_patterns")
         : extractBullets(extractSection(body, "Agent-Specific Anti-patterns")),
-    examples:
-      data.examples
-        ? {
-            goodFit: asStringArray(asRecord(data.examples, "examples").good_fit ?? asRecord(data.examples, "examples").goodFit ?? [], "examples.good_fit"),
-            badFit: asStringArray(asRecord(data.examples, "examples").bad_fit ?? asRecord(data.examples, "examples").badFit ?? [], "examples.bad_fit"),
-          }
-        : extractExamples(extractSection(body, "Examples")),
+    examples: mapExamples(asOptionalRecord(data.examples), body),
     toolSkillStrategy: mapToolSkillStrategy(
       asOptionalRecord(data.tool_skill_strategy ?? data.toolSkillStrategy),
     ),
