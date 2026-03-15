@@ -80,6 +80,7 @@ Required frontmatter blocks:
 
 Recommended optional blocks for parity with current `coding-team` profiles:
 
+- `execution_policy`
 - `output_contract`
 - `operations`
 - `templates`
@@ -93,7 +94,7 @@ Recommended optional blocks for parity with current `coding-team` profiles:
 
 ## Prompt Projection
 
-Use `prompt_projection` inside `team.manifest.yaml` and `agents/*.agent.md` to control exactly which schema fields are allowed to enter the final prompt.
+Use `prompt_projection` inside `team.manifest.yaml` and `agents/*.agent.md` to control exactly which schema fields are allowed to enter the final prompt. Dotted paths are supported, and `include` order is the render order.
 
 Supported Team fields:
 
@@ -103,21 +104,58 @@ Supported Team fields:
 Supported Agent fields:
 
 - `responsibility_core`
+- `responsibility_core.description`
+- `responsibility_core.objective`
+- `responsibility_core.authority`
+- `responsibility_core.output_preference`
+- `responsibility_core.use_when`
+- `responsibility_core.avoid_when`
+- `responsibility_core.success_definition`
+- `responsibility_core.non_goals`
+- `responsibility_core.in_scope`
+- `responsibility_core.out_of_scope`
 - `persona_core`
+- `execution_policy`
+- `execution_policy.ambiguity_policy`
+- `execution_policy.task_triage`
+- `execution_policy.delegation_policy`
+- `execution_policy.review_policy`
+- `execution_policy.todo_discipline`
+- `execution_policy.completion_gate`
+- `execution_policy.failure_recovery`
 - `collaboration`
 - `output_contract`
 - `operations`
+- `operations.autonomy_level`
+- `operations.stop_conditions`
+- `operations.core_operation_skeleton`
 - `templates`
+- `templates.exploration_checklist`
+- `templates.execution_plan`
+- `templates.final_report`
 - `guardrails`
+- `guardrails.critical`
 - `heuristics`
 - `anti_patterns`
 - `examples`
+- `examples.fit`
+- `examples.fit.good_fit`
+- `examples.fit.bad_fit`
+- `examples.micro`
+- `examples.micro.ambiguity_resolution`
+- `examples.micro.final_closure`
 - `tool_skill_strategy`
+- `tool_skill_strategy.principles`
+- `tool_skill_strategy.preferred_order`
+- `tool_skill_strategy.avoid`
+- `tool_skill_strategy.notes`
 - `entry_point`
 - `id`
 - `name`
 - `owner`
 - `tags`
+- `archetype`
+- `runtime_config`
 
 Example in `team.manifest.yaml`:
 
@@ -135,20 +173,45 @@ Example in `*.agent.md` frontmatter:
 ```yaml
 prompt_projection:
   include:
-    - responsibility_core
     - persona_core
+    - responsibility_core.description
+    - responsibility_core.objective
+    - responsibility_core.authority
+    - responsibility_core.output_preference
+    - execution_policy.ambiguity_policy
+    - execution_policy.task_triage
+    - execution_policy.delegation_policy
+    - execution_policy.review_policy
+    - execution_policy.todo_discipline
+    - execution_policy.completion_gate
     - collaboration
-    - output_contract
-    - operations
-    - templates
-    - guardrails
+    - operations.autonomy_level
+    - operations.stop_conditions
+    - operations.core_operation_skeleton
+    - guardrails.critical
     - heuristics
     - anti_patterns
-    - examples
-    - tool_skill_strategy
+    - output_contract
+    - templates.final_report
+    - examples.micro
+    - tool_skill_strategy.principles
+    - tool_skill_strategy.preferred_order
+    - tool_skill_strategy.avoid
   exclude:
+    - archetype
     - tags
     - entry_point
+    - runtime_config
+    - responsibility_core.use_when
+    - responsibility_core.avoid_when
+    - responsibility_core.success_definition
+    - responsibility_core.non_goals
+    - responsibility_core.in_scope
+    - responsibility_core.out_of_scope
+    - templates.exploration_checklist
+    - templates.execution_plan
+    - examples.fit
+    - tool_skill_strategy.notes
 ```
 
 `archetype` remains valid in agent profiles as design-time metadata, but it is intentionally hidden from final prompt projection.
@@ -158,6 +221,20 @@ OpenCode prompt rendering no longer dumps raw YAML-style config. The final promp
 `workflow_override` has been removed from the Agent profile schema. Put `autonomy_level`, `stop_conditions`, and `core_operation_skeleton` under `operations` instead.
 
 `tool_skill_strategy` is prompt-only guidance about how the agent should prioritize direct tools, skills, and delegation. It does not register capabilities. The real runtime capability set still comes from `runtime_config.requested_tools` and `runtime_config.skills`.
+
+`execution_policy` is the preferred home for execution-directing rules such as ambiguity handling, task triage, delegation, review, todo discipline, completion gates, and failure recovery. Keep `operations` focused on autonomy, stop conditions, and the executable procedure skeleton.
+
+`examples` should use the richer two-layer structure below. Keep broad fit guidance for authoring/reference and project only `micro` when you want compact, high-density execution examples in the final prompt.
+
+```yaml
+examples:
+  fit:
+    good_fit: []
+    bad_fit: []
+  micro:
+    ambiguity_resolution: []
+    final_closure: []
+```
 
 Current semantics are intentionally narrow:
 
