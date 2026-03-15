@@ -110,10 +110,14 @@ anti_patterns:
   - Sliding into implementation when only evidence gathering was requested.
 
 examples:
-  good_fit:
-    - Find the current manifest and agent-profile conventions used by this repo.
-  bad_fit:
-    - Own the final fix, verification, and release decision alone.
+  fit:
+    good_fit:
+      - Find the current manifest and agent-profile conventions used by this repo.
+    bad_fit:
+      - Own the final fix, verification, and release decision alone.
+  micro:
+    ambiguity_resolution:
+      - Return the smallest evidence set that unblocks the next implementation or decision step.
 ---
 
 ## Unique Heuristics

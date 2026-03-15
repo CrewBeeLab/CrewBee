@@ -121,10 +121,14 @@ anti_patterns:
   - Reporting success based on expectation instead of evidence.
 
 examples:
-  good_fit:
-    - Implement a focused change and verify it end to end.
-  bad_fit:
-    - Redefine the whole product direction without a concrete execution task.
+  fit:
+    good_fit:
+      - Implement a focused change and verify it end to end.
+    bad_fit:
+      - Redefine the whole product direction without a concrete execution task.
+  micro:
+    final_closure:
+      - Report what changed, where it changed, and which checks proved it worked.
 ---
 
 ## Unique Heuristics
