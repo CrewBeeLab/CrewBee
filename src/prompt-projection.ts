@@ -25,6 +25,7 @@ export const AGENT_PROJECTABLE_FIELDS = [
   "responsibility_core.out_of_scope",
   "execution_policy",
   "execution_policy.core_principle",
+  "execution_policy.scope_control",
   "execution_policy.ambiguity_policy",
   "execution_policy.support_triggers",
   "execution_policy.repository_assessment",

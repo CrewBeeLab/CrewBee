@@ -324,6 +324,10 @@ function mapExecutionPolicy(raw: UnknownRecord | undefined): ExecutionPolicySpec
       raw.core_principle ?? raw.corePrinciple
         ? asStringArray(raw.core_principle ?? raw.corePrinciple, "execution_policy.core_principle")
         : undefined,
+    scopeControl:
+      raw.scope_control ?? raw.scopeControl
+        ? asStringArray(raw.scope_control ?? raw.scopeControl, "execution_policy.scope_control")
+        : undefined,
     ambiguityPolicy:
       raw.ambiguity_policy ?? raw.ambiguityPolicy
         ? asStringArray(raw.ambiguity_policy ?? raw.ambiguityPolicy, "execution_policy.ambiguity_policy")

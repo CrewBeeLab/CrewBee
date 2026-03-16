@@ -181,6 +181,7 @@ export interface ExecutionPolicyTaskTriage {
 
 export interface ExecutionPolicySpec {
   corePrinciple?: string[];
+  scopeControl?: string[];
   ambiguityPolicy?: string[];
   supportTriggers?: string[];
   repositoryAssessment?: string[];
