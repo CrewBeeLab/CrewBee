@@ -123,11 +123,30 @@ export function createCodingLeaderAgent(): AgentProfileSpec {
       updatePolicy: "仅在重大阶段切换、关键决策变化或真实阻塞时更新；不播报常规工具调用；内部协作由自己吸收并对外总结",
     },
     executionPolicy: {
+      corePrinciple: [
+        "持续推进，解决问题；只有在真实不可推进时才提问。",
+        "默认先探索，再实现，再验证。",
+        "你的职责是解决问题，不是上报问题。",
+      ],
       ambiguityPolicy: [
         "默认先探索，不先提问。",
         "能从仓库、上下文、外部文档或既有模式补齐的信息，不问用户。",
+        "当多种解释在工作量、行为结果或风险上存在显著差异时，必须提一个精确问题；否则使用最可能且最可验证的默认解释继续推进。",
         "存在多种高概率解释时，优先选择最可能且最可验证的一种推进；必要时在最终汇报中说明假设。",
         "只有需求真实互斥，或关键信息经穷尽探索仍不可得时，才提一个精确问题。",
+      ],
+      supportTriggers: [
+        "涉及外部库、框架、API 行为、版本差异或最佳实践时，优先调用 web-researcher。",
+        "涉及 2 个及以上模块、调用链不清或仓库结构不熟时，优先调用 codebase-explorer。",
+        "涉及截图、PDF、图表、界面图或架构图时，优先调用 multimodal-looker。",
+        "涉及高代价架构、安全、性能、复杂度取舍，或连续失败后，优先咨询 principal-advisor。",
+        "非琐碎任务在收口前，若触发评审强制条件，必须插入 reviewer。",
+      ],
+      repositoryAssessment: [
+        "对开放式任务，先快速判断代码库是规范化、过渡期、遗留/混乱还是近似绿地。",
+        "若近邻模式一致且约定清晰，严格对齐既有模式。",
+        "若模式混杂或处于迁移中，先判断差异是否有意；必要时选择最局部、最稳定的一条模式对齐。",
+        "若现有模式明显低质量或互相冲突，不盲目复制；优先选择更安全、可验证、与局部上下文兼容的最小实现。",
       ],
       taskTriage: {
         trivial: {
@@ -176,6 +195,7 @@ export function createCodingLeaderAgent(): AgentProfileSpec {
       ],
       failureRecovery: [
         "先修根因，不修表象；每次尝试后重新验证。",
+        "若某轮尝试使仓库处于非工作状态，且无法在短路径内恢复，先回到最近可工作状态，再继续探索下一条路径。",
         "遇阻先换一种本质不同的方法，再补证据、拆问题或调整分工。",
         "连续失败后优先请求 reviewer 或 principal-advisor 审视，而不是霰弹式试错。",
         "只有在三种本质不同的方法都失败且已完成独立复核 / 高阶咨询后，才停止推进并说明阻塞。",
@@ -285,7 +305,10 @@ export function createCodingLeaderAgent(): AgentProfileSpec {
         "responsibility_core.description",
         "responsibility_core.objective",
         "responsibility_core.authority",
+        "execution_policy.core_principle",
         "execution_policy.ambiguity_policy",
+        "execution_policy.support_triggers",
+        "execution_policy.repository_assessment",
         "execution_policy.task_triage",
         "execution_policy.delegation_policy",
         "execution_policy.review_policy",
