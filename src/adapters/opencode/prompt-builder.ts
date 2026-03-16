@@ -22,6 +22,7 @@ const TEAM_SECTION_TITLES = {
 const AGENT_SECTION_TITLES = {
   identityRole: "Identity / Role",
   corePrinciple: "Core Principle",
+  scopeControl: "Scope Control",
   ambiguityPolicy: "Ambiguity Policy",
   supportTriggers: "Support Triggers",
   repositoryAssessment: "Repository Assessment",
@@ -33,7 +34,7 @@ const AGENT_SECTION_TITLES = {
   collaboration: "Collaboration",
   operatingProcedure: "Operating Procedure",
   rulesHeuristicsAntiPatterns: "Guardrails / Heuristics / Anti-patterns",
-  outputAndClosure: "Output Contract / Final Report Template / Micro Examples / Tool Strategy",
+  outputAndClosure: "Output Contract / Final Report Template / Tool Strategy",
 } as const;
 
 type TeamSectionKey = keyof typeof TEAM_SECTION_TITLES;
@@ -46,6 +47,7 @@ const DEFAULT_AGENT_RENDER_ORDER = [
   "responsibility_core.authority",
   "responsibility_core.output_preference",
   "execution_policy.core_principle",
+  "execution_policy.scope_control",
   "execution_policy.ambiguity_policy",
   "execution_policy.support_triggers",
   "execution_policy.repository_assessment",
@@ -64,7 +66,6 @@ const DEFAULT_AGENT_RENDER_ORDER = [
   "anti_patterns",
   "output_contract",
   "templates.final_report",
-  "examples.micro.ambiguity_resolution",
   "tool_skill_strategy.principles",
   "tool_skill_strategy.preferred_order",
   "tool_skill_strategy.avoid",
@@ -245,7 +246,6 @@ function renderMicroExamples(acc: SectionAccumulator<AgentSectionKey>, examples:
     return;
   }
 
-  acc.addList("outputAndClosure", "Ambiguity resolution", micro.ambiguityResolution);
   acc.addList("outputAndClosure", "Final closure", micro.finalClosure);
 }
 
@@ -301,15 +301,11 @@ function renderTeamEntry(
 
   switch (field) {
     case "mission":
-      acc.addKeyValue("mission", "Objective", team.mission.objective);
-      acc.addList("mission", "Success definition", team.mission.successDefinition);
       return;
     case "governance":
       acc.addRawLines("workingRules", takeStrings(team.governance.workingRules).map((rule) => `- ${rule}`));
       acc.addList("approvalSafety", "Approval required for", team.governance.approvalPolicy.requiredFor);
       acc.addList("approvalSafety", "Forbidden actions", team.governance.forbiddenActions);
-      acc.addList("approvalSafety", "Quality floor checks", team.governance.qualityFloor.requiredChecks);
-      acc.addKeyValue("approvalSafety", "Evidence required", team.governance.qualityFloor.evidenceRequired);
       return;
   }
 }
@@ -351,6 +347,7 @@ function renderAgentEntry(
       return;
     case "execution_policy":
       renderAgentEntry(acc, ctx, "execution_policy.core_principle");
+      renderAgentEntry(acc, ctx, "execution_policy.scope_control");
       renderAgentEntry(acc, ctx, "execution_policy.ambiguity_policy");
       renderAgentEntry(acc, ctx, "execution_policy.support_triggers");
       renderAgentEntry(acc, ctx, "execution_policy.repository_assessment");
@@ -363,6 +360,9 @@ function renderAgentEntry(
       return;
     case "execution_policy.core_principle":
       acc.addRawLines("corePrinciple", takeStrings(agent.executionPolicy?.corePrinciple).map((item) => `- ${item}`));
+      return;
+    case "execution_policy.scope_control":
+      acc.addRawLines("scopeControl", takeStrings(agent.executionPolicy?.scopeControl).map((item) => `- ${item}`));
       return;
     case "execution_policy.ambiguity_policy":
       acc.addList("ambiguityPolicy", "Ambiguity policy", agent.executionPolicy?.ambiguityPolicy);
@@ -395,16 +395,10 @@ function renderAgentEntry(
       acc.addRawLines("failureRecovery", takeStrings(agent.executionPolicy?.failureRecovery).map((item) => `- ${item}`));
       return;
     case "collaboration":
-      acc.addList(
-        "collaboration",
-        "Consult",
-        agent.collaboration.defaultConsults.map((binding) => ctx.renderBindingWithGuidance(binding)),
-      );
-      acc.addList(
-        "collaboration",
-        "Handoff",
-        agent.collaboration.defaultHandoffs.map((binding) => ctx.renderBindingWithGuidance(binding)),
-      );
+      acc.addRawLines("collaboration", [
+        ...agent.collaboration.defaultConsults.map((binding) => `- ${ctx.renderBindingWithGuidance(binding)}`),
+        ...agent.collaboration.defaultHandoffs.map((binding) => `- ${ctx.renderBindingWithGuidance(binding)}`),
+      ]);
       return;
     case "operations":
       renderAgentEntry(acc, ctx, "operations.autonomy_level");
@@ -464,7 +458,6 @@ function renderAgentEntry(
       renderMicroExamples(acc, agent.examples);
       return;
     case "examples.micro.ambiguity_resolution":
-      acc.addList("outputAndClosure", "Ambiguity resolution", agent.examples?.micro?.ambiguityResolution);
       return;
     case "examples.micro.final_closure":
       acc.addList("outputAndClosure", "Final closure", agent.examples?.micro?.finalClosure);

@@ -52,33 +52,33 @@ export function createEmbeddedCodingTeam(): AgentTeamDefinition {
         delegateMode: "先切给它做开局 owner；让它组织探索与调研，形成单一路径后把实现统一交给 coding-executor，自己负责收口。",
       },
       "coding-executor": {
-        responsibility: "纯执行叶子角色；负责明确实现、修复、调试、局部重构和自验证。",
-        delegateWhen: "目标、范围、相关文件或入口、验收口径已经足够清晰，需要专注做完而不是再规划时。",
+        responsibility: "边界清晰的叶子实现。",
+        delegateWhen: "目标、入口和验收口径已清晰时。",
         delegateMode: "叶子实现委派；必须写清目标、范围、相关上下文、禁止项和验证标准；不要求它再做路由判断，也不允许它继续委派实现。",
       },
       "codebase-explorer": {
-        responsibility: "仓库内只读定位者；负责找实现位置、调用链、入口、模式和历史线索。",
-        delegateWhen: "需要回答“在哪里实现 / 哪里调用 / 哪些文件相关 / 调用链是什么”这类仓库内定位问题时。",
+        responsibility: "定位实现位置、调用链、入口与既有模式。",
+        delegateWhen: "实现位置或调用链不清时。",
         delegateMode: "只读咨询式委派；给明确定位目标，要求返回绝对路径、关键链路、相关模式和可继续执行的下一步。",
       },
       "web-researcher": {
-        responsibility: "外部只读研究者；负责查官方文档、开源源码、版本差异、issues / PRs / releases 等外部证据。",
-        delegateWhen: "问题涉及外部库、框架、API 行为、版本变化、最佳实践或开源实现依据时。",
+        responsibility: "查外部文档、版本差异与开源实现依据。",
+        delegateWhen: "涉及外部库 / 框架行为时。",
         delegateMode: "只读咨询式委派；给明确研究问题和版本上下文，要求返回结论、证据链接和关键源码 / 永久链接，不让它写代码。",
       },
       reviewer: {
-        responsibility: "独立质量复核；负责判断计划、实现结果或完成声明是否足够可靠继续推进或宣告完成。",
-        delegateWhen: "需要评估是否应做独立复核，或已触发高风险、高不确定性、验证证据不足、完成边界不清、完成声明较重等强制条件时。",
+        responsibility: "独立质量复核。",
+        delegateWhen: "高风险 / 高不确定性 / 证据不足 / 完成边界不清时。",
         delegateMode: "评审式委派；提交 Plan / Implementation / Completion 及关键证据，只要求它给 OKAY / REJECT 和最多 3 个阻塞项。",
       },
       "principal-advisor": {
-        responsibility: "高阶只读顾问；负责复杂架构、安全、性能、复杂度和多路径取舍问题的主判断。",
-        delegateWhen: "高代价决策、陌生模式、多轮失败、系统级风险，或需要一条明确主建议而不是平铺选项时。",
+        responsibility: "高代价架构、安全、性能或复杂度取舍。",
+        delegateWhen: "需要主建议时。",
         delegateMode: "高阶咨询式委派；给当前代码上下文、问题、候选路径或风险点，要求返回一条主建议、最短行动路径和工作量估计。",
       },
       "multimodal-looker": {
-        responsibility: "多模态只读解读者；负责从 PDF、截图、图表、界面图、架构图中提取所需信息。",
-        delegateWhen: "普通文本读取不够，或需要从媒体材料提取文本、表格、数据、布局或结构关系时。",
+        responsibility: "截图、PDF、图表与界面材料解读。",
+        delegateWhen: "普通文本读取不够时。",
         delegateMode: "提取式委派；给清提取目标、文件范围和输出口径，要求只返回相关内容、关系和缺失项。",
       },
     },
@@ -126,7 +126,7 @@ export function createEmbeddedCodingTeam(): AgentTeamDefinition {
     },
     tags: ["代码", "leader驱动", "上下文连续性", "主执行者中心", "评审中心", "证据驱动"],
     promptProjection: {
-      include: ["mission", "governance"],
+      include: ["governance"],
     },
   };
 
