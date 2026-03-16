@@ -67,8 +67,8 @@ export function createEmbeddedCodingTeam(): AgentTeamDefinition {
         delegateMode: "只读咨询式委派；给明确研究问题和版本上下文，要求返回结论、证据链接和关键源码 / 永久链接，不让它写代码。",
       },
       reviewer: {
-        responsibility: "独立评审者；负责判断计划、实现结果或完成声明是否足够可靠继续推进或宣告完成。",
-        delegateWhen: "非琐碎任务在进入执行前、实现完成后、或对外宣称完成前，需要独立质量刹车时。",
+        responsibility: "独立质量复核；负责判断计划、实现结果或完成声明是否足够可靠继续推进或宣告完成。",
+        delegateWhen: "需要评估是否应做独立复核，或已触发高风险、高不确定性、验证证据不足、完成边界不清、完成声明较重等强制条件时。",
         delegateMode: "评审式委派；提交 Plan / Implementation / Completion 及关键证据，只要求它给 OKAY / REJECT 和最多 3 个阻塞项。",
       },
       "principal-advisor": {
@@ -97,6 +97,7 @@ export function createEmbeddedCodingTeam(): AgentTeamDefinition {
         "忽略硬约束",
         "假装读过未读代码",
         "未经明确批准压制类型错误",
+        "不允许用 as any / @ts-ignore / @ts-expect-error、空 catch 或删除失败测试来换取“通过”",
       ],
       qualityFloor: {
         requiredChecks: ["诊断检查（diagnostics）", "构建检查（build）", "测试检查（tests）"],
@@ -108,7 +109,7 @@ export function createEmbeddedCodingTeam(): AgentTeamDefinition {
         "支援 Agent 必须向 Leader 或当前主执行 owner 回报",
         "任何委派或咨询都必须写清目标、范围、约束、交付与验证口径",
         "面向用户的最终总结必须由持有收口责任的角色给出",
-        "非琐碎任务在宣称完成前必须经过评审",
+        "非琐碎任务在宣称完成前必须评估是否需要评审；触发强制条件时必须经过评审",
         "叶子执行者必须自行验证；最终收口由 owner 统一完成",
         "仓库内研究与外部研究必须分离",
       ],

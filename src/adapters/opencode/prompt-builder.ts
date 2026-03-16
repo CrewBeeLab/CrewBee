@@ -17,7 +17,6 @@ const TEAM_SECTION_TITLES = {
   mission: "Mission",
   workingRules: "Working Rules",
   approvalSafety: "Approval & Safety",
-  requiredChecks: "Required Checks",
 } as const;
 
 const AGENT_SECTION_TITLES = {
@@ -48,6 +47,7 @@ const DEFAULT_AGENT_RENDER_ORDER = [
   "execution_policy.review_policy",
   "execution_policy.todo_discipline",
   "execution_policy.completion_gate",
+  "execution_policy.failure_recovery",
   "collaboration",
   "operations.autonomy_level",
   "operations.stop_conditions",
@@ -57,7 +57,7 @@ const DEFAULT_AGENT_RENDER_ORDER = [
   "anti_patterns",
   "output_contract",
   "templates.final_report",
-  "examples.micro",
+  "examples.micro.ambiguity_resolution",
   "tool_skill_strategy.principles",
   "tool_skill_strategy.preferred_order",
   "tool_skill_strategy.avoid",
@@ -75,32 +75,22 @@ function takeStrings(values: readonly string[] | undefined): string[] {
   return unique((values ?? []).map((value) => value.trim()).filter(present));
 }
 
-function renderMemberGuidance(agentRef: string, member: TeamMemberGuidance): string {
-  const parts = [`agent_ref=${agentRef}`, `responsibility=${member.responsibility}`];
-
-  if (present(member.delegateWhen)) {
-    parts.push(`delegate_when=${member.delegateWhen}`);
+function trimTrailingPunctuation(text: string | undefined): string | undefined {
+  if (!present(text)) {
+    return undefined;
   }
 
-  if (present(member.delegateMode)) {
-    parts.push(`delegate_mode=${member.delegateMode}`);
-  }
-
-  return parts.join("; ");
+  const trimmed = text.trim().replace(/[。；;，,：:\s]+$/u, "");
+  return present(trimmed) ? trimmed : undefined;
 }
 
-function renderBinding(binding: CollaborationBindingInput): string {
-  if (typeof binding === "string") {
-    return `agent_ref=${binding}`;
+function renderCollaborationUsage(text: string | undefined): string | undefined {
+  const trimmed = trimTrailingPunctuation(text);
+  if (!present(trimmed)) {
+    return undefined;
   }
 
-  const parts = [`agent_ref=${binding.agentRef}`];
-
-  if (present(binding.description)) {
-    parts.push(`description=${binding.description}`);
-  }
-
-  return parts.join("; ");
+  return trimmed.endsWith("时") ? `${trimmed}使用` : trimmed;
 }
 
 class SectionAccumulator<TSectionKey extends string> {
@@ -185,20 +175,21 @@ class RenderContext {
   }
 
   renderBindingWithGuidance(binding: CollaborationBindingInput): string {
-    const base = renderBinding(binding);
     const agentRef = typeof binding === "string" ? binding : binding.agentRef;
     const member = this.team.members[agentRef];
 
     if (!member) {
-      return base;
+      const fallback = typeof binding === "string" ? undefined : trimTrailingPunctuation(binding.description);
+      return present(fallback) ? `${agentRef}：${fallback}` : agentRef;
     }
 
-    const guidanceWithoutAgentRef = renderMemberGuidance(agentRef, member)
-      .split("; ")
-      .filter((part) => !part.startsWith("agent_ref="))
-      .join("; ");
+    const parts = [`${agentRef}：${trimTrailingPunctuation(member.responsibility) ?? agentRef}`];
+    const usage = renderCollaborationUsage(member.delegateWhen);
+    if (present(usage)) {
+      parts.push(usage);
+    }
 
-    return present(guidanceWithoutAgentRef) ? `${base}; ${guidanceWithoutAgentRef}` : base;
+    return parts.join("；");
   }
 }
 
@@ -307,11 +298,11 @@ function renderTeamEntry(
       acc.addList("mission", "Success definition", team.mission.successDefinition);
       return;
     case "governance":
-      acc.addList("workingRules", "Working rules", team.governance.workingRules);
+      acc.addRawLines("workingRules", takeStrings(team.governance.workingRules).map((rule) => `- ${rule}`));
       acc.addList("approvalSafety", "Approval required for", team.governance.approvalPolicy.requiredFor);
       acc.addList("approvalSafety", "Forbidden actions", team.governance.forbiddenActions);
-      acc.addList("requiredChecks", "Required checks", team.governance.qualityFloor.requiredChecks);
-      acc.addKeyValue("requiredChecks", "Evidence required", team.governance.qualityFloor.evidenceRequired);
+      acc.addList("approvalSafety", "Quality floor checks", team.governance.qualityFloor.requiredChecks);
+      acc.addKeyValue("approvalSafety", "Evidence required", team.governance.qualityFloor.evidenceRequired);
       return;
   }
 }
