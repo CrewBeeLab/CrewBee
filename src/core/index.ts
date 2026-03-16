@@ -180,7 +180,10 @@ export interface ExecutionPolicyTaskTriage {
 }
 
 export interface ExecutionPolicySpec {
+  corePrinciple?: string[];
   ambiguityPolicy?: string[];
+  supportTriggers?: string[];
+  repositoryAssessment?: string[];
   taskTriage?: ExecutionPolicyTaskTriage;
   delegationPolicy?: string[];
   reviewPolicy?: string[];

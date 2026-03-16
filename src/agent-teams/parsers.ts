@@ -320,9 +320,21 @@ function mapExecutionPolicy(raw: UnknownRecord | undefined): ExecutionPolicySpec
     : undefined;
 
   const executionPolicy: ExecutionPolicySpec = {
+    corePrinciple:
+      raw.core_principle ?? raw.corePrinciple
+        ? asStringArray(raw.core_principle ?? raw.corePrinciple, "execution_policy.core_principle")
+        : undefined,
     ambiguityPolicy:
       raw.ambiguity_policy ?? raw.ambiguityPolicy
         ? asStringArray(raw.ambiguity_policy ?? raw.ambiguityPolicy, "execution_policy.ambiguity_policy")
+        : undefined,
+    supportTriggers:
+      raw.support_triggers ?? raw.supportTriggers
+        ? asStringArray(raw.support_triggers ?? raw.supportTriggers, "execution_policy.support_triggers")
+        : undefined,
+    repositoryAssessment:
+      raw.repository_assessment ?? raw.repositoryAssessment
+        ? asStringArray(raw.repository_assessment ?? raw.repositoryAssessment, "execution_policy.repository_assessment")
         : undefined,
     taskTriage:
       taskTriage && Object.values(taskTriage).some(Boolean)
