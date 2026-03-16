@@ -21,11 +21,15 @@ const TEAM_SECTION_TITLES = {
 
 const AGENT_SECTION_TITLES = {
   identityRole: "Identity / Role",
+  corePrinciple: "Core Principle",
   ambiguityPolicy: "Ambiguity Policy",
+  supportTriggers: "Support Triggers",
+  repositoryAssessment: "Repository Assessment",
   taskTriage: "Task Triage",
   delegationReview: "Delegation & Review",
   todoDiscipline: "Todo Discipline",
   completionGate: "Completion Gate",
+  failureRecovery: "Failure Recovery",
   collaboration: "Collaboration",
   operatingProcedure: "Operating Procedure",
   rulesHeuristicsAntiPatterns: "Guardrails / Heuristics / Anti-patterns",
@@ -41,7 +45,10 @@ const DEFAULT_AGENT_RENDER_ORDER = [
   "responsibility_core.objective",
   "responsibility_core.authority",
   "responsibility_core.output_preference",
+  "execution_policy.core_principle",
   "execution_policy.ambiguity_policy",
+  "execution_policy.support_triggers",
+  "execution_policy.repository_assessment",
   "execution_policy.task_triage",
   "execution_policy.delegation_policy",
   "execution_policy.review_policy",
@@ -343,7 +350,10 @@ function renderAgentEntry(
       acc.addList("identityRole", "Output preference", agent.responsibilityCore.outputPreference);
       return;
     case "execution_policy":
+      renderAgentEntry(acc, ctx, "execution_policy.core_principle");
       renderAgentEntry(acc, ctx, "execution_policy.ambiguity_policy");
+      renderAgentEntry(acc, ctx, "execution_policy.support_triggers");
+      renderAgentEntry(acc, ctx, "execution_policy.repository_assessment");
       renderAgentEntry(acc, ctx, "execution_policy.task_triage");
       renderAgentEntry(acc, ctx, "execution_policy.delegation_policy");
       renderAgentEntry(acc, ctx, "execution_policy.review_policy");
@@ -351,8 +361,20 @@ function renderAgentEntry(
       renderAgentEntry(acc, ctx, "execution_policy.completion_gate");
       renderAgentEntry(acc, ctx, "execution_policy.failure_recovery");
       return;
+    case "execution_policy.core_principle":
+      acc.addRawLines("corePrinciple", takeStrings(agent.executionPolicy?.corePrinciple).map((item) => `- ${item}`));
+      return;
     case "execution_policy.ambiguity_policy":
       acc.addList("ambiguityPolicy", "Ambiguity policy", agent.executionPolicy?.ambiguityPolicy);
+      return;
+    case "execution_policy.support_triggers":
+      acc.addRawLines("supportTriggers", takeStrings(agent.executionPolicy?.supportTriggers).map((item) => `- ${item}`));
+      return;
+    case "execution_policy.repository_assessment":
+      acc.addRawLines(
+        "repositoryAssessment",
+        takeStrings(agent.executionPolicy?.repositoryAssessment).map((item) => `- ${item}`),
+      );
       return;
     case "execution_policy.task_triage":
       renderTaskTriage(acc, agent.executionPolicy?.taskTriage);
@@ -370,7 +392,7 @@ function renderAgentEntry(
       acc.addList("completionGate", "Completion gate", agent.executionPolicy?.completionGate);
       return;
     case "execution_policy.failure_recovery":
-      acc.addList("completionGate", "Failure recovery", agent.executionPolicy?.failureRecovery);
+      acc.addRawLines("failureRecovery", takeStrings(agent.executionPolicy?.failureRecovery).map((item) => `- ${item}`));
       return;
     case "collaboration":
       acc.addList(
