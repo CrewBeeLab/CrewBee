@@ -29,6 +29,7 @@ export const AGENT_PROJECTABLE_FIELDS = [
   "execution_policy.ambiguity_policy",
   "execution_policy.support_triggers",
   "execution_policy.repository_assessment",
+  "execution_policy.concern_escalation_policy",
   "execution_policy.task_triage",
   "execution_policy.delegation_policy",
   "execution_policy.review_policy",

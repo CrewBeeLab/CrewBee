@@ -185,6 +185,7 @@ export interface ExecutionPolicySpec {
   ambiguityPolicy?: string[];
   supportTriggers?: string[];
   repositoryAssessment?: string[];
+  concernEscalationPolicy?: string[];
   taskTriage?: ExecutionPolicyTaskTriage;
   delegationPolicy?: string[];
   reviewPolicy?: string[];

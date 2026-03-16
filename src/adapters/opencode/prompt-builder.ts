@@ -26,6 +26,7 @@ const AGENT_SECTION_TITLES = {
   ambiguityPolicy: "Ambiguity Policy",
   supportTriggers: "Support Triggers",
   repositoryAssessment: "Repository Assessment",
+  concernEscalationPolicy: "Concern Escalation Policy",
   taskTriage: "Task Triage",
   delegationReview: "Delegation & Review",
   todoDiscipline: "Todo Discipline",
@@ -51,6 +52,7 @@ const DEFAULT_AGENT_RENDER_ORDER = [
   "execution_policy.ambiguity_policy",
   "execution_policy.support_triggers",
   "execution_policy.repository_assessment",
+  "execution_policy.concern_escalation_policy",
   "execution_policy.task_triage",
   "execution_policy.delegation_policy",
   "execution_policy.review_policy",
@@ -117,6 +119,10 @@ class SectionAccumulator<TSectionKey extends string> {
   }
 
   addRawLines(key: TSectionKey, lines: readonly string[]): void {
+    if (lines.length === 0) {
+      return;
+    }
+
     const target = this.ensure(key);
     for (const line of lines) {
       target.push(line);
@@ -351,6 +357,7 @@ function renderAgentEntry(
       renderAgentEntry(acc, ctx, "execution_policy.ambiguity_policy");
       renderAgentEntry(acc, ctx, "execution_policy.support_triggers");
       renderAgentEntry(acc, ctx, "execution_policy.repository_assessment");
+      renderAgentEntry(acc, ctx, "execution_policy.concern_escalation_policy");
       renderAgentEntry(acc, ctx, "execution_policy.task_triage");
       renderAgentEntry(acc, ctx, "execution_policy.delegation_policy");
       renderAgentEntry(acc, ctx, "execution_policy.review_policy");
@@ -374,6 +381,12 @@ function renderAgentEntry(
       acc.addRawLines(
         "repositoryAssessment",
         takeStrings(agent.executionPolicy?.repositoryAssessment).map((item) => `- ${item}`),
+      );
+      return;
+    case "execution_policy.concern_escalation_policy":
+      acc.addRawLines(
+        "concernEscalationPolicy",
+        takeStrings(agent.executionPolicy?.concernEscalationPolicy).map((item) => `- ${item}`),
       );
       return;
     case "execution_policy.task_triage":

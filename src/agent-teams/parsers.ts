@@ -340,6 +340,13 @@ function mapExecutionPolicy(raw: UnknownRecord | undefined): ExecutionPolicySpec
       raw.repository_assessment ?? raw.repositoryAssessment
         ? asStringArray(raw.repository_assessment ?? raw.repositoryAssessment, "execution_policy.repository_assessment")
         : undefined,
+    concernEscalationPolicy:
+      raw.concern_escalation_policy ?? raw.concernEscalationPolicy
+        ? asStringArray(
+            raw.concern_escalation_policy ?? raw.concernEscalationPolicy,
+            "execution_policy.concern_escalation_policy",
+          )
+        : undefined,
     taskTriage:
       taskTriage && Object.values(taskTriage).some(Boolean)
         ? taskTriage
