@@ -8,7 +8,12 @@ import {
   type OpenCodeBootstrapOutput,
 } from "./bootstrap";
 import type { OpenCodeConfigLike } from "./config-merge";
-import { resolveProjectedAgentSelection } from "./projection";
+import {
+  createProjectedAgentAliasIndex,
+  createProjectedAgentTaskAliasHelpLines,
+  resolveProjectedAgentAlias,
+  resolveProjectedAgentSelection,
+} from "./projection";
 
 const DEFAULT_MODE = "single-executor" as const;
 
@@ -46,6 +51,7 @@ export const OpenCodeCrewBeePlugin: Plugin = async (ctx) => {
       defaultMode: DEFAULT_MODE,
     },
   });
+  let aliasIndex = createProjectedAgentAliasIndex(boot.projectedAgents);
   const bindings = new Map<string, SessionRuntimeBinding>();
 
   return {
@@ -61,6 +67,7 @@ export const OpenCodeCrewBeePlugin: Plugin = async (ctx) => {
       });
 
       boot = next;
+      aliasIndex = createProjectedAgentAliasIndex(next.projectedAgents);
       cfg.agent = (next.mergedConfig?.agent ?? next.configPatch.agent) as typeof cfg.agent;
 
       if (next.mergedConfig?.default_agent) {
@@ -108,6 +115,53 @@ export const OpenCodeCrewBeePlugin: Plugin = async (ctx) => {
         mode: DEFAULT_MODE,
         source: input.agent ? "host-agent-selection" : "plugin-default",
       }));
+    },
+    "tool.definition": async (input, output) => {
+      if (input.toolID !== "task") {
+        return;
+      }
+
+      const helpLines = createProjectedAgentTaskAliasHelpLines(boot.projectedAgents);
+
+      if (helpLines.length === 0) {
+        return;
+      }
+
+      output.description = [
+        output.description,
+        "",
+        "CrewBee subagent aliases:",
+        ...helpLines,
+        "",
+        "When delegating inside CrewBee, prefer the CrewBee source-agent alias shown on each line.",
+      ].join("\n");
+    },
+    "tool.execute.before": async (input, output) => {
+      if (input.tool !== "task") {
+        return;
+      }
+
+      if (!bindings.has(input.sessionID)) {
+        return;
+      }
+
+      if (typeof output.args !== "object" || output.args === null) {
+        return;
+      }
+
+      const subagentType = "subagent_type" in output.args ? output.args.subagent_type : undefined;
+
+      if (typeof subagentType !== "string") {
+        return;
+      }
+
+      const resolved = resolveProjectedAgentAlias(aliasIndex, subagentType);
+
+      if (!resolved) {
+        return;
+      }
+
+      output.args.subagent_type = resolved.agent.configKey;
     },
     "experimental.chat.system.transform": async (input, output) => {
       if (!input.sessionID) {

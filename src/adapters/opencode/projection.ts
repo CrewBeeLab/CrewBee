@@ -98,6 +98,12 @@ export interface OpenCodeProjectionOptions {
   availableTools?: readonly (string | AvailableToolDefinition)[];
 }
 
+export interface OpenCodeAgentAliasEntry {
+  alias: string;
+  agent: OpenCodeAgentConfig;
+  kind: "config-key" | "public-name" | "source-agent-id";
+}
+
 function sanitizeSegment(value: string): string {
   return value
     .trim()
@@ -242,4 +248,53 @@ export function resolveProjectedAgentSelection(
   }
 
   return undefined;
+}
+
+function normalizeAlias(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+export function createProjectedAgentAliasEntries(agent: OpenCodeAgentConfig): OpenCodeAgentAliasEntry[] {
+  return [
+    { alias: agent.configKey, agent, kind: "config-key" },
+    { alias: agent.publicName, agent, kind: "public-name" },
+    { alias: agent.sourceAgentId, agent, kind: "source-agent-id" },
+  ];
+}
+
+export function createProjectedAgentAliasIndex(
+  agents: OpenCodeAgentConfig[],
+): Map<string, OpenCodeAgentAliasEntry> {
+  const index = new Map<string, OpenCodeAgentAliasEntry>();
+
+  for (const agent of agents) {
+    for (const entry of createProjectedAgentAliasEntries(agent)) {
+      const key = normalizeAlias(entry.alias);
+      if (!key || index.has(key)) {
+        continue;
+      }
+
+      index.set(key, entry);
+    }
+  }
+
+  return index;
+}
+
+export function resolveProjectedAgentAlias(
+  index: Map<string, OpenCodeAgentAliasEntry>,
+  alias: string | undefined,
+): OpenCodeAgentAliasEntry | undefined {
+  if (!alias) {
+    return undefined;
+  }
+
+  return index.get(normalizeAlias(alias));
+}
+
+export function createProjectedAgentTaskAliasHelpLines(agents: OpenCodeAgentConfig[]): string[] {
+  return agents.map((agent) => {
+    const aliases = [agent.sourceAgentId, agent.publicName, agent.configKey];
+    return `- ${agent.sourceAgentId} => ${agent.configKey} (${agent.publicName}; accepts: ${aliases.join(" | ")})`;
+  });
 }
