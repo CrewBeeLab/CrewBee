@@ -6,18 +6,28 @@
   "license": "MIT",
   "main": "./opencode-plugin.mjs",
   "types": "./dist/src/adapters/opencode/plugin.d.ts",
+  "bin": {
+    "crewbee": "bin/crewbee.js"
+  },
   "exports": {
     ".": "./opencode-plugin.mjs"
   },
   "files": [
     "dist",
+    "bin",
     "opencode-plugin.mjs"
   ],
   "scripts": {
     "build": "npm run clean && tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
-    "simulate:opencode": "npm run build && node ./simulators/opencode-runtime.mjs"
+    "simulate:opencode": "npm run build && node ./simulators/opencode-runtime.mjs",
+    "prepack": "npm run build",
+    "pack:local": "node ./scripts/pack-local.mjs",
+    "install:local:user": "npm run pack:local && node ./bin/crewbee.js install --source local --local-tarball ./.artifacts/local/crewbee-local.tgz",
+    "uninstall:user": "node ./bin/crewbee.js uninstall:user",
+    "doctor": "node ./bin/crewbee.js doctor",
+    "test": "npm run build && node --test tests/**/*.test.mjs"
   },
   "devDependencies": {
     "@types/node": "^25.3.5",
