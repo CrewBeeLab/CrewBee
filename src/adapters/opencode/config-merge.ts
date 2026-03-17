@@ -36,6 +36,26 @@ function getConfiguredAgentName(definition: unknown): string | undefined {
   return typeof candidate === "string" ? candidate : undefined;
 }
 
+function isCrewBeePublicNameAliasEntry(
+  key: string,
+  definition: unknown,
+  allAgents: Record<string, unknown>,
+): boolean {
+  const publicName = getConfiguredAgentName(definition);
+
+  if (!publicName || key !== publicName || !publicName.startsWith("[")) {
+    return false;
+  }
+
+  return Object.entries(allAgents).some(([otherKey, otherDefinition]) => {
+    if (!isCompatibleCrewBeeOwnedKey(otherKey)) {
+      return false;
+    }
+
+    return getConfiguredAgentName(otherDefinition) === publicName;
+  });
+}
+
 export function applyOpenCodeAgentConfigPatch(
   config: OpenCodeConfigLike,
   patch: OpenCodeAgentConfigPatch,
@@ -64,7 +84,9 @@ export function applyOpenCodeAgentConfigPatch(
       continue;
     }
 
-    if (isCrewBeeOwnedKey(key)) {
+    const existingDefinition = nextAgents[key];
+
+    if (isCrewBeeOwnedKey(key) || isCrewBeePublicNameAliasEntry(key, existingDefinition, nextAgents)) {
       nextAgents[key] = definition;
       updatedAgentKeys.push(key);
       continue;

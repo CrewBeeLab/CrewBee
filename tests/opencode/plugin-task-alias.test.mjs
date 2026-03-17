@@ -57,6 +57,18 @@ test("CrewBee rewrites CodingTeam source-agent task aliases to projected config 
   assert.equal(output.args.subagent_type, "crewbee.coding-team.executor");
 });
 
+test("CrewBee injects hidden public-name aliases for OpenCode round-trip lookups", async () => {
+  const plugin = await OpenCodeCrewBeePlugin(createPluginInput());
+  const config = { agent: {} };
+
+  await plugin.config?.(config);
+
+  assert.equal(config.agent["crewbee.coding-team.leader"].name, "[CodingTeam]leader");
+  assert.equal(config.agent["crewbee.coding-team.leader"].hidden, undefined);
+  assert.equal(config.agent["[CodingTeam]leader"].name, "[CodingTeam]leader");
+  assert.equal(config.agent["[CodingTeam]leader"].hidden, true);
+});
+
 test("CrewBee rewrites projected public task aliases case-insensitively", async () => {
   const plugin = await OpenCodeCrewBeePlugin(createPluginInput());
   const config = { agent: {} };
@@ -84,6 +96,40 @@ test("CrewBee rewrites projected public task aliases case-insensitively", async 
       tool: "task",
       sessionID: "ses-test-2",
       callID: "call-test-2",
+    },
+    output,
+  );
+
+  assert.equal(output.args.subagent_type, "crewbee.coding-team.executor");
+});
+
+test("CrewBee binds sessions selected by projected public agent names", async () => {
+  const plugin = await OpenCodeCrewBeePlugin(createPluginInput());
+  const config = { agent: {} };
+
+  await plugin.config?.(config);
+  await plugin["chat.message"]?.(
+    {
+      sessionID: "ses-test-3",
+      agent: "[CodingTeam]leader",
+    },
+    {
+      message: { role: "user", parts: [] },
+      parts: [],
+    },
+  );
+
+  const output = {
+    args: {
+      subagent_type: "coding-executor",
+    },
+  };
+
+  await plugin["tool.execute.before"]?.(
+    {
+      tool: "task",
+      sessionID: "ses-test-3",
+      callID: "call-test-3",
     },
     output,
   );

@@ -17,6 +17,26 @@ import {
 
 const DEFAULT_MODE = "single-executor" as const;
 
+function deduplicateTaskDescription(description: string): string {
+  const seen = new Set<string>();
+
+  return description
+    .split("\n")
+    .filter((line) => {
+      if (!line.startsWith("- ")) {
+        return true;
+      }
+
+      if (seen.has(line)) {
+        return false;
+      }
+
+      seen.add(line);
+      return true;
+    })
+    .join("\n");
+}
+
 function getDefaultAgent(boot: OpenCodeBootstrapOutput): string | undefined {
   return boot.mergedConfig?.default_agent ?? boot.configPatch.defaultAgent;
 }
@@ -127,6 +147,7 @@ export const OpenCodeCrewBeePlugin: Plugin = async (ctx) => {
         return;
       }
 
+      output.description = deduplicateTaskDescription(output.description);
       output.description = [
         output.description,
         "",

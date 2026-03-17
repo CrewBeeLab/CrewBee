@@ -104,6 +104,11 @@ export interface OpenCodeAgentAliasEntry {
   kind: "config-key" | "public-name" | "source-agent-id";
 }
 
+export interface OpenCodeProjectionIdentityEntry {
+  configKey: string;
+  publicName: string;
+}
+
 function sanitizeSegment(value: string): string {
   return value
     .trim()
@@ -118,6 +123,10 @@ export function createOpenCodePublicAgentName(agent: ProjectedAgent): string {
 
 export function createOpenCodeConfigKey(agent: ProjectedAgent): string {
   return `crewbee.${sanitizeSegment(agent.teamId)}.${sanitizeSegment(agent.surfaceLabel)}`;
+}
+
+export function createOpenCodePublicNameAliasKey(agent: OpenCodeAgentConfig): string {
+  return agent.publicName;
 }
 
 export function createOpenCodeAgentConfig(
@@ -208,12 +217,37 @@ export function createOpenCodeAgentDefinition(agent: OpenCodeAgentConfig): OpenC
   };
 }
 
+export function createOpenCodePublicNameAliasDefinition(agent: OpenCodeAgentConfig): OpenCodeAgentDefinition {
+  return {
+    ...createOpenCodeAgentDefinition(agent),
+    hidden: true,
+  };
+}
+
+export function createOpenCodeProjectedIdentities(agent: OpenCodeAgentConfig): OpenCodeProjectionIdentityEntry[] {
+  return [
+    {
+      configKey: agent.configKey,
+      publicName: agent.publicName,
+    },
+    {
+      configKey: createOpenCodePublicNameAliasKey(agent),
+      publicName: agent.publicName,
+    },
+  ];
+}
+
 export function createOpenCodeAgentConfigPatch(input: {
   agents: OpenCodeAgentConfig[];
   defaultAgentConfigKey?: string;
 }): OpenCodeAgentConfigPatch {
   return {
-    agent: Object.fromEntries(input.agents.map((agent) => [agent.configKey, createOpenCodeAgentDefinition(agent)])),
+    agent: Object.fromEntries(
+      input.agents.flatMap((agent) => [
+        [agent.configKey, createOpenCodeAgentDefinition(agent)],
+        [createOpenCodePublicNameAliasKey(agent), createOpenCodePublicNameAliasDefinition(agent)],
+      ]),
+    ),
     defaultAgent: input.defaultAgentConfigKey,
   };
 }

@@ -20,6 +20,8 @@ import {
 import {
   createOpenCodeAgentConfigs,
   createOpenCodeAgentConfigPatch,
+  createOpenCodeProjectedIdentities,
+  createOpenCodePublicNameAliasKey,
   type OpenCodeAgentConfig,
   resolveProjectedAgentSelection,
   type OpenCodeAgentConfigPatch,
@@ -140,7 +142,17 @@ function filterSafeProjectedAgents(
   const blockedConfigKeys = new Set(collisions.configKeyCollisions);
   const blockedPublicNames = new Set(collisions.publicNameCollisions);
 
-  return agents.filter((agent) => !blockedConfigKeys.has(agent.configKey) && !blockedPublicNames.has(agent.publicName));
+  return agents.filter((agent) => {
+    if (blockedConfigKeys.has(agent.configKey)) {
+      return false;
+    }
+
+    if (blockedConfigKeys.has(createOpenCodePublicNameAliasKey(agent))) {
+      return false;
+    }
+
+    return !blockedPublicNames.has(agent.publicName);
+  });
 }
 
 function isCompatibleCrewBeeOwnedKey(key: string): boolean {
@@ -154,6 +166,26 @@ function getConfiguredAgentName(definition: unknown): string | undefined {
 
   const candidate = definition.name;
   return typeof candidate === "string" ? candidate : undefined;
+}
+
+function isCrewBeePublicNameAliasEntry(
+  key: string,
+  definition: unknown,
+  allAgents: Record<string, unknown>,
+): boolean {
+  const publicName = getConfiguredAgentName(definition);
+
+  if (!publicName || key !== publicName || !publicName.startsWith("[")) {
+    return false;
+  }
+
+  return Object.entries(allAgents).some(([otherKey, otherDefinition]) => {
+    if (!isCompatibleCrewBeeOwnedKey(otherKey)) {
+      return false;
+    }
+
+    return getConfiguredAgentName(otherDefinition) === publicName;
+  });
 }
 
 function getForeignCollisionInputs(input: {
@@ -172,7 +204,7 @@ function getForeignCollisionInputs(input: {
   const compatibleOwnedPublicNames = new Set<string>();
 
   for (const [key, definition] of Object.entries(input.existingConfig.agent)) {
-    if (!isCompatibleCrewBeeOwnedKey(key)) {
+    if (!isCompatibleCrewBeeOwnedKey(key) && !isCrewBeePublicNameAliasEntry(key, definition, input.existingConfig.agent)) {
       continue;
     }
 
@@ -221,10 +253,7 @@ export function createOpenCodeBootstrap(input: OpenCodeBootstrapInput): OpenCode
     existingPublicNames: input.existingPublicNames,
   });
   const collisions = detectOpenCodeProjectionCollisions({
-    projectedAgents: projectedAgents.map((agent) => ({
-      configKey: agent.configKey,
-      publicName: agent.publicName,
-    })),
+    projectedAgents: projectedAgents.flatMap((agent) => createOpenCodeProjectedIdentities(agent)),
     existingConfigKeys: foreignCollisions.existingConfigKeys,
     existingPublicNames: foreignCollisions.existingPublicNames,
   });

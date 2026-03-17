@@ -18,12 +18,15 @@ export { OpenCodeCrewBeePlugin } from "./plugin";
 export {
   createOpenCodeAgentConfig,
   createOpenCodeAgentConfigs,
+  createOpenCodeProjectedIdentities,
   createProjectedAgentAliasEntries,
   createProjectedAgentAliasIndex,
   createProjectedAgentTaskAliasHelpLines,
   createOpenCodeConfigKey,
   createOpenCodeAgentConfigPatch,
   createOpenCodeAgentDefinition,
+  createOpenCodePublicNameAliasDefinition,
+  createOpenCodePublicNameAliasKey,
   createOpenCodePublicAgentName,
   findProjectedAgentByConfigKey,
   findProjectedAgentByPublicName,
@@ -37,6 +40,7 @@ export {
   type OpenCodeAgentRuntimeConfig,
   type OpenCodeAgentMetadata,
   type OpenCodeAgentMode,
+  type OpenCodeProjectionIdentityEntry,
 } from "./projection";
 
 export { createOpenCodePermissionRules, type OpenCodePermissionAction, type OpenCodePermissionRule } from "./permission-mapper";
