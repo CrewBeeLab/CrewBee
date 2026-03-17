@@ -1,0 +1,20 @@
+export function renderCliHelp(): string {
+  return [
+    "CrewBee CLI",
+    "",
+    "Usage:",
+    "  crewbee install [--source <local|registry>] [--local-tarball <path>] [--install-root <path>] [--config-path <path>] [--dry-run]",
+    "  crewbee install:local:user [--local-tarball <path>] [--install-root <path>] [--config-path <path>] [--dry-run]",
+    "  crewbee uninstall:user [--install-root <path>] [--config-path <path>] [--dry-run]",
+    "  crewbee doctor [--install-root <path>] [--config-path <path>]",
+    "  crewbee help",
+    "",
+    "Current scope:",
+    "  local      Install CrewBee into the OpenCode user-level workspace from a local tarball.",
+    "  registry   Reserved for future online publish/install flow. Not implemented yet.",
+    "",
+    "Compatibility aliases:",
+    "  --tarball      Deprecated alias for --local-tarball",
+    "  --config       Deprecated alias for --config-path",
+  ].join("\n");
+}
