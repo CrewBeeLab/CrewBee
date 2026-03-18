@@ -196,6 +196,9 @@ export interface ExecutionPolicySpec {
   outputPolicy?: string[];
   scopeControl?: string[];
   ambiguityPolicy?: string[];
+  recommendationPolicy?: string[];
+  highRiskSelfCheck?: string[];
+  toolUsePolicy?: string[];
   supportTriggers?: string[];
   repositoryAssessment?: string[];
   concernEscalationPolicy?: string[];

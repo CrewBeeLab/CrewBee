@@ -37,6 +37,9 @@ const AGENT_SECTION_TITLES = {
   outputPolicy: "Output Policy",
   scopeControl: "Scope Control",
   ambiguityPolicy: "Ambiguity Policy",
+  recommendationPolicy: "Recommendation Policy",
+  highRiskSelfCheck: "High-Risk Self-Check",
+  toolUsePolicy: "Tool Use Policy",
   supportTriggers: "Support Triggers",
   repositoryAssessment: "Repository Assessment",
   concernEscalationPolicy: "Concern Escalation Policy",
@@ -76,6 +79,9 @@ const DEFAULT_AGENT_RENDER_ORDER = [
   "execution_policy.output_policy",
   "execution_policy.scope_control",
   "execution_policy.ambiguity_policy",
+  "execution_policy.recommendation_policy",
+  "execution_policy.high_risk_self_check",
+  "execution_policy.tool_use_policy",
   "execution_policy.support_triggers",
   "execution_policy.repository_assessment",
   "execution_policy.concern_escalation_policy",
@@ -394,6 +400,9 @@ function renderAgentEntry(
       renderAgentEntry(acc, ctx, "execution_policy.output_policy");
       renderAgentEntry(acc, ctx, "execution_policy.scope_control");
       renderAgentEntry(acc, ctx, "execution_policy.ambiguity_policy");
+      renderAgentEntry(acc, ctx, "execution_policy.recommendation_policy");
+      renderAgentEntry(acc, ctx, "execution_policy.high_risk_self_check");
+      renderAgentEntry(acc, ctx, "execution_policy.tool_use_policy");
       renderAgentEntry(acc, ctx, "execution_policy.support_triggers");
       renderAgentEntry(acc, ctx, "execution_policy.repository_assessment");
       renderAgentEntry(acc, ctx, "execution_policy.concern_escalation_policy");
@@ -451,6 +460,15 @@ function renderAgentEntry(
       return;
     case "execution_policy.ambiguity_policy":
       acc.addList("ambiguityPolicy", "Ambiguity policy", agent.executionPolicy?.ambiguityPolicy);
+      return;
+    case "execution_policy.recommendation_policy":
+      acc.addList("recommendationPolicy", "Recommendation policy", agent.executionPolicy?.recommendationPolicy);
+      return;
+    case "execution_policy.high_risk_self_check":
+      acc.addList("highRiskSelfCheck", "High-risk self-check", agent.executionPolicy?.highRiskSelfCheck);
+      return;
+    case "execution_policy.tool_use_policy":
+      acc.addList("toolUsePolicy", "Tool use policy", agent.executionPolicy?.toolUsePolicy);
       return;
     case "execution_policy.support_triggers":
       acc.addRawLines("supportTriggers", takeStrings(agent.executionPolicy?.supportTriggers).map((item) => `- ${item}`));

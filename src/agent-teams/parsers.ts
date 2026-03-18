@@ -390,6 +390,18 @@ function mapExecutionPolicy(raw: UnknownRecord | undefined): ExecutionPolicySpec
       raw.ambiguity_policy ?? raw.ambiguityPolicy
         ? asStringArray(raw.ambiguity_policy ?? raw.ambiguityPolicy, "execution_policy.ambiguity_policy")
         : undefined,
+    recommendationPolicy:
+      raw.recommendation_policy ?? raw.recommendationPolicy
+        ? asStringArray(raw.recommendation_policy ?? raw.recommendationPolicy, "execution_policy.recommendation_policy")
+        : undefined,
+    highRiskSelfCheck:
+      raw.high_risk_self_check ?? raw.highRiskSelfCheck
+        ? asStringArray(raw.high_risk_self_check ?? raw.highRiskSelfCheck, "execution_policy.high_risk_self_check")
+        : undefined,
+    toolUsePolicy:
+      raw.tool_use_policy ?? raw.toolUsePolicy
+        ? asStringArray(raw.tool_use_policy ?? raw.toolUsePolicy, "execution_policy.tool_use_policy")
+        : undefined,
     supportTriggers:
       raw.support_triggers ?? raw.supportTriggers
         ? asStringArray(raw.support_triggers ?? raw.supportTriggers, "execution_policy.support_triggers")

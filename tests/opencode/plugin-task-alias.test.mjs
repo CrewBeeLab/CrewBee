@@ -116,6 +116,28 @@ test("CrewBee upgrades reviewer prompt and runtime for blocker-oriented approval
   assert.doesNotMatch(agent.prompt, /计划生成后，需要判断该计划是否已经可以交给执行者推进/);
 });
 
+test("CrewBee upgrades principal-advisor prompt and runtime for oracle-style consulting", async () => {
+  const plugin = await OpenCodeCrewBeePlugin(createPluginInput());
+  const config = { agent: {} };
+
+  await plugin.config?.(config);
+
+  const agent = config.agent["crewbee.coding-team.principal-advisor"];
+
+  assert.equal(agent.permission.task["*"], "allow");
+  assert.equal(agent.permission.edit["*"], "deny");
+  assert.equal(agent.permission.write?.["*"] ?? "deny", "deny");
+  assert.equal(agent.permission.bash["*"], "deny");
+  assert.match(agent.prompt, /### Scope Control/);
+  assert.match(agent.prompt, /### Ambiguity Policy/);
+  assert.match(agent.prompt, /### Recommendation Policy/);
+  assert.match(agent.prompt, /### High-Risk Self-Check/);
+  assert.match(agent.prompt, /### Tool Use Policy/);
+  assert.match(agent.prompt, /\*\*结论\*\*：<2-3 句主建议>/);
+  assert.doesNotMatch(agent.prompt, /Agent tags/);
+  assert.doesNotMatch(agent.prompt, /Good fit/);
+});
+
 test("CrewBee rewrites projected public task aliases case-insensitively", async () => {
   const plugin = await OpenCodeCrewBeePlugin(createPluginInput());
   const config = { agent: {} };
