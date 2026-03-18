@@ -97,6 +97,25 @@ test("CrewBee upgrades web-researcher prompt and runtime for librarian-style res
   assert.doesNotMatch(agent.prompt, /需要回答“如何使用某个库\/框架”“最佳实践是什么”这类概念性问题/);
 });
 
+test("CrewBee upgrades reviewer prompt and runtime for blocker-oriented approval reviews", async () => {
+  const plugin = await OpenCodeCrewBeePlugin(createPluginInput());
+  const config = { agent: {} };
+
+  await plugin.config?.(config);
+
+  const agent = config.agent["crewbee.coding-team.reviewer"];
+
+  assert.equal(agent.permission.lsp["*"], "allow");
+  assert.equal(agent.permission.edit["*"], "deny");
+  assert.equal(agent.permission.bash["*"], "deny");
+  assert.match(agent.prompt, /### Input Validation/);
+  assert.match(agent.prompt, /### Review Target Policy/);
+  assert.match(agent.prompt, /### Approval Bias/);
+  assert.match(agent.prompt, /### Blocking Threshold/);
+  assert.match(agent.prompt, /\*\*\[OKAY\]\*\* 或 \*\*\[REJECT\]\*\*/);
+  assert.doesNotMatch(agent.prompt, /计划生成后，需要判断该计划是否已经可以交给执行者推进/);
+});
+
 test("CrewBee rewrites projected public task aliases case-insensitively", async () => {
   const plugin = await OpenCodeCrewBeePlugin(createPluginInput());
   const config = { agent: {} };

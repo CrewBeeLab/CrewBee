@@ -324,6 +324,22 @@ function mapExecutionPolicy(raw: UnknownRecord | undefined): ExecutionPolicySpec
       raw.core_principle ?? raw.corePrinciple
         ? asStringArray(raw.core_principle ?? raw.corePrinciple, "execution_policy.core_principle")
         : undefined,
+    inputValidation:
+      raw.input_validation ?? raw.inputValidation
+        ? asStringArray(raw.input_validation ?? raw.inputValidation, "execution_policy.input_validation")
+        : undefined,
+    reviewTargetPolicy:
+      raw.review_target_policy ?? raw.reviewTargetPolicy
+        ? asStringArray(raw.review_target_policy ?? raw.reviewTargetPolicy, "execution_policy.review_target_policy")
+        : undefined,
+    approvalBias:
+      raw.approval_bias ?? raw.approvalBias
+        ? asStringArray(raw.approval_bias ?? raw.approvalBias, "execution_policy.approval_bias")
+        : undefined,
+    blockingThreshold:
+      raw.blocking_threshold ?? raw.blockingThreshold
+        ? asStringArray(raw.blocking_threshold ?? raw.blockingThreshold, "execution_policy.blocking_threshold")
+        : undefined,
     dateAwareness:
       raw.date_awareness ?? raw.dateAwareness
         ? asStringArray(raw.date_awareness ?? raw.dateAwareness, "execution_policy.date_awareness")

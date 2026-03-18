@@ -22,6 +22,10 @@ const TEAM_SECTION_TITLES = {
 const AGENT_SECTION_TITLES = {
   identityRole: "Identity / Role",
   corePrinciple: "Core Principle",
+  inputValidation: "Input Validation",
+  reviewTargetPolicy: "Review Target Policy",
+  approvalBias: "Approval Bias",
+  blockingThreshold: "Blocking Threshold",
   dateAwareness: "Date Awareness",
   requestClassification: "Request Classification",
   documentationDiscovery: "Documentation Discovery",
@@ -57,6 +61,10 @@ const DEFAULT_AGENT_RENDER_ORDER = [
   "responsibility_core.authority",
   "responsibility_core.output_preference",
   "execution_policy.core_principle",
+  "execution_policy.input_validation",
+  "execution_policy.review_target_policy",
+  "execution_policy.approval_bias",
+  "execution_policy.blocking_threshold",
   "execution_policy.date_awareness",
   "execution_policy.request_classification",
   "execution_policy.documentation_discovery",
@@ -371,6 +379,10 @@ function renderAgentEntry(
       return;
     case "execution_policy":
       renderAgentEntry(acc, ctx, "execution_policy.core_principle");
+      renderAgentEntry(acc, ctx, "execution_policy.input_validation");
+      renderAgentEntry(acc, ctx, "execution_policy.review_target_policy");
+      renderAgentEntry(acc, ctx, "execution_policy.approval_bias");
+      renderAgentEntry(acc, ctx, "execution_policy.blocking_threshold");
       renderAgentEntry(acc, ctx, "execution_policy.date_awareness");
       renderAgentEntry(acc, ctx, "execution_policy.request_classification");
       renderAgentEntry(acc, ctx, "execution_policy.documentation_discovery");
@@ -394,6 +406,18 @@ function renderAgentEntry(
       return;
     case "execution_policy.core_principle":
       acc.addRawLines("corePrinciple", takeStrings(agent.executionPolicy?.corePrinciple).map((item) => `- ${item}`));
+      return;
+    case "execution_policy.input_validation":
+      acc.addList("inputValidation", "Input validation", agent.executionPolicy?.inputValidation);
+      return;
+    case "execution_policy.review_target_policy":
+      acc.addList("reviewTargetPolicy", "Review target policy", agent.executionPolicy?.reviewTargetPolicy);
+      return;
+    case "execution_policy.approval_bias":
+      acc.addList("approvalBias", "Approval bias", agent.executionPolicy?.approvalBias);
+      return;
+    case "execution_policy.blocking_threshold":
+      acc.addList("blockingThreshold", "Blocking threshold", agent.executionPolicy?.blockingThreshold);
       return;
     case "execution_policy.date_awareness":
       acc.addList("dateAwareness", "Date awareness", agent.executionPolicy?.dateAwareness);

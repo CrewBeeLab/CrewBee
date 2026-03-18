@@ -181,6 +181,10 @@ export interface ExecutionPolicyTaskTriage {
 
 export interface ExecutionPolicySpec {
   corePrinciple?: string[];
+  inputValidation?: string[];
+  reviewTargetPolicy?: string[];
+  approvalBias?: string[];
+  blockingThreshold?: string[];
   dateAwareness?: string[];
   requestClassification?: string[];
   documentationDiscovery?: string[];
