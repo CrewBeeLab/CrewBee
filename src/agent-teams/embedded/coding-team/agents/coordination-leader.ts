@@ -105,7 +105,7 @@ export function createCoordinationLeaderAgent(): AgentProfileSpec {
         { permission: "task", pattern: "*", action: "allow" },
         { permission: "edit", pattern: "*", action: "ask" },
         { permission: "write", pattern: "*", action: "ask" },
-        { permission: "bash", pattern: "*", action: "ask" },
+        { permission: "bash", pattern: "*", action: "allow" },
         { permission: "lsp_diagnostics", pattern: "*", action: "allow" },
       ],
       skills: ["repo-search-toolkit", "external-research-toolkit", "verification-toolkit"],

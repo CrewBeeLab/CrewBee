@@ -69,6 +69,34 @@ test("CrewBee injects hidden public-name aliases for OpenCode round-trip lookups
   assert.equal(config.agent["[CodingTeam]leader"].hidden, true);
 });
 
+test("CrewBee projects CodingTeam shell permissions as allow by default", async () => {
+  const plugin = await OpenCodeCrewBeePlugin(createPluginInput());
+  const config = { agent: {} };
+
+  await plugin.config?.(config);
+
+  assert.equal(config.agent["crewbee.coding-team.leader"].permission.bash["*"], "allow");
+  assert.equal(config.agent["crewbee.coding-team.executor"].permission.bash["*"], "allow");
+  assert.equal(config.agent["crewbee.coding-team.coordination-leader"].permission.bash["*"], "allow");
+});
+
+test("CrewBee upgrades web-researcher prompt and runtime for librarian-style research", async () => {
+  const plugin = await OpenCodeCrewBeePlugin(createPluginInput());
+  const config = { agent: {} };
+
+  await plugin.config?.(config);
+
+  const agent = config.agent["crewbee.coding-team.web-researcher"];
+
+  assert.equal(agent.permission.bash["*"], "allow");
+  assert.match(agent.prompt, /### Date Awareness/);
+  assert.match(agent.prompt, /### Documentation Discovery/);
+  assert.match(agent.prompt, /### Evidence Policy/);
+  assert.match(agent.prompt, /### Output Policy/);
+  assert.match(agent.prompt, /\*\*版本 \/ 范围\*\*/);
+  assert.doesNotMatch(agent.prompt, /需要回答“如何使用某个库\/框架”“最佳实践是什么”这类概念性问题/);
+});
+
 test("CrewBee rewrites projected public task aliases case-insensitively", async () => {
   const plugin = await OpenCodeCrewBeePlugin(createPluginInput());
   const config = { agent: {} };

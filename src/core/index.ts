@@ -181,6 +181,15 @@ export interface ExecutionPolicyTaskTriage {
 
 export interface ExecutionPolicySpec {
   corePrinciple?: string[];
+  dateAwareness?: string[];
+  requestClassification?: string[];
+  documentationDiscovery?: string[];
+  researchPathPolicy?: string[];
+  sourcePriority?: string[];
+  versionPolicy?: string[];
+  evidencePolicy?: string[];
+  parallelismPolicy?: string[];
+  outputPolicy?: string[];
   scopeControl?: string[];
   ambiguityPolicy?: string[];
   supportTriggers?: string[];

@@ -93,7 +93,7 @@ export function createCodingExecutorAgent(): AgentProfileSpec {
           { permission: "skill", pattern: "*", action: "allow" },
           { permission: "edit", pattern: "*", action: "ask" },
           { permission: "write", pattern: "*", action: "ask" },
-          { permission: "bash", pattern: "*", action: "ask" },
+          { permission: "bash", pattern: "*", action: "allow" },
           { permission: "todowrite", pattern: "*", action: "allow" },
           { permission: "lsp_diagnostics", pattern: "*", action: "allow" },
         ],

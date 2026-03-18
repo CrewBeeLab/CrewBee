@@ -324,6 +324,48 @@ function mapExecutionPolicy(raw: UnknownRecord | undefined): ExecutionPolicySpec
       raw.core_principle ?? raw.corePrinciple
         ? asStringArray(raw.core_principle ?? raw.corePrinciple, "execution_policy.core_principle")
         : undefined,
+    dateAwareness:
+      raw.date_awareness ?? raw.dateAwareness
+        ? asStringArray(raw.date_awareness ?? raw.dateAwareness, "execution_policy.date_awareness")
+        : undefined,
+    requestClassification:
+      raw.request_classification ?? raw.requestClassification
+        ? asStringArray(
+            raw.request_classification ?? raw.requestClassification,
+            "execution_policy.request_classification",
+          )
+        : undefined,
+    documentationDiscovery:
+      raw.documentation_discovery ?? raw.documentationDiscovery
+        ? asStringArray(
+            raw.documentation_discovery ?? raw.documentationDiscovery,
+            "execution_policy.documentation_discovery",
+          )
+        : undefined,
+    researchPathPolicy:
+      raw.research_path_policy ?? raw.researchPathPolicy
+        ? asStringArray(raw.research_path_policy ?? raw.researchPathPolicy, "execution_policy.research_path_policy")
+        : undefined,
+    sourcePriority:
+      raw.source_priority ?? raw.sourcePriority
+        ? asStringArray(raw.source_priority ?? raw.sourcePriority, "execution_policy.source_priority")
+        : undefined,
+    versionPolicy:
+      raw.version_policy ?? raw.versionPolicy
+        ? asStringArray(raw.version_policy ?? raw.versionPolicy, "execution_policy.version_policy")
+        : undefined,
+    evidencePolicy:
+      raw.evidence_policy ?? raw.evidencePolicy
+        ? asStringArray(raw.evidence_policy ?? raw.evidencePolicy, "execution_policy.evidence_policy")
+        : undefined,
+    parallelismPolicy:
+      raw.parallelism_policy ?? raw.parallelismPolicy
+        ? asStringArray(raw.parallelism_policy ?? raw.parallelismPolicy, "execution_policy.parallelism_policy")
+        : undefined,
+    outputPolicy:
+      raw.output_policy ?? raw.outputPolicy
+        ? asStringArray(raw.output_policy ?? raw.outputPolicy, "execution_policy.output_policy")
+        : undefined,
     scopeControl:
       raw.scope_control ?? raw.scopeControl
         ? asStringArray(raw.scope_control ?? raw.scopeControl, "execution_policy.scope_control")

@@ -22,6 +22,15 @@ const TEAM_SECTION_TITLES = {
 const AGENT_SECTION_TITLES = {
   identityRole: "Identity / Role",
   corePrinciple: "Core Principle",
+  dateAwareness: "Date Awareness",
+  requestClassification: "Request Classification",
+  documentationDiscovery: "Documentation Discovery",
+  researchPathPolicy: "Research Path Policy",
+  sourcePriority: "Source Priority",
+  versionPolicy: "Version Policy",
+  evidencePolicy: "Evidence Policy",
+  parallelismPolicy: "Parallelism Policy",
+  outputPolicy: "Output Policy",
   scopeControl: "Scope Control",
   ambiguityPolicy: "Ambiguity Policy",
   supportTriggers: "Support Triggers",
@@ -48,6 +57,15 @@ const DEFAULT_AGENT_RENDER_ORDER = [
   "responsibility_core.authority",
   "responsibility_core.output_preference",
   "execution_policy.core_principle",
+  "execution_policy.date_awareness",
+  "execution_policy.request_classification",
+  "execution_policy.documentation_discovery",
+  "execution_policy.research_path_policy",
+  "execution_policy.source_priority",
+  "execution_policy.version_policy",
+  "execution_policy.evidence_policy",
+  "execution_policy.parallelism_policy",
+  "execution_policy.output_policy",
   "execution_policy.scope_control",
   "execution_policy.ambiguity_policy",
   "execution_policy.support_triggers",
@@ -353,6 +371,15 @@ function renderAgentEntry(
       return;
     case "execution_policy":
       renderAgentEntry(acc, ctx, "execution_policy.core_principle");
+      renderAgentEntry(acc, ctx, "execution_policy.date_awareness");
+      renderAgentEntry(acc, ctx, "execution_policy.request_classification");
+      renderAgentEntry(acc, ctx, "execution_policy.documentation_discovery");
+      renderAgentEntry(acc, ctx, "execution_policy.research_path_policy");
+      renderAgentEntry(acc, ctx, "execution_policy.source_priority");
+      renderAgentEntry(acc, ctx, "execution_policy.version_policy");
+      renderAgentEntry(acc, ctx, "execution_policy.evidence_policy");
+      renderAgentEntry(acc, ctx, "execution_policy.parallelism_policy");
+      renderAgentEntry(acc, ctx, "execution_policy.output_policy");
       renderAgentEntry(acc, ctx, "execution_policy.scope_control");
       renderAgentEntry(acc, ctx, "execution_policy.ambiguity_policy");
       renderAgentEntry(acc, ctx, "execution_policy.support_triggers");
@@ -367,6 +394,33 @@ function renderAgentEntry(
       return;
     case "execution_policy.core_principle":
       acc.addRawLines("corePrinciple", takeStrings(agent.executionPolicy?.corePrinciple).map((item) => `- ${item}`));
+      return;
+    case "execution_policy.date_awareness":
+      acc.addList("dateAwareness", "Date awareness", agent.executionPolicy?.dateAwareness);
+      return;
+    case "execution_policy.request_classification":
+      acc.addList("requestClassification", "Request classification", agent.executionPolicy?.requestClassification);
+      return;
+    case "execution_policy.documentation_discovery":
+      acc.addList("documentationDiscovery", "Documentation discovery", agent.executionPolicy?.documentationDiscovery);
+      return;
+    case "execution_policy.research_path_policy":
+      acc.addList("researchPathPolicy", "Research path policy", agent.executionPolicy?.researchPathPolicy);
+      return;
+    case "execution_policy.source_priority":
+      acc.addList("sourcePriority", "Source priority", agent.executionPolicy?.sourcePriority);
+      return;
+    case "execution_policy.version_policy":
+      acc.addList("versionPolicy", "Version policy", agent.executionPolicy?.versionPolicy);
+      return;
+    case "execution_policy.evidence_policy":
+      acc.addList("evidencePolicy", "Evidence policy", agent.executionPolicy?.evidencePolicy);
+      return;
+    case "execution_policy.parallelism_policy":
+      acc.addList("parallelismPolicy", "Parallelism policy", agent.executionPolicy?.parallelismPolicy);
+      return;
+    case "execution_policy.output_policy":
+      acc.addList("outputPolicy", "Output policy", agent.executionPolicy?.outputPolicy);
       return;
     case "execution_policy.scope_control":
       acc.addRawLines("scopeControl", takeStrings(agent.executionPolicy?.scopeControl).map((item) => `- ${item}`));
