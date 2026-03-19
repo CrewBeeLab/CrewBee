@@ -95,12 +95,15 @@ export function createReviewerAgent(): AgentProfileSpec {
       defaultHandoffs: [],
     },
     runtimeConfig: {
-      requestedTools: ["read", "glob", "grep", "task", "lsp_diagnostics"],
+      requestedTools: ["read", "glob", "grep", "task", "delegate_task", "delegate_status", "delegate_cancel", "lsp_diagnostics"],
       permission: [
         { permission: "read", pattern: "*", action: "allow" },
         { permission: "glob", pattern: "*", action: "allow" },
         { permission: "grep", pattern: "*", action: "allow" },
         { permission: "task", pattern: "*", action: "allow" },
+        { permission: "delegate_task", pattern: "*", action: "allow" },
+        { permission: "delegate_status", pattern: "*", action: "allow" },
+        { permission: "delegate_cancel", pattern: "*", action: "allow" },
         { permission: "lsp_diagnostics", pattern: "*", action: "allow" },
         { permission: "edit", pattern: "*", action: "deny" },
         { permission: "write", pattern: "*", action: "deny" },

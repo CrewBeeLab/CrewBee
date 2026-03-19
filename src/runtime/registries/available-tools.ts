@@ -36,12 +36,12 @@ export function createAvailableToolContext(
     }
   }
 
-  if (mergedTools.length === 0) {
+  if (hostTools.length === 0) {
     // Framework-level fallback only: when the host has not provided tool metadata yet,
     // keep the model permissive and mark the source as a default placeholder instead of
     // hardcoding a specific OpenCode builtin tool list.
     return {
-      tools: [],
+      tools: pluginTools,
       source: "default-placeholder",
       hasExplicitTools: false,
     };

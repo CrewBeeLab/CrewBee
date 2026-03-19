@@ -12,28 +12,28 @@ export interface CrewBeePluginToolDefinition {
 }
 
 const CREWBEE_PLUGIN_TOOLS: Record<string, CrewBeePluginToolDefinition> = {
-  "crewbee.team-state": {
-    id: "crewbee.team-state",
+  delegate_task: {
+    id: "delegate_task",
     source: "crewbee-plugin",
-    status: "reserved-placeholder",
+    status: "implemented",
     visibility: "agent-addressable",
-    description: "Reserved placeholder for Team runtime state read/write helpers.",
+    description: "Delegate work to a CrewBee team member with foreground or background execution.",
     hostTargets: ["opencode"],
   },
-  "crewbee.session-binding": {
-    id: "crewbee.session-binding",
+  delegate_status: {
+    id: "delegate_status",
     source: "crewbee-plugin",
-    status: "reserved-placeholder",
-    visibility: "internal-only",
-    description: "Reserved placeholder for session binding synchronization helpers.",
+    status: "implemented",
+    visibility: "agent-addressable",
+    description: "Query the status of a CrewBee background delegation.",
     hostTargets: ["opencode"],
   },
-  "crewbee.team-handoff": {
-    id: "crewbee.team-handoff",
+  delegate_cancel: {
+    id: "delegate_cancel",
     source: "crewbee-plugin",
-    status: "reserved-placeholder",
+    status: "implemented",
     visibility: "agent-addressable",
-    description: "Reserved placeholder for explicit Team handoff and delegation helpers.",
+    description: "Cancel a CrewBee background delegation.",
     hostTargets: ["opencode"],
   },
 };
