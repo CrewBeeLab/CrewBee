@@ -9,8 +9,8 @@ The repository currently delivers a complete MVP path for OpenCode:
 
 - host-agnostic Team and Agent contracts
 - Team library loading from embedded code and `AgentTeams/`
-- runtime projection and session binding
-- OpenCode agent projection, config patch generation, and collision handling
+- runtime projection, formal-leader default selection, and session binding
+- OpenCode agent projection, config patch generation, collision handling, and delegation tooling
 - a real OpenCode plugin entry exported through `opencode-plugin.mjs`
 - a user-level installer that writes the canonical CrewBee plugin entry into OpenCode config
 
@@ -36,7 +36,7 @@ Today, CrewBee implements that path for OpenCode while keeping the core model po
 
 ### 2. Host-agnostic runtime projection
 
-- `src/runtime/team-library-projection.ts`: converts `TeamLibrary` into projected teams and projected agents for runtime use
+- `src/runtime/team-library-projection.ts`: converts `TeamLibrary` into projected teams and projected agents for runtime use, with formal-leader default selection and `selectionPriority`-aware ordering
 - `src/runtime/types.ts`: projection and binding types shared by adapters
 
 ### 3. OpenCode adapter and plugin runtime
@@ -44,7 +44,7 @@ Today, CrewBee implements that path for OpenCode while keeping the core model po
 - `src/adapters/opencode/bootstrap.ts`: assembles OpenCode-facing projection results
 - `src/adapters/opencode/projection.ts`: maps projected agents to OpenCode agent config objects
 - `src/adapters/opencode/config-merge.ts`: safely merges CrewBee agents into host config
-- `src/adapters/opencode/plugin.ts`: real OpenCode plugin runtime hooks
+- `src/adapters/opencode/plugin.ts`: real OpenCode plugin runtime hooks, delegation tools, event handling, and compaction continuity integration
 - `opencode-plugin.mjs`: published OpenCode plugin entry shim
 
 ### 4. User-level installation flow
@@ -61,11 +61,20 @@ Today, CrewBee implements that path for OpenCode while keeping the core model po
 CrewBee is intentionally narrower than a full multi-agent execution engine.
 
 - no general multi-host runtime yet beyond OpenCode
-- no full Team-collaboration execution loop in the host runtime
-- no custom CrewBee plugin tools injected into OpenCode yet
+- no host-agnostic Team-collaboration runtime yet beyond the current OpenCode delegation path
 - no standalone Manager product surface yet; `src/manager` is still an internal helper layer
 - no online registry install flow yet; `--source registry` is reserved only
 - no standalone platform binaries yet; CLI remains JS package-first
+
+## Selection And Ordering Semantics
+
+CrewBee currently distinguishes between three related but different concepts:
+
+- **formal leader**: declared by `team.manifest.leader.agentRef`; when that agent is user-selectable, it is the default entry for the team
+- **entry-point priority**: optional `entryPoint.selectionPriority`; lower numbers rank earlier within the same role group during runtime projection
+- **host-visible list order**: ultimately owned by the host runtime
+
+For OpenCode specifically, CrewBee controls the projected agents, their default entry, and their visible names, but OpenCode still applies its own final list ordering rules. In practice, CrewBee can reliably set the default projected agent, while final non-default list order remains host-controlled.
 
 ## Architecture At A Glance
 

@@ -60,7 +60,7 @@ CrewBee 在 OpenCode 中不再只暴露一个 Team Entry Agent。
 而是把 Team 内一部分合适的角色投影为 OpenCode 的用户可选 Agent。例如：
 
 * `coding-leader` -> `[CodingTeam]leader`
-* `management-leader` -> `[CodingTeam]coordination-leader`
+* `coordination-leader` -> `[CodingTeam]coordination-leader`
 * `coding-executor` -> `[CodingTeam]executor`
 
 用户在 OpenCode 里选择哪个 Agent，实际上就是选择：
@@ -233,11 +233,13 @@ CrewBee 的原生模型是 Team-first：
 * `entryPoint.exposure`
 * `entryPoint.selectionLabel`
 * `entryPoint.selectionDescription`
+* `entryPoint.selectionPriority`
 
 它表达的是：
 
 * 这个 Agent 是否适合作为用户直接选择的入口
 * 如果适合，对外希望呈现成什么角色标签
+* 如果同一个 Team 暴露多个入口，它在 Team 内排序中的优先级
 
 这不是 OpenCode 特有字段，而是一个跨宿主都成立的问题：
 
@@ -267,7 +269,7 @@ CrewBee 的原生模型是 Team-first：
 ### 用户可选投影 Agent
 
 * `coding-leader` -> `[CodingTeam]leader`
-* `management-leader` -> `[CodingTeam]coordination-leader`
+* `coordination-leader` -> `[CodingTeam]coordination-leader`
 * `coding-executor` -> `[CodingTeam]executor`
 
 ### 内部 support Agent
@@ -287,6 +289,13 @@ CrewBee 的原生模型是 Team-first：
 * `[CodingTeam]executor`，就是直接走边界清晰的执行路径
 
 因此“用户选择 Agent 执行者，就是选择 Team”在这个模型下是成立的。
+
+当前实现进一步明确了两条规则：
+
+* formal leader 若是 `user-selectable`，则它是该 Team 的默认入口；
+* 多个 user-selectable 入口的 runtime projection 顺序为：formal leader 在前，其余按 `selectionPriority` 升序，再按声明顺序兜底。
+
+但在 OpenCode 宿主里，最终可见列表顺序仍由宿主自己决定。因此这里的优先级首先作用于 CrewBee 的投影与默认选择语义，而不是对宿主 UI 顺序的绝对控制。
 
 ## 5.4 对 GeneralTeam / WukongTeam 的推广规则
 
@@ -382,9 +391,15 @@ CrewBee 不应：
 
 CrewBee 只注入和维护自己生成的 Agent，不主动改写别的插件已经注册的 agent prompt、permission 或 mode。
 
-### 规则四：不抢 `default_agent`，除非用户明确配置
+### 规则四：只在安全条件满足时更新 `default_agent`
 
-如果用户没有明确把某个 CrewBee 投影 Agent 设为默认值，插件不应强行覆盖已有默认 agent。
+当前实现对 `default_agent` 的规则是：
+
+* 如果宿主还没有 `default_agent`，CrewBee 可以写入自己的默认入口；
+* 如果现有 `default_agent` 已经是 CrewBee 兼容 key，则 CrewBee 可以更新为新的默认入口；
+* 如果现有 `default_agent` 属于 foreign agent，则 CrewBee 不覆盖它。
+
+因此，CrewBee 并不是“永远不碰 `default_agent`”，而是只在空值或已归自己名下的情况下做安全更新。
 
 ### 规则五：把 hook 当共享环境而不是独占环境
 
@@ -480,7 +495,7 @@ runtime/                   # TeamLibrary Projection + Session Binding
 例如 `CodingTeam`：
 
 * `coding-leader` -> `user-selectable`
-* `management-leader` -> `user-selectable`，并给出 `coordination-leader` 作为投影标签
+* `coordination-leader` -> `user-selectable`
 * `coding-executor` -> `user-selectable`
 
 ### 10.2 生成一份 TeamLibrary Projection
@@ -508,7 +523,7 @@ runtime/                   # TeamLibrary Projection + Session Binding
 
 本次框架修改后，工程里应体现出以下变化：
 
-1. `src/core` 新增 Agent 入口暴露的静态契约
+1. `src/core` 新增 Agent 入口暴露与入口优先级的静态契约
 2. `src/agent-teams/parsers.ts` 支持解析入口暴露字段
 3. `CodingTeam` 中将 leader / coordination-leader / executor 标为可投影入口
 4. `src/runtime/` 新增 TeamLibrary Projection 与 Session Binding 骨架

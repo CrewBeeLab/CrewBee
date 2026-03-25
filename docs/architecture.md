@@ -25,15 +25,14 @@
 
 - Team / Agent 的宿主无关静态契约
 - 内置 Team 与文件型 Team 的统一装配
-- Team-first 到 Agent-first 的宿主无关投影
-- OpenCode Agent 配置生成、配置合并、命名空间隔离
-- OpenCode 插件入口、最小会话绑定、最小系统提示注入
+- Team-first 到 Agent-first 的宿主无关投影，并支持 formal leader 默认入口与 `selectionPriority` 排序语义
+- OpenCode Agent 配置生成、配置合并、命名空间隔离与默认 agent 安全更新
+- OpenCode 插件入口、会话绑定、系统提示注入、delegation 工具、事件驱动后台状态与 compaction continuity
 
 当前仓库尚未实现：
 
 - 面向多个宿主的并行运行时实现
-- 完整 Team-collaboration 执行引擎
-- 真正的 CrewBee 自定义 plugin tools 注入
+- 完整且宿主无关的 Team-collaboration 执行引擎
 - 独立的 Manager 产品入口
 
 ---
@@ -77,6 +76,12 @@ flowchart LR
 - entry point / capabilities / output contract
 - Team selection / execution plan / runtime snapshot / runtime event
 - host capability contract
+
+其中当前已经落地到运行时的重要 entry-point 语义包括：
+
+- `leader.agentRef`：定义 Team 的 formal leader
+- `entryPoint.exposure`：定义 agent 是否对用户暴露
+- `entryPoint.selectionPriority`：定义同一角色组内的排序优先级（数字越小越靠前）
 
 这一层的关键特征是：
 
@@ -126,6 +131,8 @@ loadDefaultTeamLibrary()
 
 1. **TeamLibrary Projection**
    - 把 `TeamLibrary` 展开成所有 Team、Agent、入口暴露信息
+   - 对投影顺序执行稳定规则：formal leader 在前，其余按 `selectionPriority`，最后按原声明顺序兜底
+   - 计算默认 user-selectable agent：formal leader 若可选则优先，否则取排序后的第一个可选 agent
    - 结果类型是 `TeamLibraryProjection`
 
 2. **Session Binding**
@@ -227,7 +234,8 @@ sequenceDiagram
 步骤：
 
 1. 遍历每个 Team
-2. 把每个 Agent 转成 `ProjectedAgent`
+2. 按 formal leader / `selectionPriority` / 原声明顺序生成稳定 agent 顺序
+3. 把每个 Agent 转成 `ProjectedAgent`
 3. 标记 leader / member
 4. 标记 `user-selectable` / `internal-only`
 5. 汇总成 `TeamLibraryProjection`
@@ -251,7 +259,7 @@ sequenceDiagram
 3. 通过 `createOpenCodeAgentConfigs()` 生成 OpenCode agent config 草图
 4. 检查命名冲突和 foreign agent 冲突
 5. 过滤掉不安全的投影结果
-6. 计算默认入口 agent
+6. 计算默认入口 agent（优先 formal leader）
 7. 生成 `configPatch`
 8. 如果拿到了宿主现有配置，就做 merge
 9. 如果拿到了 `sessionID` 和选中 agent，就生成 `SessionRuntimeBinding`
@@ -271,27 +279,45 @@ sequenceDiagram
 
 入口：`src/adapters/opencode/plugin.ts`
 
-当前 OpenCode MVP 插件实现了 3 个真实 hook：
+当前 OpenCode 插件已经接入 9 个真实 hook / hook 组：
 
 1. `config`
    - 调用 `createOpenCodeBootstrap()`
    - 把 CrewBee 投影的 agents 写入 `cfg.agent`
    - 在安全条件满足时写入 `default_agent`
 
-2. `chat.message`
+2. `tool`
+   - 注册 `delegate_task` / `delegate_status` / `delegate_cancel`
+
+3. `event`
+   - 消费 session 事件，驱动 background delegation 状态与 continuity 恢复
+
+4. `chat.message`
    - 根据当前选中的 OpenCode agent 找到对应 CrewBee entry agent
    - 生成 `SessionRuntimeBinding`
    - 存入当前插件运行时的 `bindings` map
 
-3. `experimental.chat.system.transform`
+5. `tool.definition`
+   - 给 OpenCode 原生 `task` 补充 CrewBee alias 提示
+
+6. `tool.execute.before`
+   - 把 CrewBee alias 重写成 projected config key
+
+7. `tool.execute.after`
+   - 对 delegation 结果做结果 hardening
+
+8. `experimental.chat.system.transform`
    - 根据 `sessionID` 找回 binding
    - 注入最小运行时说明：Team、Entry Agent、Active Owner、Mode
+
+9. `experimental.session.compacting`
+   - 注入 continuity context，并为后续恢复保留 checkpoint / todo 摘要
 
 这条链路说明：
 
 - CrewBee 已经不是“只有静态 config patch”
 - 它已经真实接到了 OpenCode 插件运行时
-- 但它目前仍然是 **最小运行时治理链路**，不是完整多 Agent 执行引擎
+- 但它目前仍然是 **有 delegation 闭环的最小运行时治理链路**，不是完整且宿主无关的多 Agent 执行引擎
 
 ### 5.6 阶段 5：包入口与宿主加载
 
@@ -353,16 +379,32 @@ sequenceDiagram
 - config 注入
 - `default_agent` 安全更新
 - 命名空间与 collision 处理
+- formal leader 默认入口与 `selectionPriority` 排序语义
 - 最小会话绑定
 - 最小系统提示注入
+- delegation 三件套工具
+- background delegation 状态跟踪
+- compaction continuity 与 todo 恢复提示
+- OpenCode 原生 `task` alias 兼容层
 
 尚未实现：
 
-- Team-collaboration 运行时编排
-- 自定义工具真实注入
+- 宿主无关的 Team-collaboration 运行时编排
 - 多宿主并行适配
 - 独立 Manager UI / CLI
 - 宿主侧完整运行时间线
+
+## 7.1 关于 OpenCode 列表排序的边界
+
+虽然 CrewBee 会产出稳定的 projected agent 顺序，并明确计算默认入口 agent，但 OpenCode 最终的可见列表顺序仍由宿主决定。
+
+当前实现下，CrewBee **可靠控制的是**：
+
+- 哪个 agent 成为 `default_agent`
+- projected agent 的名字和元数据
+- runtime projection 的内部顺序与默认选择语义
+
+而 OpenCode 的最终 UI 列表顺序会继续受宿主自身规则影响。因此文档中的“优先级排序”应理解为 CrewBee 的投影与默认选择语义，而不是对宿主 UI 排序的绝对接管。
 
 ---
 
