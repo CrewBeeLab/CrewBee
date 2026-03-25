@@ -14,6 +14,7 @@ export interface ProjectedAgent {
   sourceAgentId: string;
   roleKind: TeamRoleKind;
   exposure: AgentExposure;
+  selectionPriority?: number;
   surfaceLabel: string;
   description: string;
   sourceAgent: AgentProfileSpec;

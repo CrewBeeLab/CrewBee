@@ -30,6 +30,33 @@ function getProjectionDescription(agent: AgentProfileSpec): string {
   return agent.entryPoint?.selectionDescription ?? agent.responsibilityCore.description;
 }
 
+function getLeaderSortRank(team: AgentTeamDefinition, agent: AgentProfileSpec): number {
+  return isLeaderAgent(team, agent) ? 0 : 1;
+}
+
+function getSelectionPriority(agent: AgentProfileSpec): number {
+  return agent.entryPoint?.selectionPriority ?? Number.POSITIVE_INFINITY;
+}
+
+function sortTeamAgents(team: AgentTeamDefinition): AgentProfileSpec[] {
+  return team.agents
+    .map((agent, index) => ({ agent, index }))
+    .sort((left, right) => {
+      const leaderOrder = getLeaderSortRank(team, left.agent) - getLeaderSortRank(team, right.agent);
+      if (leaderOrder !== 0) {
+        return leaderOrder;
+      }
+
+      const priorityOrder = getSelectionPriority(left.agent) - getSelectionPriority(right.agent);
+      if (priorityOrder !== 0) {
+        return priorityOrder;
+      }
+
+      return left.index - right.index;
+    })
+    .map(({ agent }) => agent);
+}
+
 export function createProjectedAgent(
   team: AgentTeamDefinition,
   agent: AgentProfileSpec,
@@ -43,6 +70,7 @@ export function createProjectedAgent(
     sourceAgentId: agent.metadata.id,
     roleKind,
     exposure: getExposure(agent),
+    selectionPriority: agent.entryPoint?.selectionPriority,
     surfaceLabel: getSurfaceLabel(agent),
     description: getProjectionDescription(agent),
     sourceAgent: agent,
@@ -50,7 +78,7 @@ export function createProjectedAgent(
 }
 
 export function createProjectedTeam(team: AgentTeamDefinition): ProjectedTeam {
-  const agents = team.agents.map((agent) => createProjectedAgent(team, agent));
+  const agents = sortTeamAgents(team).map((agent) => createProjectedAgent(team, agent));
 
   return {
     team,
@@ -104,5 +132,13 @@ export function createSessionRuntimeBinding(input: {
 }
 
 export function pickDefaultUserSelectableAgent(team: AgentTeamDefinition): AgentProfileSpec | undefined {
-  return team.agents.find((agent) => agent.entryPoint?.exposure === "user-selectable");
+  const leader = team.agents.find(
+    (agent) => isLeaderAgent(team, agent) && agent.entryPoint?.exposure === "user-selectable",
+  );
+
+  if (leader) {
+    return leader;
+  }
+
+  return sortTeamAgents(team).find((agent) => agent.entryPoint?.exposure === "user-selectable");
 }

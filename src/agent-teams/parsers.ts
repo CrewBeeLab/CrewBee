@@ -68,6 +68,18 @@ function asOptionalBoolean(value: unknown): boolean | undefined {
   return typeof value === "boolean" ? value : undefined;
 }
 
+function asOptionalNumber(value: unknown, label: string): number | undefined {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new Error(`${label} must be a finite number.`);
+  }
+
+  return value;
+}
+
 function asStringArray(value: unknown, label: string): string[] {
   if (!Array.isArray(value)) {
     throw new Error(`${label} must be an array.`);
@@ -676,6 +688,7 @@ function mapEntryPoint(raw: UnknownRecord | undefined): AgentEntryPointSpec | un
     exposure: asString(raw.exposure, "entry_point.exposure") as AgentEntryPointSpec["exposure"],
     selectionLabel: asOptionalString(raw.selection_label ?? raw.selectionLabel),
     selectionDescription: asOptionalString(raw.selection_description ?? raw.selectionDescription),
+    selectionPriority: asOptionalNumber(raw.selection_priority ?? raw.selectionPriority, "entry_point.selection_priority"),
   };
 }
 

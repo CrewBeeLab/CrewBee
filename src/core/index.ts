@@ -251,6 +251,9 @@ export interface AgentEntryPointSpec {
   exposure: AgentExposure;
   selectionLabel?: string;
   selectionDescription?: string;
+  // Lower numbers rank earlier within the same role group. Omitted values sort
+  // after explicit priorities and fall back to original declaration order.
+  selectionPriority?: number;
 }
 
 export interface AgentProfileSpec {

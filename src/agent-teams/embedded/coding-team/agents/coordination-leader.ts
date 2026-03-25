@@ -322,6 +322,7 @@ export function createCoordinationLeaderAgent(): AgentProfileSpec {
       selectionLabel: "coordination-leader",
       selectionDescription:
         "CodingTeam 的协调型 Leader 投影；适合高模糊、范围待收束、多子任务编排的开局路径。",
+      selectionPriority: 1,
     },
     promptProjection: {
       include: [
