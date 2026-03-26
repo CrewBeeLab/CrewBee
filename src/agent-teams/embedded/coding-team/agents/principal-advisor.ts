@@ -95,7 +95,7 @@ export function createPrincipalAdvisorAgent(): AgentProfileSpec {
         defaultHandoffs: [],
       },
       runtimeConfig: {
-        requestedTools: ["read", "glob", "grep", "webfetch", "websearch", "task", "delegate_task", "delegate_status", "delegate_cancel"],
+        requestedTools: ["read", "glob", "grep", "webfetch", "websearch", "task"],
         permission: [
           { permission: "read", pattern: "*", action: "allow" },
           { permission: "glob", pattern: "*", action: "allow" },
@@ -103,9 +103,9 @@ export function createPrincipalAdvisorAgent(): AgentProfileSpec {
           { permission: "webfetch", pattern: "*", action: "allow" },
           { permission: "websearch", pattern: "*", action: "allow" },
           { permission: "task", pattern: "*", action: "allow" },
-          { permission: "delegate_task", pattern: "*", action: "allow" },
-          { permission: "delegate_status", pattern: "*", action: "allow" },
-          { permission: "delegate_cancel", pattern: "*", action: "allow" },
+          { permission: "delegate_task", pattern: "*", action: "deny" },
+          { permission: "delegate_status", pattern: "*", action: "deny" },
+          { permission: "delegate_cancel", pattern: "*", action: "deny" },
           { permission: "edit", pattern: "*", action: "deny" },
           { permission: "write", pattern: "*", action: "deny" },
           { permission: "bash", pattern: "*", action: "deny" },

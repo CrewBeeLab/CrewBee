@@ -228,6 +228,32 @@ test("delegate_task failure adds retry guidance", async () => {
   assert.match(result.message, /RETRY REQUIRED/);
 });
 
+test("delegated subagents cannot delegate again", async () => {
+  const fixture = createPluginInput();
+  const plugin = await OpenCodeCrewBeePlugin(fixture.input);
+  const config = { agent: {} };
+
+  await plugin.config?.(config);
+  await plugin["chat.message"]?.(
+    { sessionID: "ses-parent", agent: "crewbee.coding-team.leader" },
+    { message: { role: "user", parts: [] }, parts: [] },
+  );
+
+  const first = parseJson(await plugin.tool.delegate_task.execute(
+    { agent: "reviewer", prompt: "Review the current implementation.", mode: "foreground" },
+    createToolContext(fixture.worktree),
+  ));
+
+  const nestedRaw = await plugin.tool.delegate_task.execute(
+    { agent: "principal-advisor", prompt: "Escalate this review.", mode: "foreground" },
+    createToolContext(fixture.worktree, first.session_id),
+  );
+  const nested = parseJson(nestedRaw);
+
+  assert.equal(nested.status, "failed");
+  assert.equal(nested.error_code, "nested_delegate_forbidden");
+});
+
 test("session.compacted triggers prompt checkpoint recovery", async () => {
   const fixture = createPluginInput();
   const plugin = await OpenCodeCrewBeePlugin(fixture.input);

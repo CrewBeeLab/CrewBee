@@ -204,6 +204,12 @@ export function createDelegateTools(input: CreateDelegateToolsInput) {
         return stringifyDelegateTaskResult(createFailedResult(ctx.sessionID, "missing_agent", "Provide the CrewBee agent field when delegating work."));
       }
 
+      if (input.store.getSession(ctx.sessionID)) {
+        return stringifyDelegateTaskResult(
+          createFailedResult(ctx.sessionID, "nested_delegate_forbidden", "Nested CrewBee delegation is disabled for delegated subagent sessions."),
+        );
+      }
+
       const mode = args.mode ?? "foreground";
       if (mode !== "foreground" && mode !== "background") {
         return stringifyDelegateTaskResult(createFailedResult(ctx.sessionID, "unsupported_mode", "Use mode=foreground or mode=background."));

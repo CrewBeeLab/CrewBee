@@ -37,6 +37,7 @@ function buildRetryGuidance(result: DelegateTaskResult): string | undefined {
     invalid_session_id: 'Fix: use a delegated `session_id` previously returned by `delegate_task`.',
     agent_session_mismatch: 'Fix: resume with the same agent that created the delegated session.',
     unsupported_mode: 'Fix: use `mode="foreground"` or `mode="background"`.',
+    nested_delegate_forbidden: 'Fix: return the result to the parent session instead of delegating again from a delegated subagent.',
     self_delegate_forbidden: 'Fix: delegate to another CrewBee member instead of the current active agent.',
   };
   const fix = fixes[result.error_code];
