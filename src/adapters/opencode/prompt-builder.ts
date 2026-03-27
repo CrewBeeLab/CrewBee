@@ -43,7 +43,9 @@ export function createOpenCodePromptFromRawDocuments(input: {
   teamBody?: string;
   agentBody?: string;
 }): string {
-  const loadedTeamManifest = loadTeamManifest(input.teamManifestRaw);
+  const loadedTeamManifest = input.teamBody
+    ? attachMarkdownBodySections(loadTeamManifest(input.teamManifestRaw), input.teamBody)
+    : loadTeamManifest(input.teamManifestRaw);
   const loadedAgent = input.agentBody
     ? attachMarkdownBodySections(loadAgentProfile(input.agentRaw), input.agentBody)
     : loadAgentProfile(input.agentRaw);
@@ -61,6 +63,7 @@ export function createOpenCodePromptFromRawDocuments(input: {
       promptProjection: loadedTeamManifest.promptProjection,
     },
     loadedPolicy,
+    loadedTeamManifest.bodySections,
   );
   const teamPart = renderPromptPlan(
     buildPromptPlan(applyPromptProjection(buildPromptCatalog(teamSource), teamSource.promptProjection)),

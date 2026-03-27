@@ -179,6 +179,7 @@ export function createCodingLeaderAgent(): AgentProfileSpec {
         "trivial / explicit 任务优先自己做；non_trivial 任务由自己持有上下文并按需分派。",
         "不允许把主责任整链外包给二手执行者。",
         "子角色结果必须回到主链路统一验证，不能仅凭口头结果收口。",
+        "默认要求子角色按 result / evidence / blockers / verification 四段返回，便于主链路统一收口。",
       ],
       review_policy: [
         "非琐碎任务默认评估是否需要 reviewer。",

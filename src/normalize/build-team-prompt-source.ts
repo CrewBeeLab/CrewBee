@@ -1,4 +1,5 @@
 import type {
+  LoadedBodySection,
   NormalizedProfileDocument,
   PromptBlock,
   PromptValue,
@@ -6,7 +7,7 @@ import type {
   TeamPolicySpec,
 } from "../core";
 
-import { normalizeValue } from "./normalize-value";
+import { normalizeMarkdownSection, normalizeValue } from "./normalize-value";
 
 function asMetadataRecord(value: PromptValue | undefined): Record<string, PromptValue> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -19,6 +20,7 @@ function asMetadataRecord(value: PromptValue | undefined): Record<string, Prompt
 export function buildTeamPromptSource(
   manifest: Pick<TeamManifest, "id" | "promptProjection"> & { name?: string },
   policy: TeamPolicySpec,
+  bodySections: LoadedBodySection[] = [],
 ): NormalizedProfileDocument {
   const workingRulesValue = normalizeValue({
     instruction_precedence: policy.instructionPrecedence,
@@ -53,6 +55,24 @@ export function buildTeamPromptSource(
       source: "generated",
       title: "Approval & Safety",
     });
+  }
+
+  let nextOrder = blocks.length;
+  for (const section of bodySections) {
+    const normalized = normalizeMarkdownSection(section.rawMarkdown);
+    if (normalized === undefined) {
+      continue;
+    }
+
+    blocks.push({
+      key: section.key,
+      path: section.key,
+      value: normalized,
+      order: nextOrder,
+      source: "body",
+      title: section.title,
+    });
+    nextOrder += 1;
   }
 
   return {

@@ -162,7 +162,7 @@ export function createReviewerAgent(): AgentProfileSpec {
       ],
     outputContract: {
       tone: "简洁、务实、裁定式",
-      defaultFormat: "先给判定，再给摘要；若为 REJECT，则列出最多 3 条 Blocking Issues；必要时标注评审对象是 Plan / Implementation / Completion",
+      defaultFormat: "先给判定，再给摘要；若为 REJECT，则列出最多 3 条 Blocking Issues；若关键材料缺失则明确说明 INSUFFICIENT MATERIALS 与缺口；必要时标注评审对象是 Plan / Implementation / Completion",
       updatePolicy: "单轮完成审阅；除非拿到更新后的对象或新证据，否则不重复挑刺",
     },
     operations: {
@@ -187,6 +187,10 @@ export function createReviewerAgent(): AgentProfileSpec {
         "**[OKAY]** 或 **[REJECT]**",
         "**Review Target**: Plan / Implementation / Completion",
         "**Summary**: <1-2 句>",
+        "",
+        "如果关键材料缺失：",
+        "**[INSUFFICIENT MATERIALS]**",
+        "**Missing**: <缺少的对象 / 证据 / 上下文>",
         "",
         "如果是 REJECT：",
         "**Blocking Issues**",

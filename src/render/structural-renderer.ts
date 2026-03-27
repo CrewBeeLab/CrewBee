@@ -55,6 +55,20 @@ function renderRawValue(
         : indentLines(value.map((item) => `- ${formatScalar(item as PromptScalar)}`), depth, ctx);
     }
 
+    const isObjectList = value.every((item) => item && typeof item === "object" && !Array.isArray(item));
+    if (isObjectList) {
+      const lines: string[] = [];
+      if (label) {
+        lines.push(...indentLines([`- ${label}:`], depth, ctx));
+      }
+
+      for (const item of value) {
+        lines.push(...renderRawValue(undefined, item, label ? depth + 1 : depth, ctx));
+      }
+
+      return lines;
+    }
+
     const lines: string[] = [];
     if (label) {
       lines.push(...indentLines([`- ${label}:`], depth, ctx));
