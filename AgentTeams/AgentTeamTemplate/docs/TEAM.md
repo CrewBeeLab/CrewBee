@@ -94,12 +94,12 @@ Recommended optional blocks for parity with current `coding-team` profiles:
 
 ## Prompt Projection
 
-Use `prompt_projection` inside `team.manifest.yaml` and `agents/*.agent.md` to control exactly which schema fields are allowed to enter the final prompt. Dotted paths are supported, and `include` order is the render order.
+Use `prompt_projection` inside `team.policy.yaml` and `agents/*.agent.md` to control which fields enter the final prompt. Dotted paths are supported. Render order is determined by the framework's semantic section plan first, then by source order for extra sections.
 
-Supported Team fields:
+Supported Team prompt fields:
 
-- `mission`
-- `governance`
+- `working_rules`
+- `approval_safety`
 
 Supported Agent fields:
 

@@ -126,9 +126,6 @@ export function createEmbeddedCodingTeam(): AgentTeamDefinition {
       "multimodal-looker": { provider: "openai", model: "gpt-5.4", temperature: 0.2, topP: 0.85 },
     },
     tags: ["代码", "leader驱动", "上下文连续性", "主执行者中心", "评审中心", "证据驱动"],
-    promptProjection: {
-      include: ["governance"],
-    },
   };
 
   const agents = createCodingTeamAgents();
