@@ -15,16 +15,14 @@ import type {
   MinimalOperations,
   MinimalTemplates,
   OutputContract,
-  PromptProjectionSpec,
   TeamManifest,
   TeamMemberMap,
   TeamAgentRuntimeMap,
   ToolSkillStrategySpec,
 } from "../core";
-import {
-  normalizeAgentPromptProjection,
-  normalizeTeamPromptProjection,
-} from "../prompt-projection";
+import { parseMarkdownBodySections } from "../loader/markdown-body-loader";
+import { assertSnakeCaseOnly, mapPromptProjection } from "../loader/profile-loader";
+import { normalizeMarkdownSection } from "../normalize/normalize-value";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -93,7 +91,9 @@ function readTextFile(filePath: string): string {
 }
 
 function parseYamlFile(filePath: string): UnknownRecord {
-  return asRecord(parseYaml(readTextFile(filePath)), filePath);
+  const parsed = asRecord(parseYaml(readTextFile(filePath)), filePath);
+  assertSnakeCaseOnly(parsed, filePath);
+  return parsed;
 }
 
 function mapLegacyTeamMembers(rawMembers: unknown): TeamMemberMap {
@@ -147,7 +147,6 @@ function mapTeamMembers(rawMembers: unknown): TeamMemberMap {
 
 function rejectRemovedTeamManifestFields(raw: UnknownRecord, filePath: string): void {
   const removedFields = [
-    "kind",
     "status",
     "owner",
     "modes",
@@ -161,6 +160,8 @@ function rejectRemovedTeamManifestFields(raw: UnknownRecord, filePath: string): 
     "roleBoundaries",
     "structure_principles",
     "structurePrinciples",
+    "projection_schema",
+    "projectionSchema",
   ];
 
   for (const field of removedFields) {
@@ -192,6 +193,8 @@ function rejectRemovedAgentProfileFields(data: UnknownRecord, filePath: string):
     "autonomyLevel",
     "stop_conditions",
     "stopConditions",
+    "projection_schema",
+    "projectionSchema",
   ];
 
   for (const field of removedFields) {
@@ -210,7 +213,11 @@ function parseFrontmatter(filePath: string): { data: UnknownRecord; body: string
   }
 
   return {
-    data: asRecord(parseYaml(match[1]), `${filePath} frontmatter`),
+    data: (() => {
+      const parsed = asRecord(parseYaml(match[1]), `${filePath} frontmatter`);
+      assertSnakeCaseOnly(parsed, `${filePath} frontmatter`);
+      return parsed;
+    })(),
     body: match[2],
   };
 }
@@ -692,20 +699,6 @@ function mapEntryPoint(raw: UnknownRecord | undefined): AgentEntryPointSpec | un
   };
 }
 
-function mapPromptProjection(raw: UnknownRecord | undefined): PromptProjectionSpec | undefined {
-  if (!raw) {
-    return undefined;
-  }
-
-  const include = raw.include ? asStringArray(raw.include, "prompt_projection.include") : undefined;
-  const exclude = raw.exclude ? asStringArray(raw.exclude, "prompt_projection.exclude") : undefined;
-
-  if (!include && !exclude) {
-    return undefined;
-  }
-
-  return { include, exclude };
-}
 
 function mapAgentRuntime(raw: UnknownRecord | undefined): TeamAgentRuntimeMap | undefined {
   if (!raw) {
@@ -731,6 +724,50 @@ function mapAgentRuntime(raw: UnknownRecord | undefined): TeamAgentRuntimeMap | 
   );
 }
 
+function omitKeys(record: UnknownRecord, keys: readonly string[]): UnknownRecord {
+  const omitted = new Set(keys);
+  return Object.fromEntries(Object.entries(record).filter(([key]) => !omitted.has(key)));
+}
+
+const KNOWN_AGENT_TOP_LEVEL_KEYS = [
+  "id",
+  "name",
+  "archetype",
+  "owner",
+  "tags",
+  "persona_core",
+  "responsibility_core",
+  "collaboration",
+  "runtime_config",
+  "output_contract",
+  "execution_policy",
+  "operations",
+  "templates",
+  "guardrails",
+  "heuristics",
+  "anti_patterns",
+  "examples",
+  "tool_skill_strategy",
+  "entry_point",
+  "prompt_projection",
+] as const;
+
+const KNOWN_TEAM_TOP_LEVEL_KEYS = [
+  "id",
+  "version",
+  "name",
+  "description",
+  "mission",
+  "scope",
+  "leader",
+  "members",
+  "workflow",
+  "governance",
+  "agent_runtime",
+  "tags",
+  "prompt_projection",
+] as const;
+
 export function mapAgentProfile(filePath: string): AgentProfileSpec {
   const { data, body } = parseFrontmatter(filePath);
   rejectRemovedAgentProfileFields(data, filePath);
@@ -739,11 +776,19 @@ export function mapAgentProfile(filePath: string): AgentProfileSpec {
   const collaboration = asRecord(data.collaboration, "collaboration");
   const runtimeConfig = asRecord(data.runtime_config ?? data.runtimeConfig ?? data.capabilities, "runtime_config");
 
-  return {
+  const extraContent = omitKeys(data, KNOWN_AGENT_TOP_LEVEL_KEYS);
+  const reservedAgentKeys = new Set<string>(KNOWN_AGENT_TOP_LEVEL_KEYS);
+  const bodySections = Object.fromEntries(
+    parseMarkdownBodySections(body)
+      .filter((section) => !reservedAgentKeys.has(section.key) && !(section.key in extraContent))
+      .map((section) => [section.key, normalizeMarkdownSection(section.rawMarkdown) ?? section.rawMarkdown]),
+  );
+
+  const profile: AgentProfileSpec & Record<string, unknown> = {
     metadata: {
       id: asString(data.id, "id"),
       name: asString(data.name, "name"),
-      archetype: asString(data.archetype, "archetype") as AgentProfileSpec["metadata"]["archetype"],
+      archetype: asOptionalString(data.archetype),
       owner: asOptionalString(data.owner),
       tags: data.tags ? asStringArray(data.tags, "tags") : undefined,
     },
@@ -800,10 +845,12 @@ export function mapAgentProfile(filePath: string): AgentProfileSpec {
       asOptionalRecord(data.tool_skill_strategy ?? data.toolSkillStrategy),
     ),
     entryPoint: mapEntryPoint(asOptionalRecord(data.entry_point ?? data.entryPoint)),
-    promptProjection: normalizeAgentPromptProjection(
-      mapPromptProjection(asOptionalRecord(data.prompt_projection ?? data.promptProjection)),
-    ),
+    promptProjection: mapPromptProjection(asOptionalRecord(data.prompt_projection)),
+    ...extraContent,
+    ...bodySections,
   };
+
+  return profile;
 }
 
 export function mapTeamManifest(filePath: string): TeamManifest {
@@ -834,7 +881,9 @@ export function mapTeamManifest(filePath: string): TeamManifest {
     throw new Error(`${filePath} must define workflow.stages.`);
   }
 
-  return {
+  const extraContent = omitKeys(raw, KNOWN_TEAM_TOP_LEVEL_KEYS);
+
+  const manifest: TeamManifest & Record<string, unknown> = {
     id,
     version: asString(raw.version, "version"),
     name,
@@ -891,8 +940,9 @@ export function mapTeamManifest(filePath: string): TeamManifest {
     },
     agentRuntime: mapAgentRuntime(agentRuntime),
     tags: raw.tags ? asStringArray(raw.tags, "tags") : [],
-    promptProjection: normalizeTeamPromptProjection(
-      mapPromptProjection(asOptionalRecord(raw.prompt_projection ?? raw.promptProjection)),
-    ),
+    promptProjection: mapPromptProjection(asOptionalRecord(raw.prompt_projection)),
+    ...extraContent,
   };
+
+  return manifest;
 }

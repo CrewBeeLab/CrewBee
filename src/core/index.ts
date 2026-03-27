@@ -1,16 +1,11 @@
+import type { PromptProjectionSpec } from "./prompt-model";
+
 export type ExecutionMode = "single-executor" | "team-collaboration";
 
 export type TeamRoleKind = "leader" | "member";
-export type AgentArchetype =
-  | "orchestrator"
-  | "planner"
-  | "executor"
-  | "executor+orchestrator"
-  | "researcher"
-  | "advisor"
-  | "reviewer"
-  | "interpreter"
-  | "operator";
+// Compatibility-only authoring hint. The framework no longer assigns runtime,
+// projection, or prompt semantics to archetype.
+export type AgentArchetype = string;
 
 export interface TeamWorkflowSpec {
   stages: string[];
@@ -84,11 +79,6 @@ export interface QualityFloor {
   evidenceRequired: boolean;
 }
 
-export interface PromptProjectionSpec {
-  include?: string[];
-  exclude?: string[];
-}
-
 export interface PersonaCore {
   temperament: string;
   cognitiveStyle: string;
@@ -160,12 +150,12 @@ export interface AgentMicroExamples {
   finalClosure?: string[];
 }
 
-export interface AgentExamples {
+export type AgentExamples = Record<string, unknown> & {
   fit?: AgentFitExamples;
   micro?: AgentMicroExamples;
   goodFit?: string[];
   badFit?: string[];
-}
+};
 
 export interface ExecutionPolicyTriageBucket {
   signals?: string[];
@@ -179,7 +169,7 @@ export interface ExecutionPolicyTaskTriage {
   ambiguous?: ExecutionPolicyTriageBucket;
 }
 
-export interface ExecutionPolicySpec {
+export type ExecutionPolicySpec = Record<string, unknown> & {
   corePrinciple?: string[];
   inputValidation?: string[];
   reviewTargetPolicy?: string[];
@@ -208,7 +198,7 @@ export interface ExecutionPolicySpec {
   todoDiscipline?: string[];
   completionGate?: string[];
   failureRecovery?: string[];
-}
+};
 
 export interface MinimalOperations {
   autonomyLevel?: string;
@@ -216,11 +206,11 @@ export interface MinimalOperations {
   coreOperationSkeleton?: string[];
 }
 
-export interface MinimalTemplates {
+export type MinimalTemplates = Record<string, unknown> & {
   explorationChecklist?: string[];
   executionPlan?: string[];
   finalReport?: string[];
-}
+};
 
 // Prompt-only guidance for how an agent should prioritize direct tools, skills,
 // and delegated help. This does not register or enable capabilities at runtime;
@@ -233,14 +223,14 @@ export interface ToolSkillStrategySpec {
   notes?: string[];
 }
 
-export interface AgentGuardrails {
+export type AgentGuardrails = Record<string, unknown> & {
   critical?: string[];
-}
+};
 
 export interface AgentMetadata {
   id: string;
   name: string;
-  archetype: AgentArchetype;
+  archetype?: AgentArchetype;
   owner?: string;
   tags?: string[];
 }
@@ -333,3 +323,19 @@ export interface RuntimeEvent {
   type: "team-selected" | "mode-selected" | "stage-changed" | "owner-changed" | "note";
   detail: string;
 }
+
+export type {
+  LoadedBodySection,
+  LoadedDocumentKind,
+  LoadedProfileDocument,
+  NormalizedProfileDocument,
+  PromptBlock,
+  PromptCatalog,
+  PromptNode,
+  PromptNodeKind,
+  PromptPlan,
+  PromptPlanSection,
+  PromptProjectionSpec,
+  PromptScalar,
+  PromptValue,
+} from "./prompt-model";
