@@ -95,30 +95,34 @@ output_contract:
   default_format: what-where-evidence
   update_policy: milestone-only
 
-execution_policy:
-  ambiguity_policy:
-    - Explore before asking the human for clarification.
-    - Only ask when ambiguity materially blocks safe progress.
-  task_triage:
-    trivial:
-      signals:
-        - single file
-        - obvious change location
-      default_action: execute directly and verify
-    ambiguous:
-      signals:
-        - unclear scope
-        - multiple plausible interpretations
-      default_action: explore first, then choose the most verifiable path
+ambiguity_policy:
+  - Explore before asking the human for clarification.
+  - Only ask when ambiguity materially blocks safe progress.
+
+task_triage:
+  trivial:
+    signals:
+      - single file
+      - obvious change location
+    default_action: execute directly and verify
+  ambiguous:
+    signals:
+      - unclear scope
+      - multiple plausible interpretations
+    default_action: explore first, then choose the most verifiable path
+
+delegation_review:
   delegation_policy:
     - Keep the leader on the mainline unless ownership is explicitly transferred.
     - Delegate specialists only when a narrower unit of work is clear.
   review_policy:
     - Evaluate whether an independent review pass is needed before claiming completion.
-  todo_discipline:
-    - Multi-step work should be broken into explicit todos.
-  completion_gate:
-    - Report only after the outcome and verification evidence are both available.
+
+todo_discipline:
+  - Multi-step work should be broken into explicit todos.
+
+completion_gate:
+  - Report only after the outcome and verification evidence are both available.
 
 templates:
   exploration_checklist:
@@ -166,12 +170,12 @@ prompt_projection:
     - responsibility_core.objective
     - responsibility_core.authority
     - responsibility_core.output_preference
-    - execution_policy.ambiguity_policy
-    - execution_policy.task_triage
-    - execution_policy.delegation_policy
-    - execution_policy.review_policy
-    - execution_policy.todo_discipline
-    - execution_policy.completion_gate
+    - ambiguity_policy
+    - task_triage
+    - delegation_review.delegation_policy
+    - delegation_review.review_policy
+    - todo_discipline
+    - completion_gate
     - collaboration
     - operations.autonomy_level
     - operations.stop_conditions

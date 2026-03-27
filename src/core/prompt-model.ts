@@ -30,7 +30,7 @@ export interface PromptBlock {
   path: string;
   value: PromptValue;
   order: number;
-  source: "frontmatter" | "body";
+  source: "frontmatter" | "body" | "generated";
   title?: string;
 }
 

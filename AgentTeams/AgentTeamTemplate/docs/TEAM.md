@@ -115,14 +115,13 @@ Supported Agent fields:
 - `responsibility_core.in_scope`
 - `responsibility_core.out_of_scope`
 - `persona_core`
-- `execution_policy`
-- `execution_policy.ambiguity_policy`
-- `execution_policy.task_triage`
-- `execution_policy.delegation_policy`
-- `execution_policy.review_policy`
-- `execution_policy.todo_discipline`
-- `execution_policy.completion_gate`
-- `execution_policy.failure_recovery`
+- `ambiguity_policy`
+- `task_triage`
+- `delegation_review`
+- `delegation_review.delegation_policy`
+- `delegation_review.review_policy`
+- `todo_discipline`
+- `completion_gate`
 - `collaboration`
 - `output_contract`
 - `operations`
@@ -157,13 +156,13 @@ Supported Agent fields:
 - `archetype`
 - `runtime_config`
 
-Example in `team.manifest.yaml`:
+Example in `team.policy.yaml`:
 
 ```yaml
 prompt_projection:
   include:
-    - mission
-    - governance
+    - working_rules
+    - approval_safety
 ```
 
 For Team manifests, `kind`, `status`, `owner`, `workflow.id`, and `workflow.name` are no longer part of the schema. Keep only `workflow.stages`. `workflow` remains part of Team config for manager/UI/runtime use, but it is no longer prompt-projectable.
@@ -178,12 +177,12 @@ prompt_projection:
     - responsibility_core.objective
     - responsibility_core.authority
     - responsibility_core.output_preference
-    - execution_policy.ambiguity_policy
-    - execution_policy.task_triage
-    - execution_policy.delegation_policy
-    - execution_policy.review_policy
-    - execution_policy.todo_discipline
-    - execution_policy.completion_gate
+    - ambiguity_policy
+    - task_triage
+    - delegation_review.delegation_policy
+    - delegation_review.review_policy
+    - todo_discipline
+    - completion_gate
     - collaboration
     - operations.autonomy_level
     - operations.stop_conditions

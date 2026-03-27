@@ -16,6 +16,7 @@ import type {
   MinimalTemplates,
   OutputContract,
   TeamManifest,
+  TeamPolicySpec,
   TeamMemberMap,
   TeamAgentRuntimeMap,
   ToolSkillStrategySpec,
@@ -731,16 +732,28 @@ function omitKeys(record: UnknownRecord, keys: readonly string[]): UnknownRecord
 
 const KNOWN_AGENT_TOP_LEVEL_KEYS = [
   "id",
+  "kind",
+  "version",
   "name",
   "archetype",
+  "status",
   "owner",
   "tags",
   "persona_core",
   "responsibility_core",
+  "core_principle",
+  "scope_control",
+  "ambiguity_policy",
+  "support_triggers",
   "collaboration",
+  "repository_assessment",
+  "task_triage",
+  "delegation_review",
+  "todo_discipline",
+  "completion_gate",
+  "failure_recovery",
   "runtime_config",
   "output_contract",
-  "execution_policy",
   "operations",
   "templates",
   "guardrails",
@@ -771,10 +784,10 @@ const KNOWN_TEAM_TOP_LEVEL_KEYS = [
 export function mapAgentProfile(filePath: string): AgentProfileSpec {
   const { data, body } = parseFrontmatter(filePath);
   rejectRemovedAgentProfileFields(data, filePath);
-  const personaCore = asRecord(data.persona_core ?? data.personaCore, "persona_core");
-  const responsibilityCore = asRecord(data.responsibility_core ?? data.responsibilityCore, "responsibility_core");
+  const personaCore = asRecord(data.persona_core, "persona_core");
+  const responsibilityCore = asRecord(data.responsibility_core, "responsibility_core");
   const collaboration = asRecord(data.collaboration, "collaboration");
-  const runtimeConfig = asRecord(data.runtime_config ?? data.runtimeConfig ?? data.capabilities, "runtime_config");
+  const runtimeConfig = asRecord(data.runtime_config, "runtime_config");
 
   const extraContent = omitKeys(data, KNOWN_AGENT_TOP_LEVEL_KEYS);
   const reservedAgentKeys = new Set<string>(KNOWN_AGENT_TOP_LEVEL_KEYS);
@@ -794,60 +807,58 @@ export function mapAgentProfile(filePath: string): AgentProfileSpec {
     },
     personaCore: {
       temperament: asString(personaCore.temperament, "persona_core.temperament"),
-      cognitiveStyle: asString(personaCore.cognitive_style ?? personaCore.cognitiveStyle, "persona_core.cognitive_style"),
-      riskPosture: asString(personaCore.risk_posture ?? personaCore.riskPosture, "persona_core.risk_posture"),
-      communicationStyle: asString(personaCore.communication_style ?? personaCore.communicationStyle, "persona_core.communication_style"),
-      persistenceStyle: asString(personaCore.persistence_style ?? personaCore.persistenceStyle, "persona_core.persistence_style"),
-      conflictStyle: asOptionalString(personaCore.conflict_style ?? personaCore.conflictStyle),
-      decisionPriorities: asStringArray(
-        personaCore.decision_priorities ??
-          personaCore.decisionPriorities ??
-          personaCore.default_values ??
-          personaCore.defaultValues,
-        "persona_core.decision_priorities",
-      ),
+      cognitiveStyle: asString(personaCore.cognitive_style, "persona_core.cognitive_style"),
+      riskPosture: asString(personaCore.risk_posture, "persona_core.risk_posture"),
+      communicationStyle: asString(personaCore.communication_style, "persona_core.communication_style"),
+      persistenceStyle: asString(personaCore.persistence_style, "persona_core.persistence_style"),
+      conflictStyle: asOptionalString(personaCore.conflict_style),
+      decisionPriorities: asStringArray(personaCore.decision_priorities, "persona_core.decision_priorities"),
     },
     responsibilityCore: {
       description: asString(responsibilityCore.description, "responsibility_core.description"),
-      useWhen: asStringArray(responsibilityCore.use_when ?? responsibilityCore.useWhen, "responsibility_core.use_when"),
-      avoidWhen: asStringArray(responsibilityCore.avoid_when ?? responsibilityCore.avoidWhen, "responsibility_core.avoid_when"),
+      useWhen: asStringArray(responsibilityCore.use_when, "responsibility_core.use_when"),
+      avoidWhen: asStringArray(responsibilityCore.avoid_when, "responsibility_core.avoid_when"),
       objective: asString(responsibilityCore.objective, "responsibility_core.objective"),
-      successDefinition: asStringArray(
-        responsibilityCore.success_definition ?? responsibilityCore.successDefinition,
-        "responsibility_core.success_definition",
-      ),
-      nonGoals: asStringArray(responsibilityCore.non_goals ?? responsibilityCore.nonGoals, "responsibility_core.non_goals"),
-      inScope: asStringArray(responsibilityCore.in_scope ?? responsibilityCore.inScope, "responsibility_core.in_scope"),
-      outOfScope: asStringArray(responsibilityCore.out_of_scope ?? responsibilityCore.outOfScope, "responsibility_core.out_of_scope"),
+      successDefinition: asStringArray(responsibilityCore.success_definition, "responsibility_core.success_definition"),
+      nonGoals: asStringArray(responsibilityCore.non_goals, "responsibility_core.non_goals"),
+      inScope: asStringArray(responsibilityCore.in_scope, "responsibility_core.in_scope"),
+      outOfScope: asStringArray(responsibilityCore.out_of_scope, "responsibility_core.out_of_scope"),
       authority: asOptionalString(responsibilityCore.authority),
-      outputPreference:
-        responsibilityCore.output_preference ?? responsibilityCore.outputPreference
-          ? asStringArray(responsibilityCore.output_preference ?? responsibilityCore.outputPreference, "responsibility_core.output_preference")
-          : undefined,
+      outputPreference: responsibilityCore.output_preference
+        ? asStringArray(responsibilityCore.output_preference, "responsibility_core.output_preference")
+        : undefined,
     },
+    corePrinciple: data.core_principle as AgentProfileSpec["corePrinciple"],
+    scopeControl: data.scope_control as AgentProfileSpec["scopeControl"],
+    ambiguityPolicy: data.ambiguity_policy as AgentProfileSpec["ambiguityPolicy"],
+    supportTriggers: data.support_triggers as AgentProfileSpec["supportTriggers"],
+    repositoryAssessment: data.repository_assessment as AgentProfileSpec["repositoryAssessment"],
     collaboration: mapCollaboration(collaboration),
+    taskTriage: data.task_triage as AgentProfileSpec["taskTriage"],
+    delegationReview: data.delegation_review as AgentProfileSpec["delegationReview"],
+    todoDiscipline: data.todo_discipline as AgentProfileSpec["todoDiscipline"],
+    completionGate: data.completion_gate as AgentProfileSpec["completionGate"],
+    failureRecovery: data.failure_recovery as AgentProfileSpec["failureRecovery"],
     runtimeConfig: mapRuntimeConfig(runtimeConfig) as AgentRuntimeConfig,
-    outputContract: mapOutputContract(asOptionalRecord(data.output_contract ?? data.outputContract)) as OutputContract,
-    executionPolicy: mapExecutionPolicy(
-      asOptionalRecord(data.execution_policy ?? data.executionPolicy),
-    ),
+    outputContract: mapOutputContract(asOptionalRecord(data.output_contract)) as OutputContract,
+    executionPolicy: undefined,
     operations: mapMinimalOperations(asOptionalRecord(data.operations), body),
     templates: mapMinimalTemplates(asOptionalRecord(data.templates), body),
     guardrails: mapGuardrails(asOptionalRecord(data.guardrails), body),
     heuristics:
       data.heuristics ? asStringArray(data.heuristics, "heuristics") : extractBullets(extractSection(body, "Unique Heuristics")),
     antiPatterns:
-      data.anti_patterns ?? data.antiPatterns
-        ? asStringArray(data.anti_patterns ?? data.antiPatterns, "anti_patterns")
+      data.anti_patterns
+        ? asStringArray(data.anti_patterns, "anti_patterns")
         : extractBullets(extractSection(body, "Agent-Specific Anti-patterns")),
     examples: mapExamples(asOptionalRecord(data.examples), body),
-    toolSkillStrategy: mapToolSkillStrategy(
-      asOptionalRecord(data.tool_skill_strategy ?? data.toolSkillStrategy),
-    ),
-    entryPoint: mapEntryPoint(asOptionalRecord(data.entry_point ?? data.entryPoint)),
+    toolSkillStrategy: mapToolSkillStrategy(asOptionalRecord(data.tool_skill_strategy)),
+    entryPoint: mapEntryPoint(asOptionalRecord(data.entry_point)),
     promptProjection: mapPromptProjection(asOptionalRecord(data.prompt_projection)),
-    ...extraContent,
-    ...bodySections,
+    extraSections: {
+      ...extraContent,
+      ...bodySections,
+    },
   };
 
   return profile;
@@ -945,4 +956,20 @@ export function mapTeamManifest(filePath: string): TeamManifest {
   };
 
   return manifest;
+}
+
+export function mapTeamPolicy(filePath: string): TeamPolicySpec {
+  const raw = parseYamlFile(filePath);
+
+  return {
+    id: asOptionalString(raw.id),
+    kind: raw.kind === "team-policy" ? "team-policy" : undefined,
+    version: asOptionalString(raw.version),
+    instructionPrecedence: raw.instruction_precedence as TeamPolicySpec["instructionPrecedence"],
+    approvalPolicy: raw.approval_policy as TeamPolicySpec["approvalPolicy"],
+    forbiddenActions: raw.forbidden_actions as TeamPolicySpec["forbiddenActions"],
+    qualityFloor: raw.quality_floor as TeamPolicySpec["qualityFloor"],
+    workingRules: raw.working_rules as TeamPolicySpec["workingRules"],
+    promptProjection: mapPromptProjection(asOptionalRecord(raw.prompt_projection)),
+  };
 }

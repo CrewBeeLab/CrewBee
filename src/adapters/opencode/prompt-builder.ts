@@ -1,11 +1,8 @@
-import type {
-  AgentProfileSpec,
-  LoadedProfileDocument,
-  PromptProjectionSpec,
-  TeamManifest,
-} from "../../core";
+import type { AgentProfileSpec, LoadedProfileDocument, TeamManifest, TeamPolicySpec } from "../../core";
 import { buildPromptCatalog } from "../../catalog/build-prompt-catalog";
-import { loadProfileDocument } from "../../loader/profile-loader";
+import { attachMarkdownBodySections } from "../../loader/markdown-body-loader";
+import { loadAgentProfile, loadTeamManifest, loadTeamPolicy } from "../../loader/profile-loader";
+import { buildTeamPromptSource } from "../../normalize/build-team-prompt-source";
 import { normalizeProfileDocument } from "../../normalize/normalize-document";
 import { buildPromptPlan } from "../../plan/build-prompt-plan";
 import { applyPromptProjection } from "../../projection/apply-prompt-projection";
@@ -39,51 +36,49 @@ function toSnakeCaseValue(value: unknown): unknown {
   );
 }
 
-function normalizeRuntimeProjectionPath(path: string): string {
-  return ["id", "name", "kind", "version", "status", "owner", "tags", "archetype"].includes(path)
-    ? `metadata.${path}`
-    : path;
+function orderedEntries(record: UnknownRecord): Array<[string, unknown]> {
+  return Object.entries(record);
 }
 
-function normalizeRuntimePromptProjection(
-  projection: PromptProjectionSpec | undefined,
-): PromptProjectionSpec | undefined {
-  if (!projection) {
-    return undefined;
-  }
-
-  const include = projection.include?.map(normalizeRuntimeProjectionPath);
-  const exclude = projection.exclude?.map(normalizeRuntimeProjectionPath);
-  const labels = projection.labels
-    ? Object.fromEntries(
-        Object.entries(projection.labels).map(([key, value]) => [normalizeRuntimeProjectionPath(key), value]),
-      )
-    : undefined;
-
+function createRawTeamManifestRecord(manifest: TeamManifest): UnknownRecord {
   return {
-    ...(include ? { include } : {}),
-    ...(exclude ? { exclude } : {}),
-    ...(labels ? { labels } : {}),
+    id: manifest.id,
+    name: manifest.name,
   };
 }
 
-function createRawTeamPromptRecord(manifest: TeamManifest): UnknownRecord {
-  const raw = toSnakeCaseValue(manifest) as UnknownRecord;
-  if (isRecord(raw.prompt_projection)) {
-    raw.prompt_projection = normalizeRuntimePromptProjection(raw.prompt_projection as PromptProjectionSpec);
-  }
-  return raw;
-}
-
 function createRawAgentPromptRecord(agent: AgentProfileSpec): UnknownRecord {
-  const raw = toSnakeCaseValue(agent) as UnknownRecord;
-  const metadata = isRecord(raw.metadata) ? raw.metadata : {};
-  const promptProjection = normalizeRuntimePromptProjection(raw.prompt_projection as PromptProjectionSpec | undefined);
+  const metadata = toSnakeCaseValue(agent.metadata) as UnknownRecord;
+  const extraSections = isRecord(agent.extraSections) ? (toSnakeCaseValue(agent.extraSections) as UnknownRecord) : {};
+  const raw: UnknownRecord = {
+    ...metadata,
+    persona_core: toSnakeCaseValue(agent.personaCore),
+    responsibility_core: toSnakeCaseValue(agent.responsibilityCore),
+    core_principle: agent.corePrinciple ? toSnakeCaseValue(agent.corePrinciple) : undefined,
+    scope_control: agent.scopeControl ? toSnakeCaseValue(agent.scopeControl) : undefined,
+    ambiguity_policy: agent.ambiguityPolicy ? toSnakeCaseValue(agent.ambiguityPolicy) : undefined,
+    support_triggers: agent.supportTriggers ? toSnakeCaseValue(agent.supportTriggers) : undefined,
+    repository_assessment: agent.repositoryAssessment ? toSnakeCaseValue(agent.repositoryAssessment) : undefined,
+    collaboration: toSnakeCaseValue(agent.collaboration),
+    task_triage: agent.taskTriage ? toSnakeCaseValue(agent.taskTriage) : undefined,
+    delegation_review: agent.delegationReview ? toSnakeCaseValue(agent.delegationReview) : undefined,
+    todo_discipline: agent.todoDiscipline ? toSnakeCaseValue(agent.todoDiscipline) : undefined,
+    completion_gate: agent.completionGate ? toSnakeCaseValue(agent.completionGate) : undefined,
+    failure_recovery: agent.failureRecovery ? toSnakeCaseValue(agent.failureRecovery) : undefined,
+    operations: agent.operations ? toSnakeCaseValue(agent.operations) : undefined,
+    output_contract: toSnakeCaseValue(agent.outputContract),
+    templates: agent.templates ? toSnakeCaseValue(agent.templates) : undefined,
+    guardrails: agent.guardrails ? toSnakeCaseValue(agent.guardrails) : undefined,
+    heuristics: agent.heuristics,
+    anti_patterns: agent.antiPatterns,
+    tool_skill_strategy: agent.toolSkillStrategy ? toSnakeCaseValue(agent.toolSkillStrategy) : undefined,
+    examples: agent.examples ? toSnakeCaseValue(agent.examples) : undefined,
+    ...extraSections,
+  };
 
   return {
-    ...metadata,
-    ...Object.fromEntries(Object.entries(raw).filter(([key]) => key !== "metadata" && key !== "prompt_projection")),
-    ...(promptProjection ? { prompt_projection: promptProjection } : {}),
+    ...Object.fromEntries(orderedEntries(raw).filter(([, value]) => value !== undefined)),
+    ...(agent.promptProjection ? { prompt_projection: toSnakeCaseValue(agent.promptProjection) } : {}),
   };
 }
 
@@ -111,9 +106,63 @@ export function createOpenCodePromptFromDocuments(input: {
     .join("\n\n");
 }
 
+export function createOpenCodePromptFromRawDocuments(input: {
+  teamManifestRaw: UnknownRecord;
+  teamPolicyRaw: UnknownRecord;
+  agentRaw: UnknownRecord;
+  teamBody?: string;
+  agentBody?: string;
+}): string {
+  const loadedTeamManifest = loadTeamManifest(input.teamManifestRaw);
+  const loadedAgent = input.agentBody
+    ? attachMarkdownBodySections(loadAgentProfile(input.agentRaw), input.agentBody)
+    : loadAgentProfile(input.agentRaw);
+  const normalizedAgent = normalizeProfileDocument(loadedAgent);
+  const agentPart = renderPromptPlan(
+    buildPromptPlan(applyPromptProjection(buildPromptCatalog(normalizedAgent), normalizedAgent.promptProjection)),
+    defaultRenderContext,
+  );
+
+  const loadedPolicy = loadTeamPolicy(input.teamPolicyRaw);
+  const teamSource = buildTeamPromptSource(
+    {
+      id: String(loadedTeamManifest.metadata.id),
+      name: typeof loadedTeamManifest.metadata.name === "string" ? loadedTeamManifest.metadata.name : undefined,
+      promptProjection: loadedTeamManifest.promptProjection,
+    },
+    loadedPolicy,
+  );
+  const teamPart = renderPromptPlan(
+    buildPromptPlan(applyPromptProjection(buildPromptCatalog(teamSource), teamSource.promptProjection)),
+    defaultRenderContext,
+  );
+
+  return [renderPart("Team Contract", teamPart), renderPart("Agent Contract", agentPart)]
+    .filter((block): block is string => Boolean(block))
+    .join("\n\n");
+}
+
 export function createOpenCodeAgentPrompt(agent: ProjectedAgent, _requestedTools?: readonly string[]): string {
-  return createOpenCodePromptFromDocuments({
-    team: loadProfileDocument(createRawTeamPromptRecord(agent.sourceTeam.manifest), "team"),
-    agent: loadProfileDocument(createRawAgentPromptRecord(agent.sourceAgent), "agent"),
-  });
+  const teamSource = buildTeamPromptSource(
+    {
+      id: agent.sourceTeam.manifest.id,
+      name: agent.sourceTeam.manifest.name,
+      promptProjection: agent.sourceTeam.policy.promptProjection,
+    },
+    agent.sourceTeam.policy,
+  );
+  const teamPart = renderPromptPlan(
+    buildPromptPlan(applyPromptProjection(buildPromptCatalog(teamSource), teamSource.promptProjection)),
+    defaultRenderContext,
+  );
+  const loadedAgent = loadAgentProfile(createRawAgentPromptRecord(agent.sourceAgent));
+  const normalizedAgent = normalizeProfileDocument(loadedAgent);
+  const agentPart = renderPromptPlan(
+    buildPromptPlan(applyPromptProjection(buildPromptCatalog(normalizedAgent), normalizedAgent.promptProjection)),
+    defaultRenderContext,
+  );
+
+  return [renderPart("Team Contract", teamPart), renderPart("Agent Contract", agentPart)]
+    .filter((block): block is string => Boolean(block))
+    .join("\n\n");
 }

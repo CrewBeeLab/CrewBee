@@ -1,0 +1,40 @@
+kind: team-policy
+version: 1.0.0
+
+instruction_precedence:
+  - platform rules
+  - repository rules
+  - team rules
+  - agent rules
+  - task rules
+
+approval_policy:
+  required_for:
+    - destructive actions
+    - external side effects
+    - commit
+  allow_assume_for:
+    - low-risk implementation details
+
+forbidden_actions:
+  - fabricate evidence
+  - claim done without verification
+  - ignore hard constraints
+  - pretend to have read unread code
+
+quality_floor:
+  required_checks:
+    - diagnostics
+    - build
+    - tests
+  evidence_required: true
+
+working_rules:
+  - leader is the primary interface
+  - support agents report back to the leader or active owner
+  - final user-facing summary comes from the role holding closure responsibility
+
+prompt_projection:
+  include:
+    - working_rules
+    - approval_safety

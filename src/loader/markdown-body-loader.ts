@@ -1,4 +1,4 @@
-import type { LoadedBodySection } from "../core";
+import type { LoadedBodySection, LoadedProfileDocument } from "../core";
 
 function toSnakeCase(value: string): string {
   return value
@@ -34,4 +34,25 @@ export function parseMarkdownBodySections(markdown: string): LoadedBodySection[]
       };
     })
     .filter((section) => section.key.length > 0 && section.rawMarkdown.length > 0);
+}
+
+export function attachMarkdownBodySections(
+  document: LoadedProfileDocument,
+  markdown: string,
+): LoadedProfileDocument {
+  const bodySections = parseMarkdownBodySections(markdown);
+  const frontmatterKeys = new Set(document.sourceOrder);
+
+  for (const section of bodySections) {
+    if (frontmatterKeys.has(section.key)) {
+      throw new Error(
+        `${document.kind} markdown body section '${section.key}' conflicts with an existing frontmatter top-level key.`,
+      );
+    }
+  }
+
+  return {
+    ...document,
+    bodySections,
+  };
 }

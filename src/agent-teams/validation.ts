@@ -28,6 +28,14 @@ export function validateTeamDefinition(team: AgentTeamDefinition): TeamValidatio
     }
   }
 
+  if (!team.policy) {
+    issues.push({
+      level: "error",
+      message: `Team '${manifest.id}' must define team.policy.yaml.`,
+    });
+    return issues;
+  }
+
   for (const [agentId] of Object.entries(manifest.agentRuntime ?? {})) {
     if (!agentIds.has(agentId)) {
       issues.push({
@@ -80,6 +88,27 @@ export function validateTeamDefinition(team: AgentTeamDefinition): TeamValidatio
     issues.push({
       level: "error",
       message: `Team '${manifest.id}' must define governance.instructionPrecedence.`,
+    });
+  }
+
+  if (!team.policy.instructionPrecedence) {
+    issues.push({
+      level: "error",
+      message: `Team '${manifest.id}' must define policy.instruction_precedence.`,
+    });
+  }
+
+  if (!team.policy.workingRules) {
+    issues.push({
+      level: "error",
+      message: `Team '${manifest.id}' must define policy.working_rules.`,
+    });
+  }
+
+  if (!team.policy.qualityFloor) {
+    issues.push({
+      level: "error",
+      message: `Team '${manifest.id}' must define policy.quality_floor.`,
     });
   }
 

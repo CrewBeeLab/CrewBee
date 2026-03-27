@@ -1,6 +1,7 @@
 import type {
   AgentTeamDefinition,
   TeamManifest,
+  TeamPolicySpec,
 } from "../../core";
 
 import { createCodingTeamAgents } from "./coding-team/agents";
@@ -131,9 +132,20 @@ export function createEmbeddedCodingTeam(): AgentTeamDefinition {
   };
 
   const agents = createCodingTeamAgents();
+  const policy: TeamPolicySpec = {
+    instructionPrecedence: manifest.governance.instructionPrecedence,
+    approvalPolicy: manifest.governance.approvalPolicy as unknown as TeamPolicySpec["approvalPolicy"],
+    forbiddenActions: manifest.governance.forbiddenActions,
+    qualityFloor: manifest.governance.qualityFloor as unknown as TeamPolicySpec["qualityFloor"],
+    workingRules: manifest.governance.workingRules,
+    promptProjection: {
+      include: ["working_rules", "approval_safety"],
+    },
+  };
 
   return {
     manifest,
+    policy,
     agents,
   };
 }

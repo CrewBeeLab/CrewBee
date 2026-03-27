@@ -1,4 +1,4 @@
-import type { PromptProjectionSpec } from "./prompt-model";
+import type { PromptProjectionSpec, PromptValue } from "./prompt-model";
 
 export type ExecutionMode = "single-executor" | "team-collaboration";
 
@@ -51,6 +51,18 @@ export interface TeamGovernanceSpec {
   forbiddenActions: string[];
   qualityFloor: QualityFloor;
   workingRules: string[];
+}
+
+export interface TeamPolicySpec {
+  id?: string;
+  kind?: "team-policy";
+  version?: string;
+  instructionPrecedence?: PromptValue;
+  approvalPolicy?: PromptValue;
+  forbiddenActions?: PromptValue;
+  qualityFloor?: PromptValue;
+  workingRules?: PromptValue;
+  promptProjection?: PromptProjectionSpec;
 }
 
 export interface TeamManifest {
@@ -250,7 +262,17 @@ export interface AgentProfileSpec {
   metadata: AgentMetadata;
   personaCore: PersonaCore;
   responsibilityCore: ResponsibilityCore;
+  corePrinciple?: PromptValue;
+  scopeControl?: PromptValue;
+  ambiguityPolicy?: PromptValue;
+  supportTriggers?: PromptValue;
+  repositoryAssessment?: PromptValue;
   collaboration: CollaborationSpec;
+  taskTriage?: PromptValue;
+  delegationReview?: PromptValue;
+  todoDiscipline?: PromptValue;
+  completionGate?: PromptValue;
+  failureRecovery?: PromptValue;
   runtimeConfig: AgentRuntimeConfig;
   outputContract: OutputContract;
   executionPolicy?: ExecutionPolicySpec;
@@ -265,6 +287,7 @@ export interface AgentProfileSpec {
   toolSkillStrategy?: ToolSkillStrategySpec;
   entryPoint?: AgentEntryPointSpec;
   promptProjection?: PromptProjectionSpec;
+  extraSections?: Record<string, unknown>;
 }
 
 export interface TeamDocumentationRefs {
@@ -274,6 +297,7 @@ export interface TeamDocumentationRefs {
 
 export interface AgentTeamDefinition {
   manifest: TeamManifest;
+  policy: TeamPolicySpec;
   agents: AgentProfileSpec[];
   documentation?: TeamDocumentationRefs;
 }

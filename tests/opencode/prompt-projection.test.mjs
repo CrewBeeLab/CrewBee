@@ -2,10 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { createEmbeddedCodingTeam } from "../../dist/src/agent-teams/embedded/coding-team.js";
-import { createOpenCodeAgentPrompt, createOpenCodePromptFromDocuments } from "../../dist/src/adapters/opencode/prompt-builder.js";
+import { createOpenCodeAgentPrompt, createOpenCodePromptFromRawDocuments } from "../../dist/src/adapters/opencode/prompt-builder.js";
 import { buildPromptCatalog } from "../../dist/src/catalog/build-prompt-catalog.js";
-import { loadProfileDocument } from "../../dist/src/loader/profile-loader.js";
-import { parseMarkdownBodySections } from "../../dist/src/loader/markdown-body-loader.js";
+import { loadAgentProfile } from "../../dist/src/loader/profile-loader.js";
 import { normalizeProfileDocument } from "../../dist/src/normalize/normalize-document.js";
 import { buildPromptPlan } from "../../dist/src/plan/build-prompt-plan.js";
 import { applyPromptProjection } from "../../dist/src/projection/apply-prompt-projection.js";
@@ -67,6 +66,20 @@ function createMinimalTeam(agent) {
         include: ["governance"],
       },
     },
+    policy: {
+      instructionPrecedence: ["system", "team", "agent"],
+      approvalPolicy: {
+        requiredFor: [],
+        allowAssumeFor: [],
+      },
+      forbiddenActions: ["fabricate evidence"],
+      qualityFloor: {
+        requiredChecks: ["prompt"],
+        evidenceRequired: true,
+      },
+      workingRules: ["Stay grounded"],
+      promptProjection: { include: ["working_rules", "approval_safety"] },
+    },
     agents: [agent],
   };
 }
@@ -124,12 +137,13 @@ function createMinimalAgent(overrides = {}) {
       ...overrides.entryPoint,
     },
     promptProjection: overrides.promptProjection,
+    extraSections: overrides.extraSections,
   };
 }
 
 test("loader rejects camelCase frontmatter keys", () => {
   assert.throws(
-    () => loadProfileDocument({ id: "bad-agent", personaCore: { temperament: "bad" } }, "agent"),
+    () => loadAgentProfile({ id: "bad-agent", personaCore: { temperament: "bad" } }),
     /only supports snake_case keys/i,
   );
 });
@@ -137,37 +151,32 @@ test("loader rejects camelCase frontmatter keys", () => {
 test("prompt_projection paths must also be snake_case", () => {
   assert.throws(
     () =>
-      loadProfileDocument(
-        {
-          id: "bad-agent",
-          persona_core: { temperament: "steady" },
-          prompt_projection: {
-            include: ["personaCore"],
-          },
+      loadAgentProfile({
+        id: "bad-agent",
+        persona_core: { temperament: "steady" },
+        prompt_projection: {
+          include: ["personaCore"],
         },
-        "agent",
-      ),
+      }),
     /snake_case paths/i,
   );
 });
 
 test("markdown body sections are parsed and rendered through the generic pipeline", () => {
-  const teamDocument = loadProfileDocument(
-    {
+  const prompt = createOpenCodePromptFromRawDocuments({
+    teamManifestRaw: {
       id: "doc-team",
       name: "DocTeam",
-      version: "1.0.0",
-      governance: {
-        working_rules: ["Stay grounded"],
-      },
-      prompt_projection: {
-        include: ["governance", "examples"],
-      },
     },
-    "team",
-  );
-  const agentDocument = loadProfileDocument(
-    {
+    teamPolicyRaw: {
+      instruction_precedence: ["system"],
+      quality_floor: { required_checks: ["prompt"], evidence_required: true },
+      working_rules: ["Stay grounded"],
+      approval_policy: { required_for: [], allow_assume_for: [] },
+      forbidden_actions: ["avoid fabrication"],
+      prompt_projection: { include: ["working_rules"] },
+    },
+    agentRaw: {
       id: "doc-agent",
       name: "DocAgent",
       persona_core: {
@@ -177,13 +186,7 @@ test("markdown body sections are parsed and rendered through the generic pipelin
         include: ["persona_core", "examples"],
       },
     },
-    "agent",
-  );
-  agentDocument.bodySections = parseMarkdownBodySections(`## Examples\n- Good fit\n- Keep evidence`);
-
-  const prompt = createOpenCodePromptFromDocuments({
-    team: teamDocument,
-    agent: agentDocument,
+    agentBody: `## Examples\n- Good fit\n- Keep evidence`,
   });
 
   assert.match(prompt, /### Examples/);
@@ -192,7 +195,7 @@ test("markdown body sections are parsed and rendered through the generic pipelin
 });
 
 test("generic normalize and catalog keep arbitrary blocks without schema", () => {
-  const loaded = loadProfileDocument(
+  const loaded = loadAgentProfile(
     {
       id: "generic-agent",
       name: "Generic Agent",
@@ -201,7 +204,6 @@ test("generic normalize and catalog keep arbitrary blocks without schema", () =>
         risk_mode: "balanced",
       },
     },
-    "agent",
   );
   const normalized = normalizeProfileDocument(loaded);
   const catalog = buildPromptCatalog(normalized);
@@ -214,24 +216,29 @@ test("generic normalize and catalog keep arbitrary blocks without schema", () =>
   assert.ok(catalog.nodes.some((node) => node.path === "decision_profile"));
 });
 
-test("coding-leader prompt renders generic top-level sections with strong content", () => {
+test("coding-leader prompt renders final semantic section ordering with strong content", () => {
   const projected = getProjectedAgent(createEmbeddedCodingTeam(), "coding-leader");
   assert.ok(projected);
 
   const prompt = createOpenCodeAgentPrompt(projected);
 
   assert.match(prompt, /## Team Contract/);
-  assert.match(prompt, /### Governance/);
+  assert.match(prompt, /### Working Rules/);
+  assert.match(prompt, /### Approval & Safety/);
   assert.match(prompt, /## Agent Contract/);
   assert.match(prompt, /### Persona Core/);
   assert.match(prompt, /### Responsibility Core/);
-  assert.match(prompt, /### Execution Policy/);
-  assert.match(prompt, /### Guardrails/);
+  assert.match(prompt, /### Core Principle/);
+  assert.match(prompt, /### Scope Control/);
+  assert.match(prompt, /### Ambiguity Policy/);
+  assert.match(prompt, /### Support Triggers/);
+  assert.match(prompt, /### Task Triage/);
+  assert.match(prompt, /### Delegation Review/);
+  assert.match(prompt, /### Completion Gate/);
   assert.match(prompt, /### Output Contract/);
   assert.match(prompt, /持续推进，解决问题；只有在真实不可推进时才提问/);
   assert.match(prompt, /默认自己持有主链路/);
   assert.match(prompt, /已完成：/);
-  assert.doesNotMatch(prompt, /### Core Principle/);
 });
 
 test("coordination-leader prompt renders coordination-specific sections structurally", () => {
@@ -240,8 +247,8 @@ test("coordination-leader prompt renders coordination-specific sections structur
 
   const prompt = createOpenCodeAgentPrompt(projected);
 
-  assert.match(prompt, /### Execution Policy/);
-  assert.match(prompt, /- Concern Escalation Policy:/);
+  assert.match(prompt, /### Core Principle/);
+  assert.match(prompt, /### Concern Escalation Policy/);
   assert.match(prompt, /不直接承担主要实现工作/);
   assert.match(prompt, /### Operations/);
 });
@@ -260,7 +267,7 @@ test("executor explorer reviewer and web researcher prompts all render", () => {
 });
 
 test("promptProjection include exclude labels works on generic path tree", () => {
-  const loaded = loadProfileDocument(
+  const loaded = loadAgentProfile(
     {
       id: "tree-agent",
       name: "Tree Agent",
@@ -277,7 +284,6 @@ test("promptProjection include exclude labels works on generic path tree", () =>
         },
       },
     },
-    "agent",
   );
   const plan = buildPromptPlan(
     applyPromptProjection(buildPromptCatalog(normalizeProfileDocument(loaded)), loaded.promptProjection),
@@ -294,10 +300,15 @@ test("promptProjection include exclude labels works on generic path tree", () =>
 
 test("minimal general team can define arbitrary content blocks without schema", () => {
   const agent = createMinimalAgent({
+    extraSections: {
+      decision_model: {
+        routing_rules: ["Route writing to writer agent"],
+      },
+    },
     promptProjection: {
-      include: ["execution_policy", "metadata.id"],
+      include: ["decision_model", "metadata.id"],
       labels: {
-        execution_policy: "Decision Model",
+        decision_model: "Decision Model",
       },
     },
   });
@@ -310,5 +321,5 @@ test("minimal general team can define arbitrary content blocks without schema", 
   assert.match(prompt, /### Decision Model/);
   assert.match(prompt, /- Routing Rules:/);
   assert.match(prompt, /Route writing to writer agent/);
-  assert.match(prompt, /### Metadata/);
+  assert.match(prompt, /- Id: general-leader/);
 });

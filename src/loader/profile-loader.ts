@@ -2,6 +2,7 @@ import type {
   LoadedDocumentKind,
   LoadedProfileDocument,
   PromptProjectionSpec,
+  TeamPolicySpec,
 } from "../core";
 
 type UnknownRecord = Record<string, unknown>;
@@ -61,8 +62,19 @@ export function assertSnakeCaseOnly(value: unknown, label: string = "document"):
   }
 
   for (const [key, entry] of Object.entries(value)) {
+    if (key === "projection_schema") {
+      throw new Error(
+        "projection_schema is no longer supported. Use prompt_projection.include / exclude / labels instead.",
+      );
+    }
+
     const allowsPathKeys = label.endsWith(".labels");
-    const allowsIdentifierKeys = label.endsWith(".members") || label.endsWith(".agent_runtime");
+    const allowsIdentifierKeys =
+      label.endsWith(".members") ||
+      label.endsWith(".agent_runtime") ||
+      label.endsWith(".capability_bindings") ||
+      label.endsWith(".workflow_override") ||
+      label.endsWith(".ops");
     const isAllowed = allowsPathKeys
       ? isSnakeCasePath(key)
       : allowsIdentifierKeys
@@ -143,5 +155,29 @@ export function loadProfileDocument(raw: UnknownRecord, kind: LoadedDocumentKind
     content,
     promptProjection: mapPromptProjection(raw.prompt_projection),
     sourceOrder,
+  };
+}
+
+export function loadAgentProfile(raw: UnknownRecord): LoadedProfileDocument {
+  return loadProfileDocument(raw, "agent");
+}
+
+export function loadTeamManifest(raw: UnknownRecord): LoadedProfileDocument {
+  return loadProfileDocument(raw, "team");
+}
+
+export function loadTeamPolicy(raw: UnknownRecord): TeamPolicySpec {
+  assertSnakeCaseOnly(raw, "team_policy");
+
+  return {
+    id: typeof raw.id === "string" ? raw.id : undefined,
+    kind: raw.kind === "team-policy" ? "team-policy" : undefined,
+    version: typeof raw.version === "string" ? raw.version : undefined,
+    instructionPrecedence: raw.instruction_precedence as TeamPolicySpec["instructionPrecedence"],
+    approvalPolicy: raw.approval_policy as TeamPolicySpec["approvalPolicy"],
+    forbiddenActions: raw.forbidden_actions as TeamPolicySpec["forbiddenActions"],
+    qualityFloor: raw.quality_floor as TeamPolicySpec["qualityFloor"],
+    workingRules: raw.working_rules as TeamPolicySpec["workingRules"],
+    promptProjection: mapPromptProjection(raw.prompt_projection),
   };
 }
