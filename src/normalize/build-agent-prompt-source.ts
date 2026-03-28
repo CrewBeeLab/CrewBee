@@ -55,6 +55,15 @@ function pushBlock(blocks: PromptBlock[], key: string, value: unknown, order: nu
 }
 
 export function buildAgentPromptSource(agent: AgentProfileSpec): NormalizedProfileDocument {
+  return buildAgentPromptSourceWithOverrides(agent, {});
+}
+
+export function buildAgentPromptSourceWithOverrides(
+  agent: AgentProfileSpec,
+  overrides: {
+    collaborationValue?: unknown;
+  },
+): NormalizedProfileDocument {
   const blocks: PromptBlock[] = [];
   let order = 0;
 
@@ -64,7 +73,7 @@ export function buildAgentPromptSource(agent: AgentProfileSpec): NormalizedProfi
   order = pushBlock(blocks, "scope_control", agent.scopeControl, order);
   order = pushBlock(blocks, "ambiguity_policy", agent.ambiguityPolicy, order);
   order = pushBlock(blocks, "support_triggers", agent.supportTriggers, order);
-  order = pushBlock(blocks, "collaboration", agent.collaboration, order);
+  order = pushBlock(blocks, "collaboration", overrides.collaborationValue ?? agent.collaboration, order);
   order = pushBlock(blocks, "repository_assessment", agent.repositoryAssessment, order);
   order = pushBlock(blocks, "task_triage", agent.taskTriage, order);
   order = pushBlock(blocks, "delegation_review", agent.delegationReview, order);

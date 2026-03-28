@@ -1,5 +1,29 @@
 import type { PromptCatalog, PromptPlan } from "../core";
 
+const CANONICAL_SECTION_TITLES: Record<string, string> = {
+  working_rules: "Working Rules",
+  approval_safety: "Approval & Safety",
+  persona_core: "Persona Core",
+  responsibility_core: "Responsibility Core",
+  core_principle: "Core Principle",
+  scope_control: "Scope Control",
+  ambiguity_policy: "Ambiguity Policy",
+  support_triggers: "Support Triggers",
+  collaboration: "Collaboration",
+  task_triage: "Task Triage",
+  delegation_review: "Delegation & Review",
+  todo_discipline: "Todo Discipline",
+  completion_gate: "Completion Gate",
+  failure_recovery: "Failure Recovery",
+  operations: "Operations",
+  output_contract: "Output Contract",
+  templates: "Templates",
+  guardrails: "Guardrails",
+  heuristics: "Heuristics",
+  anti_patterns: "Anti Patterns",
+  tool_skill_strategy: "Tool Skill Strategy",
+};
+
 const AGENT_SECTION_ORDER = [
   "persona_core",
   "responsibility_core",
@@ -8,7 +32,6 @@ const AGENT_SECTION_ORDER = [
   "ambiguity_policy",
   "support_triggers",
   "collaboration",
-  "repository_assessment",
   "task_triage",
   "delegation_review",
   "todo_discipline",
@@ -31,6 +54,10 @@ function sectionRank(kind: "team" | "agent", path: string): number {
   return index === -1 ? Number.POSITIVE_INFINITY : index;
 }
 
+function resolveSectionTitle(path: string, fallback: string): string {
+  return CANONICAL_SECTION_TITLES[path] ?? fallback;
+}
+
 export function buildPromptPlan(catalog: PromptCatalog): PromptPlan {
   return {
     sections: [...catalog.nodes]
@@ -44,7 +71,7 @@ export function buildPromptPlan(catalog: PromptCatalog): PromptPlan {
       })
       .map((node, index) => ({
         path: node.path,
-        title: node.label,
+        title: resolveSectionTitle(node.path, node.label),
         order: index,
         node,
       })),

@@ -2,7 +2,7 @@ import type { LoadedProfileDocument } from "../../core";
 import { buildPromptCatalog } from "../../catalog/build-prompt-catalog";
 import { attachMarkdownBodySections } from "../../loader/markdown-body-loader";
 import { loadAgentProfile, loadTeamManifest, loadTeamPolicy } from "../../loader/profile-loader";
-import { buildAgentPromptSource } from "../../normalize/build-agent-prompt-source";
+import { buildAgentPromptSource, buildAgentPromptSourceWithOverrides } from "../../normalize/build-agent-prompt-source";
 import { buildTeamPromptSource } from "../../normalize/build-team-prompt-source";
 import { normalizeProfileDocument } from "../../normalize/normalize-document";
 import { buildPromptPlan } from "../../plan/build-prompt-plan";
@@ -11,6 +11,46 @@ import { defaultRenderContext, renderPromptPlan } from "../../render/structural-
 import type { ProjectedAgent } from "../../runtime";
 
 type UnknownRecord = Record<string, unknown>;
+
+function sanitizeSegment(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function createProjectedConfigKey(teamId: string, surfaceLabel: string): string {
+  return `crewbee.${sanitizeSegment(teamId)}.${sanitizeSegment(surfaceLabel)}`;
+}
+
+function resolveTargetAgent(team: ProjectedAgent["sourceTeam"], agentRef: string) {
+  return team.agents.find((candidate) => candidate.metadata.id === agentRef);
+}
+
+function createCollaborationPromptValue(agent: ProjectedAgent): unknown {
+  const team = agent.sourceTeam;
+
+  const mapBinding = (binding: ProjectedAgent["sourceAgent"]["collaboration"]["defaultConsults"][number]) => {
+    const agentRef = typeof binding === "string" ? binding : binding.agentRef;
+    const targetAgent = resolveTargetAgent(team, agentRef);
+    const member = team.manifest.members[agentRef];
+    const fallbackDescription = typeof binding === "string" ? undefined : binding.description;
+
+    return {
+      id: targetAgent
+        ? createProjectedConfigKey(team.manifest.id, targetAgent.entryPoint?.selectionLabel ?? targetAgent.metadata.id)
+        : agentRef,
+      description: member?.responsibility ?? targetAgent?.responsibilityCore.description ?? fallbackDescription ?? agentRef,
+      ...(member?.delegateWhen ? { when_to_delegate: member.delegateWhen } : {}),
+    };
+  };
+
+  return {
+    defaultConsults: agent.sourceAgent.collaboration.defaultConsults.map(mapBinding),
+    defaultHandoffs: agent.sourceAgent.collaboration.defaultHandoffs.map(mapBinding),
+  };
+}
 
 function renderPromptDocument(document: LoadedProfileDocument): string {
   const normalized = normalizeProfileDocument(document);
@@ -88,7 +128,9 @@ export function createOpenCodeAgentPrompt(agent: ProjectedAgent, _requestedTools
     buildPromptPlan(applyPromptProjection(buildPromptCatalog(teamSource), teamSource.promptProjection)),
     defaultRenderContext,
   );
-  const normalizedAgent = buildAgentPromptSource(agent.sourceAgent);
+  const normalizedAgent = buildAgentPromptSourceWithOverrides(agent.sourceAgent, {
+    collaborationValue: createCollaborationPromptValue(agent),
+  });
   const agentPart = renderPromptPlan(
     buildPromptPlan(applyPromptProjection(buildPromptCatalog(normalizedAgent), normalizedAgent.promptProjection)),
     defaultRenderContext,

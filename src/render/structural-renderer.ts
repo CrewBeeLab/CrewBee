@@ -1,4 +1,5 @@
 import type { PromptNode, PromptPlan, PromptPlanSection, PromptScalar, PromptValue } from "../core";
+import { formatDisplayLabel } from "../catalog/build-prompt-catalog";
 
 export interface StructuralRenderContext {
   indentUnit: string;
@@ -62,9 +63,13 @@ function renderRawValue(
         lines.push(...indentLines([`- ${label}:`], depth, ctx));
       }
 
-      for (const item of value) {
-        lines.push(...renderRawValue(undefined, item, label ? depth + 1 : depth, ctx));
-      }
+      const childDepth = label ? depth + 1 : depth;
+      value.forEach((item, index) => {
+        lines.push(...indentLines([`- Item ${index + 1}:`], childDepth, ctx));
+        for (const [key, child] of Object.entries(item as Record<string, PromptValue>)) {
+          lines.push(...renderRawValue(formatDisplayLabel(key), child, childDepth + 1, ctx));
+        }
+      });
 
       return lines;
     }
@@ -92,8 +97,7 @@ function renderRawValue(
   }
 
   for (const [key, child] of entries) {
-    const childLabel = key.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
-    lines.push(...renderRawValue(childLabel, child, label ? depth + 1 : depth, ctx));
+    lines.push(...renderRawValue(formatDisplayLabel(key), child, label ? depth + 1 : depth, ctx));
   }
 
   return lines;

@@ -4,8 +4,15 @@ function isPromptValueRecord(value: PromptValue): value is Record<string, Prompt
   return typeof value === "object" && !Array.isArray(value);
 }
 
+export function formatDisplayLabel(key: string): string {
+  return key
+    .replace(/_/g, " ")
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 export function toTitleLabel(key: string): string {
-  return key.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+  return formatDisplayLabel(key);
 }
 
 export function detectNodeKind(value: PromptValue): PromptNodeKind {

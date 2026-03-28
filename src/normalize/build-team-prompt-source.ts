@@ -9,6 +9,12 @@ import type {
 
 import { normalizeMarkdownSection, normalizeValue } from "./normalize-value";
 
+type UnknownRecord = Record<string, unknown>;
+
+function asRecord(value: unknown): UnknownRecord | undefined {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as UnknownRecord) : undefined;
+}
+
 function asMetadataRecord(value: PromptValue | undefined): Record<string, PromptValue> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("team.metadata is invalid");
@@ -22,14 +28,21 @@ export function buildTeamPromptSource(
   policy: TeamPolicySpec,
   bodySections: LoadedBodySection[] = [],
 ): NormalizedProfileDocument {
+  const qualityFloor = asRecord(policy.qualityFloor);
+  const approvalPolicy = asRecord(policy.approvalPolicy);
+
   const workingRulesValue = normalizeValue({
     instruction_precedence: policy.instructionPrecedence,
-    quality_floor: policy.qualityFloor,
+    quality_floor: {
+      required_checks: qualityFloor?.required_checks ?? qualityFloor?.requiredChecks,
+      evidence_required: qualityFloor?.evidence_required ?? qualityFloor?.evidenceRequired,
+    },
     working_rules: policy.workingRules,
   });
 
   const approvalSafetyValue = normalizeValue({
-    approval_policy: policy.approvalPolicy,
+    approval_required_for: approvalPolicy?.required_for ?? approvalPolicy?.requiredFor,
+    allow_assume_for: approvalPolicy?.allow_assume_for ?? approvalPolicy?.allowAssumeFor,
     forbidden_actions: policy.forbiddenActions,
   });
 
