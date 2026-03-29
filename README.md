@@ -1,5 +1,7 @@
 # CrewBee
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 CrewBee is a Team-first agent framework.
 It defines agent teams in a host-agnostic way, then projects them into concrete host runtimes such as OpenCode.
 
@@ -11,6 +13,7 @@ The repository currently delivers a complete MVP path for OpenCode:
 - Team library loading from embedded code and `AgentTeams/`
 - runtime projection, formal-leader default selection, and session binding
 - OpenCode agent projection, config patch generation, collision handling, and delegation tooling
+- collaboration prompt enrichment from Team manifest members into runtime-usable projected agent ids
 - a real OpenCode plugin entry exported through `opencode-plugin.mjs`
 - a user-level installer that writes the canonical CrewBee plugin entry into OpenCode config
 

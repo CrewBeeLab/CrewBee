@@ -71,7 +71,7 @@ flowchart LR
 这里定义：
 
 - Team manifest / mission / scope / workflow
-- governance / approval / quality floor
+- Team policy / approval / quality floor / working rules
 - agent profile / persona / responsibility / collaboration
 - entry point / capabilities / output contract
 - Team selection / execution plan / runtime snapshot / runtime event
@@ -108,6 +108,18 @@ flowchart LR
 
 1. 内置 Team：`CodingTeam`
 2. 文件型 Team：`AgentTeams/*`
+
+当前文件型 Team 的标准结构为：
+
+```text
+<team-id>/
+  team.manifest.yaml
+  team.policy.yaml
+  agents/
+    *.agent.md
+```
+
+其中 `team.policy.yaml` 在当前实现中已经是必需项。
 
 当前默认装配逻辑很直接：
 
@@ -171,6 +183,8 @@ loadDefaultTeamLibrary()
 | `src/adapters/opencode/prompt-builder.ts` | OpenCode agent prompt 的生成 |
 | `src/adapters/opencode/capabilities.ts` | 当前 OpenCode 宿主能力声明 |
 | `src/adapters/opencode/tool-domain.ts` | CrewBee plugin tools 的 OpenCode 视角计划 |
+
+其中 prompt 生成路径在当前实现中已经是结构化主链路，不依赖外部 projection schema，也不依赖字段专属 renderer。
 
 ### 4.6 `src/manager`：内部状态辅助层
 
@@ -263,6 +277,14 @@ sequenceDiagram
 7. 生成 `configPatch`
 8. 如果拿到了宿主现有配置，就做 merge
 9. 如果拿到了 `sessionID` 和选中 agent，就生成 `SessionRuntimeBinding`
+
+另外，在 prompt 生成阶段，当前实现还会做一个重要增强：
+
+- `Collaboration` 不仅来自 Agent Profile 声明的合作 subagent 列表；
+- 还会结合 `team.manifest.members` 的 `responsibility` 与 `delegateWhen`；
+- 并使用 OpenCode 运行时实际可解析的 projected config key 作为 `Id` 暴露给模型。
+
+这样生成出来的 Collaboration 更接近可直接委派的 agent 清单，而不是单纯的角色文本描述。
 
 输出对象：`OpenCodeBootstrapOutput`
 

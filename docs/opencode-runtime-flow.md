@@ -163,6 +163,40 @@ chat.message hook
 
 这一步的意义不是完整提示组装，而是让 OpenCode 运行时知道当前会话在 CrewBee 视角下绑定到了哪里。
 
+### 4.6A Agent Prompt 生成补充说明
+
+OpenCode 中每个 projected agent 的 prompt 都由 `src/adapters/opencode/prompt-builder.ts` 统一生成。
+
+当前实现的关键点包括：
+
+1. Team Contract 来自 `team.policy.yaml`，并统一压缩为：
+   - `Working Rules`
+   - `Approval & Safety`
+2. Agent Contract 来自 Agent Profile 的一等 section
+3. Prompt section 顺序由固定公共语义骨架控制
+4. Render 只按结构渲染，不依赖字段专属 renderer
+
+其中一个已经落地的重要规则是：
+
+**Collaboration 会结合 Team Manifest 成员信息，生成可直接委派的 agent 清单。**
+
+具体来说：
+
+- Agent Profile 提供合作 subagent 列表（`default_consults` / `default_handoffs`）
+- `team.manifest.members` 提供：
+  - `responsibility`
+  - `delegate_when`
+  - `delegate_mode`
+- OpenCode projection 提供运行时真实可用的 projected config key
+
+最终在 prompt 中，Collaboration 会显示：
+
+- `Id`：如 `crewbee.coding-team.codebase-explorer`
+- `Description`
+- `When To Delegate`
+
+这保证模型在阅读 prompt 时看到的是运行时可直接委派的目标，而不是仅供人阅读的抽象角色标签。
+
 ### 4.7 `experimental.session.compacting`
 
 作用：在 OpenCode compaction 前向 `output.context` 追加 CrewBee continuity context，并为后续 checkpoint / todo 恢复保存最小事实。
