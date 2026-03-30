@@ -129,7 +129,7 @@ export function validateTeamDefinition(team: AgentTeamDefinition): TeamValidatio
   if (!team.documentation?.teamReadme && !EMBEDDED_TEAM_IDS.includes(manifest.id as (typeof EMBEDDED_TEAM_IDS)[number])) {
     issues.push({
       level: "warning",
-      message: `Team '${manifest.id}' has no human-facing TEAM.md/README documentation path.`,
+      message: `Team '${manifest.id}' has no human-facing TEAM.md or README.md at the team root.`,
     });
   }
 

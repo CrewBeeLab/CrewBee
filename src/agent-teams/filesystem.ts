@@ -32,20 +32,19 @@ export function loadTeamDefinitionFromDirectory(
 ): AgentTeamDefinition {
   const manifest = mapTeamManifest(path.join(teamDir, TEAM_MANIFEST_FILE));
   const policyPath = path.join(teamDir, TEAM_POLICY_FILE);
-  const agentsDir = path.join(teamDir, "agents");
 
   if (!existsSync(policyPath)) {
     throw new Error(`${teamDir} is missing ${TEAM_POLICY_FILE}.`);
   }
 
-  if (!existsSync(agentsDir)) {
-    throw new Error(`${teamDir} is missing agents/.`);
-  }
-
-  const agents = readdirSync(agentsDir)
+  const agents = readdirSync(teamDir)
     .filter((entry) => entry.endsWith(".agent.md"))
     .sort()
-    .map((entry) => mapAgentProfile(path.join(agentsDir, entry)));
+    .map((entry) => mapAgentProfile(path.join(teamDir, entry)));
+
+  if (agents.length === 0) {
+    throw new Error(`${teamDir} must contain at least one *.agent.md file at the team root.`);
+  }
 
   return {
     manifest,

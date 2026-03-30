@@ -10,16 +10,14 @@ It is aligned to the current embedded `coding-team` design language and to the r
 ```text
 AgentTeams/<YourTeam>/
   team.manifest.yaml
-  agents/
-    <agent-id>.agent.md
-  docs/
-    TEAM.md            # optional but recommended
+  <agent-id>.agent.md
+  TEAM.md            # optional but recommended
 ```
 
 - `team.manifest.yaml` is required.
-- `agents/` is required.
+- At least one `*.agent.md` file at the team root is required.
 - Every agent file must end with `.agent.md`.
-- `docs/TEAM.md`, `TEAM.md`, or `README.md` is optional; the loader discovers them in that order.
+- `TEAM.md` or `README.md` is optional; the loader discovers them in that order.
 
 ## Manifest Rules
 
@@ -50,11 +48,11 @@ Recommended optional blocks that keep the file-based template aligned with curre
 - `tags`
 - `prompt_projection`
 
-`working_mode` and `structure_principles` are no longer part of the Team manifest schema. Put that design-time guidance in `docs/TEAM.md`, `TEAM.md`, or `README.md` instead.
+`working_mode` and `structure_principles` are no longer part of the Team manifest schema. Put that design-time guidance in `TEAM.md` or `README.md` instead.
 
 ## Agent Profile Rules
 
-Each `agents/*.agent.md` file must start with YAML frontmatter:
+Each `*.agent.md` file at the team root must start with YAML frontmatter:
 
 ```md
 ---
@@ -94,7 +92,7 @@ Recommended optional blocks for parity with current `coding-team` profiles:
 
 ## Prompt Projection
 
-Use `prompt_projection` inside `team.policy.yaml` and `agents/*.agent.md` to control which fields enter the final prompt. Dotted paths are supported. Render order is determined by the framework's semantic section plan first, then by source order for extra sections.
+Use `prompt_projection` inside `team.policy.yaml` and `*.agent.md` to control which fields enter the final prompt. Dotted paths are supported. Render order is determined by the framework's semantic section plan first, then by source order for extra sections.
 
 Supported Team prompt fields:
 

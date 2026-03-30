@@ -10,19 +10,15 @@ export function resolveTeamDocumentation(
   workspaceRoot: string = process.cwd(),
 ): TeamDocumentationRefs | undefined {
   const docCandidates = [
-    path.join(teamDir, "docs", "TEAM.md"),
     path.join(teamDir, "TEAM.md"),
     path.join(teamDir, "README.md"),
   ];
   const teamDocPath = docCandidates.find((candidate) => existsSync(candidate));
-  const agentsDir = path.join(teamDir, "agents");
   const teamDirName = path.basename(teamDir);
-  const agentProfiles = existsSync(agentsDir)
-    ? readdirSync(agentsDir)
-        .filter((entry) => entry.endsWith(".agent.md"))
-        .map((entry) => path.posix.join(TEAM_CONFIG_ROOT, teamDirName, "agents", entry))
-        .sort()
-    : [];
+  const agentProfiles = readdirSync(teamDir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".agent.md"))
+    .map((entry) => path.posix.join(TEAM_CONFIG_ROOT, teamDirName, entry.name))
+    .sort();
 
   if (!teamDocPath && agentProfiles.length === 0) {
     return undefined;
