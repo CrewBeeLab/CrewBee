@@ -2,87 +2,258 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-CrewBee is a Team-first agent framework.
-It defines agent teams in a host-agnostic way, then projects them into concrete host runtimes such as OpenCode.
+CrewBee is a **Team-first** Agent Team framework.
 
-Build the package locally. Install it into the OpenCode user-level workspace. Use CrewBee from any OpenCode project.
+It provides a Team-oriented way to define, project, and adapt agent systems to host runtimes, turning scattered prompts, rules, and collaboration conventions into maintainable, portable, and runnable Team assets.
 
-The repository currently delivers a complete MVP path for OpenCode:
+The current version already delivers a complete **CrewBee → OpenCode** MVP path:
 
-- host-agnostic Team and Agent contracts
-- Team library loading from embedded code and `AgentTeams/`
-- runtime projection, formal-leader default selection, and session binding
-- OpenCode agent projection, config patch generation, collision handling, and delegation tooling
-- collaboration prompt enrichment from Team manifest members into runtime-usable projected agent ids
-- a real OpenCode plugin entry exported through `opencode-plugin.mjs`
-- a user-level installer that writes the canonical CrewBee plugin entry into OpenCode config
+* host-agnostic Team / Agent definitions
+* Team Library assembly and validation
+* Runtime Projection with formal leader default entry selection
+* OpenCode agent projection, aliases, config patching, and session binding
+* OpenCode plugin entry, delegation tools, event wiring, and system prompt injection
+* local build, user-level install, doctor checks, and uninstall flow
 
-## Positioning
+> In short:
+>
+> **CrewBee = Agent Team definition framework + Runtime Projection layer + host adapter layer (currently OpenCode)**
 
-CrewBee is not a prompt pack and not a multi-agent runtime engine.
-It is the layer that makes these questions explicit and portable:
+---
 
-- What is a Team?
-- Which agent roles are user-selectable entry points?
-- Which parts stay host-agnostic?
-- How does a Team-first definition become a host-native agent entry?
+## Table of Contents
 
-Today, CrewBee implements that path for OpenCode while keeping the core model portable to Codex, Claude Code, and similar hosts.
+* [What CrewBee Is](#what-crewbee-is)
+* [What Problems CrewBee Solves](#what-problems-crewbee-solves)
+* [Core Features](#core-features)
+* [Installation](#installation)
+* [Quick Start](#quick-start)
+* [Architecture at a Glance](#architecture-at-a-glance)
+* [How Agent Teams and Agent Profiles Are Defined](#how-agent-teams-and-agent-profiles-are-defined)
+* [How the OpenCode Runtime Works](#how-the-opencode-runtime-works)
+* [Built-in Coding Team Design](#built-in-coding-team-design)
+* [Configuration, Install, and Operations Scripts](#configuration-install-and-operations-scripts)
+* [Uninstall](#uninstall)
 
-## What Works Today
+---
+
+## What CrewBee Is
+
+In CrewBee, the real first-class object is not a single Agent, but a **Team**.
+A Team is not just a collection of prompts; it is a structured definition unit that includes at least:
+
+* Team identity and positioning
+* formal leader
+* members
+* workflow
+* Team shared rules
+* Agent Profiles
+* Prompt Projection
+* host runtime mapping
+
+CrewBee does not currently try to auto-select a Team for you, nor does it try to auto-decide the right organizational structure for every task.
+At the current stage, the basic usage model is:
+
+* the user selects a Team entry Agent in the host
+* CrewBee projects the Team definition into the host runtime
+* runtime semantics are maintained through session binding, delegation, and system prompt injection
+
+---
+
+## What Problems CrewBee Solves
+
+CrewBee primarily solves three kinds of problems:
+
+### 1. Turning scattered Agent practices into maintainable Team assets
+
+Many Agent workflows still live in prompts, host configs, and informal conventions. That makes them hard to reuse, migrate, and maintain over time. CrewBee turns them into stable Team definitions.
+
+### 2. Using different Teams for different task types instead of one prompt for everything
+
+Coding, research, writing, analysis, and operational work do not share the same optimal working style. CrewBee’s core idea is to define different Teams for different scenarios instead of reusing one generic prompt stack everywhere.
+
+### 3. Making execution style selectable and manageable
+
+Many systems focus on whether agents can execute. CrewBee puts more emphasis on how they should execute: which entry point to use, when to involve support agents, and how to keep the execution path understandable and controllable.
+
+---
+
+## Core Features
 
 ### 1. Team-first static model
 
-- `src/core`: Team, Agent, governance, runtime, and host capability contracts
-- `src/agent-teams`: Team library loading, parsing, validation, and embedded teams
-- `AgentTeams/`: file-based public teams such as `GeneralTeam` and `WukongTeam`
+CrewBee treats Teams as first-class objects rather than isolated agent prompts.
+That means:
 
-### 2. Host-agnostic runtime projection
+* Teams have a formal leader
+* Teams have policy
+* Teams have members and workflow
+* Teams have a host-agnostic structural model
 
-- `src/runtime/team-library-projection.ts`: converts `TeamLibrary` into projected teams and projected agents for runtime use, with formal-leader default selection and `selectionPriority`-aware ordering
-- `src/runtime/types.ts`: projection and binding types shared by adapters
+### 2. Host-agnostic Runtime Projection
+
+CrewBee first converts Team-first structures into a unified intermediate model, then maps that model into specific hosts.
+This keeps Team / Agent definitions as host-agnostic as possible and makes long-term maintenance and future expansion easier.
 
 ### 3. OpenCode adapter and plugin runtime
 
-- `src/adapters/opencode/bootstrap.ts`: assembles OpenCode-facing projection results
-- `src/adapters/opencode/projection.ts`: maps projected agents to OpenCode agent config objects
-- `src/adapters/opencode/config-merge.ts`: safely merges CrewBee agents into host config
-- `src/adapters/opencode/plugin.ts`: real OpenCode plugin runtime hooks, delegation tools, event handling, and compaction continuity integration
-- `opencode-plugin.mjs`: published OpenCode plugin entry shim
+CrewBee already supports the full path from Team / Agent definitions to runnable OpenCode agents, including:
 
-### 4. User-level installation flow
+* projected agent → OpenCode agent config
+* Team / Agent prompt construction
+* config patch generation
+* host event integration
+* delegation tool wiring
 
-- `src/install/install-root.ts`: resolves the OpenCode config root and CrewBee install root
-- `src/install/workspace.ts`: bootstraps the user-level package workspace
-- `src/install/package-manager.ts`: installs or removes CrewBee in the user-level workspace
-- `src/install/plugin-entry.ts`: canonicalizes the installed plugin entry as `file://`
-- `src/install/config-writer.ts`: migrates and rewrites OpenCode plugin config idempotently
-- `src/install/doctor.ts`: verifies install state against the canonical user-level entry
+### 4. Prompts stay low-coupling while preserving execution semantics
 
-## What Is Not Implemented Yet
+CrewBee does not fall back to “one renderer per field”, nor does it dump every top-level block transparently.
 
-CrewBee is intentionally narrower than a full multi-agent execution engine.
+Instead, it uses:
 
-- no general multi-host runtime yet beyond OpenCode
-- no host-agnostic Team-collaboration runtime yet beyond the current OpenCode delegation path
-- no standalone Manager product surface yet; `src/manager` is still an internal helper layer
-- no online registry install flow yet; `--source registry` is reserved only
-- no standalone platform binaries yet; CLI remains JS package-first
+> **a small shared semantic skeleton + general structural handling + structured rendering**
 
-## Selection And Ordering Semantics
+For example, the Agent prompt skeleton is organized around execution thinking:
 
-CrewBee currently distinguishes between three related but different concepts:
+* Persona Core
+* Responsibility Core
+* Core Principle
+* Scope Control
+* Ambiguity Policy
+* Support Triggers
+* Collaboration
+* Task Triage
+* Delegation & Review
+* Todo Discipline
+* Completion Gate
+* Failure Recovery
+* Operations
+* Output Contract
+* Templates
+* Guardrails
+* Heuristics
+* Anti Patterns
+* Tool Skill Strategy
 
-- **formal leader**: declared by `team.manifest.leader.agentRef`; when that agent is user-selectable, it is the default entry for the team
-- **entry-point priority**: optional `entryPoint.selectionPriority`; lower numbers rank earlier within the same role group during runtime projection
-- **host-visible list order**: ultimately owned by the host runtime
+This helps the model quickly establish:
 
-For OpenCode specifically, CrewBee controls the projected agents, their default entry, and their visible names, but OpenCode still applies its own final list ordering rules. In practice, CrewBee can reliably set the default projected agent, while final non-default list order remains host-controlled.
+* who I am
+* what I am responsible for
+* how I normally act
+* when to delegate / review / ask / stop
+* what counts as done
+* how to recover from failure
 
-## Architecture At A Glance
+### 5. Collaboration produces directly usable delegation targets
+
+Generated `Collaboration` output is not just a plain list of profile bindings. It combines:
+
+* collaboration targets declared in Agent Profiles
+* `members` descriptions from the Team Manifest
+* projected ids that OpenCode can resolve
+
+This lets the runtime surface delegation-ready agent entries.
+
+### 6. Team Contract is compressed into an executable handbook
+
+Instead of mechanically rendering the whole governance block, CrewBee compresses Team prompt output into:
+
+* `Working Rules`
+* `Approval & Safety`
+
+This makes Team contracts much easier for models to consume.
+
+### 7. User-level install and operations flow
+
+CrewBee already includes a complete local build, user-level install, doctor, and uninstall flow, so it can be used as a stable OpenCode user-level plugin.
+
+---
+
+## Installation
+
+### Shortest path for humans
+
+If you are using an LLM Agent, just send it this:
 
 ```text
-Team definitions
+Please install CrewBee by following docs/guide/installation.md.
+Use the OpenCode user-level installation flow only, not the old project-local flow.
+```
+
+Or read the guide yourself:
+
+* [Installation Guide](docs/guide/installation.md)
+
+### Shortest path for LLM Agents
+
+Read and follow:
+
+```text
+docs/guide/installation.md
+```
+
+### One-click local install script for Windows
+
+The repository already provides:
+
+```bat
+scripts\install-local-user.bat
+```
+
+It runs:
+
+1. `npm install`
+2. `npm run install:local:user`
+3. `npm run doctor`
+
+---
+
+## Quick Start
+
+### Development build
+
+```bash
+npm install
+npm run typecheck
+npm run build
+```
+
+### Local user-level install
+
+Recommended from the repository root:
+
+```bash
+npm install
+npm run install:local:user
+```
+
+This does four things:
+
+1. builds CrewBee
+2. packs a stable local tarball to `.artifacts/local/crewbee-local.tgz`
+3. installs it into the OpenCode user-level workspace
+4. rewrites OpenCode config to the canonical plugin entry
+
+### Verify installation
+
+```bash
+npm run doctor
+```
+
+### Use in OpenCode
+
+After installation:
+
+1. open any project
+2. select a CrewBee projected agent (for example `[CodingTeam]leader`)
+3. send requests normally
+
+---
+
+## Architecture at a Glance
+
+```text
+Team Definitions
   -> TeamLibrary
   -> TeamLibrary Projection
   -> OpenCode Bootstrap
@@ -96,172 +267,300 @@ User-level install
   -> OpenCode config
 ```
 
-More detail:
+---
 
-1. `src/agent-teams/library.ts` loads the default Team library
-2. `src/runtime/team-library-projection.ts` converts Team-first data into projected teams and projected agents
-3. `src/adapters/opencode/bootstrap.ts` builds OpenCode-facing config patches and binding results
-4. `src/adapters/opencode/plugin.ts` wires CrewBee into real OpenCode hooks
-5. `src/install/*` installs CrewBee into the OpenCode user-level workspace and rewrites config
-6. `opencode-plugin.mjs` exposes the plugin entry that OpenCode loads
+## How Agent Teams and Agent Profiles Are Defined
 
-## Repository Map
+### Actual file-based Team structure
 
-- `src/core`: host-agnostic contracts
-- `src/agent-teams`: Team discovery, parsing, validation, embedded teams
-- `src/runtime`: host-agnostic projection and session binding
-- `src/adapters`: host adapter contracts and implementations
-- `src/adapters/opencode`: current OpenCode adapter and plugin runtime
-- `src/install`: user-level install root, workspace, package manager, plugin entry, config writer, doctor
-- `src/cli`: CLI command parsing and command adapters
-- `src/manager`: internal Team selection and runtime snapshot helpers
-- `docs/architecture.md`: current architecture and implementation overview
-- `docs/opencode-runtime-flow.md`: OpenCode plugin runtime flow, step by step
-- `docs/guide/installation.md`: user-level install and migration guide
-
-## Installation
-
-### For Humans
-
-Copy this into your agent:
+The real runnable file-based Team structure is currently:
 
 ```text
-Install CrewBee by following the instructions in docs/guide/installation.md.
-Use the OpenCode user-level workspace flow, not the old project-local install flow.
+AgentTeams/<TeamName>/
+  team.manifest.yaml
+  team.policy.yaml
+  <agent>.agent.md
+  <agent>.agent.md
+  TEAM.md            # optional
 ```
 
-Or read the [Installation Guide](docs/guide/installation.md) yourself.
+The current implementation uses a **flat sibling layout**; it does not require `agents/` or `docs/` subdirectories.
 
-### For LLM Agents
+### `team.manifest.yaml`
 
-Read and follow:
+It defines:
+
+* Team identity
+* mission / scope
+* formal leader
+* members
+* workflow
+* agent runtime overrides
+* tags
+
+`members` is not just descriptive. It affects:
+
+* Team structure validation
+* Team runtime description
+* Collaboration prompt output
+
+That makes `members.<agent>.responsibility / delegate_when / delegate_mode` important fields rather than decorative metadata.
+
+### `team.policy.yaml`
+
+It defines:
+
+* instruction precedence
+* approval policy
+* forbidden actions
+* quality floor
+* working rules
+
+And it is eventually compressed into two Team Contract sections:
+
+* `Working Rules`
+* `Approval & Safety`
+
+### `*.agent.md`
+
+Each file defines the static image of a single Agent, including:
+
+* what kind of worker the Agent is
+* what the Agent is responsible for
+* what the Agent’s boundaries are
+* how the Agent collaborates by default
+* which runtime tools and permissions the Agent needs
+* how the Agent normally outputs results
+
+CrewBee recommends expressing key execution semantics as top-level sections, such as:
+
+* `persona_core`
+* `responsibility_core`
+* `core_principle`
+* `scope_control`
+* `ambiguity_policy`
+* `support_triggers`
+* `collaboration`
+* `task_triage`
+* `delegation_review`
+* `todo_discipline`
+* `completion_gate`
+* `failure_recovery`
+* `operations`
+* `output_contract`
+* `templates`
+* `guardrails`
+* `heuristics`
+* `anti_patterns`
+* `tool_skill_strategy`
+
+### Current capability definition path
+
+The main capability definition path today is:
+
+* **Agent-level capability**: `runtime_config` inside `*.agent.md`
+* **Team-level runtime override**: `agent_runtime` inside `team.manifest.yaml`
+* **Host-available capability set**: adapter / host capability contract
+
+### `TEAM.md`
+
+`TEAM.md` is a human-facing Team document.
+It helps explain:
+
+* what the Team does
+* who the Leader is
+* what each member does
+* what the default workflow is
+
+But it is not the source of truth.
+The real logic source remains:
+
+* `team.manifest.yaml`
+* `team.policy.yaml`
+* `*.agent.md`
+
+### Prompt Projection
+
+Current supported shape:
+
+```yaml
+prompt_projection:
+  include:
+    - persona_core
+    - responsibility_core.description
+  exclude:
+    - metadata.tags
+  labels:
+    delegation_review: Delegation & Review
+```
+
+Constraints:
+
+* only `snake_case` paths are allowed
+* `projection_schema` is not supported
+* camelCase paths are not supported
+
+---
+
+## How the OpenCode Runtime Works
+
+The current OpenCode plugin chain is roughly:
 
 ```text
-docs/guide/installation.md
+package.json
+  -> opencode-plugin.mjs
+  -> dist/src/adapters/opencode/plugin.js
+  -> src/adapters/opencode/plugin.ts
 ```
 
-## Quick Start
+### What happens during plugin initialization
+
+1. load the default Team Library
+2. validate the Team Library
+3. generate bootstrap results
+4. build the alias index
+5. initialize the session binding store
+6. initialize the delegation state store
+
+### Key hooks
+
+#### `config`
+
+Injects CrewBee projected agents into OpenCode config.
+
+#### `chat.message`
+
+Reads the currently selected agent and establishes CrewBee-side session binding.
+
+#### `tool` / delegation tools
+
+Registers:
+
+* `delegate_task`
+* `delegate_status`
+* `delegate_cancel`
+
+#### `tool.execute.before`
+
+Rewrites `task.subagent_type` from aliases into projected config keys.
+
+#### `experimental.chat.system.transform`
+
+Injects minimal CrewBee runtime context into the system prompt:
+
+* Team
+* Entry Agent
+* Active Owner
+* Mode
+
+---
+
+## Built-in Coding Team Design
+
+The most important methodological example in CrewBee right now is the built-in Coding Team.
+
+Its core judgments include:
+
+### 1. Leader is not the same as Planner, nor a pure Orchestrator
+
+The Leader is the default entry, the main-path owner, and the final closure owner.
+But the Leader is not assumed to be “coordination only”.
+
+### 2. The role most worth separating is usually not Planner, but Reviewer
+
+In coding work, planning, execution, and verification are tightly coupled loops.
+What matters most is:
+
+* context continuity
+* end-to-end responsibility closure
+* an independent quality perspective
+
+So the more stable structure is usually:
+
+* main execution owner
+* research
+* reviewer
+* advisor when needed
+
+rather than equal O / P / E splitting.
+
+### 3. Simple tasks should not force heavy collaboration, and hard tasks should not default to heavy ceremony either
+
+CrewBee’s position is:
+
+* **simple tasks** should stay light
+* **extremely hard problems** should keep context concentrated, iteration fast, and human guidance clear
+* **complex but normal engineering work** is where structured Team collaboration is most useful
+
+### 4. main execution owner + research + review is the more important current pattern
+
+For coding tasks, CrewBee currently emphasizes:
+
+* formal leader is not equal to pure manager
+* the main execution owner can hold the main context for a long time
+* research, review, and advisor roles are inserted only as needed
+* reviewer remains independent from the main execution path
+
+---
+
+## Configuration, Install, and Operations Scripts
+
+### Common scripts
 
 ```bash
-npm install
-npm run typecheck
 npm run build
-```
-
-## Scripts
-
-```bash
+npm run typecheck
+npm run test
 npm run pack:local
 npm run install:local:user
 npm run doctor
 npm run uninstall:user
+npm run simulate:opencode
 ```
 
-## User-Level Local Install Flow
+### What they do
 
-CrewBee now installs into an OpenCode user-level workspace instead of a business project's `node_modules`.
+* `build`: build artifacts
+* `typecheck`: run TypeScript type checks
+* `test`: run tests
+* `pack:local`: pack a local tarball
+* `install:local:user`: run the full user-level install
+* `doctor`: verify OpenCode config and install state
+* `uninstall:user`: uninstall the user-level install
+* `simulate:opencode`: run the local OpenCode runtime simulator
 
-### Recommended path from the repo root
-
-```bash
-npm install
-npm run install:local:user
-```
-
-That does the following:
-
-1. builds CrewBee
-2. packs a stable local tarball at `.artifacts/local/crewbee-local.tgz`
-3. installs that tarball into the OpenCode user-level workspace
-4. rewrites OpenCode config to point at the canonical user-level plugin entry
-
-### Manual path
-
-```bash
-npm run pack:local
-node ./bin/crewbee.js install --source local --local-tarball ./.artifacts/local/crewbee-local.tgz
-```
-
-## User-Level Workspace Layout
-
-By default, CrewBee uses two user-level locations:
+### Default user-level workspace paths
 
 ```text
 Config root:  ~/.config/opencode
 Install root: ~/.cache/opencode/crewbee
 ```
 
-The install root becomes a minimal package workspace:
+On Windows, the default still prefers:
 
 ```text
-~/.cache/opencode/crewbee/
-  package.json
-  package-lock.json
-  node_modules/
-    crewbee/
-      opencode-plugin.mjs
-      dist/
-      bin/
+~/.config/opencode
 ```
 
-OpenCode config is then updated to point at:
+If an existing OpenCode configuration is already located at `%APPDATA%/opencode`, CrewBee falls back to that existing config location for compatibility.
 
-```text
-file://<install-root>/node_modules/crewbee/opencode-plugin.mjs
+---
+
+## Uninstall
+
+Recommended:
+
+```bash
+npm run uninstall:user
 ```
 
-## New vs Old Flow
+This will:
 
-### Old project-local flow
+* remove the CrewBee plugin entry from OpenCode config
+* remove the installed package from the user-level workspace
 
-```text
-pack tarball -> install into target project node_modules -> run npx crewbee install there
-```
-
-### Current user-level flow
-
-```text
-pack local tarball -> install into OpenCode user-level workspace -> update OpenCode config -> use CrewBee from any OpenCode project
-```
-
-## Migration From Project-Local Installs
-
-If your OpenCode config still points at an old project-local CrewBee plugin entry such as:
-
-```text
-file:///some/project/node_modules/crewbee/opencode-plugin.mjs
-```
-
-running the new installer will automatically migrate that entry to the canonical user-level workspace entry.
-
-Use:
+If you want to verify the uninstall state afterward, run:
 
 ```bash
 npm run doctor
 ```
-
-to verify that the configured plugin entry matches the installed user-level path.
-
-## OpenCode Plugin Entry
-
-The package root currently targets the OpenCode path.
-
-- `package.json` exports `./opencode-plugin.mjs`
-- `opencode-plugin.mjs` re-exports the built plugin from `dist/src/adapters/opencode/plugin.js`
-
-## Future Online Install
-
-CrewBee already reserves the install source surface for future online publish and remote package installation.
-
-- Current: `crewbee install --source local`
-- Reserved: `crewbee install --source registry`
-
-The registry flow is intentionally not implemented yet. This repository remains local-package-first for now.
-
-## Recommended Reading Order
-
-1. `README.md`
-2. `docs/guide/installation.md`
-3. `docs/architecture.md`
-4. `docs/opencode-runtime-flow.md`
-5. `docs/internal/OpenCode适配设计.md` for the original adapter design rationale

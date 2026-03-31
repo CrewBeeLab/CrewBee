@@ -14,7 +14,7 @@
 1. CrewBee 与 oh-my-opencode 在功能开发上视为互斥体系，CrewBee 不依赖 oh-my-opencode 的任何功能。
 2. OpenCode 仍然是唯一入口；配置、Agent 选择、Model 选择、CLI 参数都继续沿用 OpenCode 原生方式。
 3. Team 不再通过额外 Manager 入口暴露，而是通过一组投影后的 OpenCode Agent 暴露给用户；用户选择某个投影 Agent，本质上就是选择了某个 Team 的执行入口。
-4. `shared-capabilities.yaml` 不再是当前框架主路径；provider/model 级别配置收敛到 `team.manifest.yaml` 的 `agent_runtime` 中。
+4. provider/model 级别配置收敛到 `team.manifest.yaml` 的 `agent_runtime` 中，能力定义主路径则落在 Agent `runtime_config` 与宿主可用能力集合上。
 
 配套的机器可读决策文件见 `docs/opencode-team-decisions.json`。
 

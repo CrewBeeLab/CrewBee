@@ -10,3 +10,5 @@ docs/internal
 AgentTeams/internal
 tmp/
 NUL
+.artifacts/
+.sisyphus/

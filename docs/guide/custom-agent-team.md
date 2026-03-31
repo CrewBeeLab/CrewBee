@@ -21,20 +21,20 @@
 AgentTeams/<YourTeam>/
   team.manifest.yaml
   team.policy.yaml
-  TEAM.md
   <agent-1>.agent.md
   <agent-2>.agent.md
   <agent-3>.agent.md
+  TEAM.md      # optional
 ```
 
 说明：
 
 - `team.manifest.yaml`：定义这支 Team 是谁、Leader 是谁、成员有哪些、默认工作流是什么
 - `team.policy.yaml`：定义这支 Team 的共享规则、安全边界、质量底线
-- `TEAM.md`：写给人看的 Team 说明文档
+- `TEAM.md`：写给人看的 Team 说明文档（可选）
 - `*.agent.md`：每个 Agent 的定义文件
 
-> 当前实现里，`*.agent.md` 和 `TEAM.md` 必须和 `team.manifest.yaml`、`team.policy.yaml` 放在同一目录，不再使用 `agents/` 或 `docs/` 子目录。
+> 当前实现里，`*.agent.md` 必须和 `team.manifest.yaml`、`team.policy.yaml` 放在同一目录；`TEAM.md` 也是同目录下的可选说明文件。当前不使用 `agents/` 或 `docs/` 子目录，也不会扫描这些子目录中的 Agent 文件。
 
 ---
 
@@ -197,10 +197,10 @@ AgentTeams/
   ResearchOpsTeam/
     team.manifest.yaml
     team.policy.yaml
-    TEAM.md
     researchops-leader.agent.md
     evidence-researcher.agent.md
     report-writer.agent.md
+    TEAM.md
 ```
 
 建议：
@@ -839,6 +839,8 @@ output_contract:
 ## 10. 第六步：写 `TEAM.md`
 
 这个文件是给人看的，不是给 parser 读的。
+
+它是 **推荐补充**，不是 Team 被加载的必需文件。
 
 它的目的主要是帮助你和团队成员快速理解这支 Team。
 

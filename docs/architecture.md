@@ -115,11 +115,16 @@ flowchart LR
 <team-id>/
   team.manifest.yaml
   team.policy.yaml
-  agents/
-    *.agent.md
+  *.agent.md
+  TEAM.md      # optional
+  README.md    # optional
 ```
 
-其中 `team.policy.yaml` 在当前实现中已经是必需项。
+其中：
+
+- `team.manifest.yaml`、`team.policy.yaml`、根目录下至少一个 `*.agent.md` 是当前实现的必需项
+- `TEAM.md` / `README.md` 只是可选的人类说明文档
+- 当前实现 **不扫描 `agents/` 子目录**
 
 当前默认装配逻辑很直接：
 
