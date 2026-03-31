@@ -137,5 +137,5 @@ export function validateTeamDefinition(team: AgentTeamDefinition): TeamValidatio
 }
 
 export function validateTeamLibrary(teamLibrary: TeamLibrary): TeamValidationIssue[] {
-  return teamLibrary.teams.flatMap(validateTeamDefinition);
+  return [...(teamLibrary.loadIssues ?? []), ...teamLibrary.teams.flatMap(validateTeamDefinition)];
 }

@@ -305,6 +305,11 @@ export interface AgentTeamDefinition {
 export interface TeamLibrary {
   version: string;
   teams: AgentTeamDefinition[];
+  loadIssues?: {
+    level: "error" | "warning";
+    message: string;
+    filePath?: string;
+  }[];
 }
 
 export type TeamSpec = TeamManifest;
