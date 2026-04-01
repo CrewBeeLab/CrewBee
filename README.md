@@ -277,7 +277,7 @@ User-level install
 The real runnable file-based Team structure is currently:
 
 ```text
-AgentTeams/<TeamName>/
+<ConfiguredTeamDir>/
   team.manifest.yaml
   team.policy.yaml
   <agent>.agent.md
@@ -286,6 +286,30 @@ AgentTeams/<TeamName>/
 ```
 
 The current implementation uses a **flat sibling layout**; it does not require `agents/` or `docs/` subdirectories.
+
+Which file-based Teams are loaded is now controlled by:
+
+```text
+~/.config/opencode/crewbee.json
+```
+
+Example:
+
+```json
+{
+  "teams": [
+    { "id": "coding-team", "enabled": true, "priority": 0 },
+    { "path": "@tmp/oh-my-opencode", "enabled": true, "priority": 1 }
+  ]
+}
+```
+
+Notes:
+
+* built-in `coding-team` has no `path`
+* file-based Teams use `path` to point at the folder that contains `team.manifest.yaml`
+* `@...` paths are resolved relative to the OpenCode config root
+* lower `priority` values rank earlier; the highest-priority Team's default leader becomes CrewBee's default OpenCode agent
 
 ### `team.manifest.yaml`
 

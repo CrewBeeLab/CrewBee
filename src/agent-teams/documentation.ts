@@ -3,7 +3,9 @@ import path from "node:path";
 
 import type { TeamDocumentationRefs } from "../core";
 
-import { TEAM_CONFIG_ROOT } from "./constants";
+function toWorkspaceRelativePath(filePath: string, workspaceRoot: string): string {
+  return path.relative(workspaceRoot, filePath).replace(/\\/g, "/");
+}
 
 export function resolveTeamDocumentation(
   teamDir: string,
@@ -14,10 +16,9 @@ export function resolveTeamDocumentation(
     path.join(teamDir, "README.md"),
   ];
   const teamDocPath = docCandidates.find((candidate) => existsSync(candidate));
-  const teamDirName = path.basename(teamDir);
   const agentProfiles = readdirSync(teamDir, { withFileTypes: true })
     .filter((entry) => entry.isFile() && entry.name.endsWith(".agent.md"))
-    .map((entry) => path.posix.join(TEAM_CONFIG_ROOT, teamDirName, entry.name))
+    .map((entry) => toWorkspaceRelativePath(path.join(teamDir, entry.name), workspaceRoot))
     .sort();
 
   if (!teamDocPath && agentProfiles.length === 0) {
@@ -25,7 +26,7 @@ export function resolveTeamDocumentation(
   }
 
   return {
-    teamReadme: teamDocPath ? path.relative(workspaceRoot, teamDocPath).replace(/\\/g, "/") : "",
+    teamReadme: teamDocPath ? toWorkspaceRelativePath(teamDocPath, workspaceRoot) : "",
     agentProfiles: agentProfiles.length > 0 ? agentProfiles : undefined,
   };
 }

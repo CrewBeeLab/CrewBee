@@ -16,6 +16,9 @@ export interface InstallCommandContext {
 export interface InstallResult {
   configChanged: boolean;
   configPath: string;
+  crewbeeConfigChanged: boolean;
+  crewbeeConfigPath: string;
+  crewbeeConfigReason: "created-default" | "repaired-invalid" | "added-default-coding-team" | "unchanged";
   dryRun: boolean;
   installRoot: string;
   migratedEntries: string[];

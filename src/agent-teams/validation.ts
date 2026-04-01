@@ -11,11 +11,17 @@ export function validateTeamDefinition(team: AgentTeamDefinition): TeamValidatio
   const issues: TeamValidationIssue[] = [];
   const agentIds = new Set(team.agents.map((agent) => agent.metadata.id));
   const { manifest } = team;
+  const leaderAgent = team.agents.find((agent) => agent.metadata.id === manifest.leader.agentRef);
 
   if (!agentIds.has(manifest.leader.agentRef)) {
     issues.push({
       level: "error",
       message: `Leader agent '${manifest.leader.agentRef}' is not defined in this Team.`,
+    });
+  } else if (leaderAgent?.entryPoint?.exposure !== "user-selectable") {
+    issues.push({
+      level: "error",
+      message: `Leader agent '${manifest.leader.agentRef}' must be user-selectable.`,
     });
   }
 

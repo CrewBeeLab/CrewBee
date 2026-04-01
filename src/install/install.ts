@@ -1,3 +1,7 @@
+import path from "node:path";
+
+import { ensureCrewBeeConfigFile } from "../agent-teams";
+
 import { readOpenCodeConfig, upsertCrewBeePluginEntry, writeOpenCodeConfig } from "./config-writer";
 import { resolveOpenCodeConfigPath, resolveInstallRoot } from "./install-root";
 import { resolveLocalTarballPath } from "./local-tarball";
@@ -40,9 +44,18 @@ export async function installCrewBee(input: {
     writeOpenCodeConfig(configPath, configDocument.config);
   }
 
+  const crewbeeConfigUpdate = ensureCrewBeeConfigFile({
+    configRoot: path.dirname(configPath),
+    dryRun: input.options.dryRun,
+    mode: "install",
+  });
+
   return {
     configChanged: pluginUpdate.changed,
     configPath,
+    crewbeeConfigChanged: crewbeeConfigUpdate.changed,
+    crewbeeConfigPath: crewbeeConfigUpdate.configPath,
+    crewbeeConfigReason: crewbeeConfigUpdate.reason,
     dryRun: input.options.dryRun,
     installRoot,
     migratedEntries: pluginUpdate.migratedEntries,

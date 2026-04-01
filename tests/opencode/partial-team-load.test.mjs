@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
@@ -33,6 +33,10 @@ function createPluginInput(worktree, logs) {
 function writeFile(filePath, content) {
   mkdirSync(path.dirname(filePath), { recursive: true });
   writeFileSync(filePath, content);
+}
+
+function createCrewBeeConfig(teams) {
+  return JSON.stringify({ teams }, null, 2);
 }
 
 function createTeamPolicy() {
@@ -165,13 +169,28 @@ entry_point:
 `;
 }
 
-test("invalid file-based teams are skipped without blocking valid teams or plugin startup", async () => {
+test("invalid configured file-based teams are skipped without blocking valid teams or plugin startup", async () => {
   const workspace = mkdtempSync(path.join(os.tmpdir(), "crewbee-partial-load-"));
+  const previousConfigDir = process.env.OPENCODE_CONFIG_DIR;
 
   try {
-    const teamRoot = path.join(workspace, "AgentTeams");
-    const validTeamDir = path.join(teamRoot, "ValidTeam");
-    const invalidTeamDir = path.join(teamRoot, "BrokenTeam");
+    const configRoot = path.join(workspace, ".config", "opencode");
+    const validTeamDir = path.join(configRoot, "tmp", "ValidTeam");
+    const invalidTeamDir = path.join(configRoot, "tmp", "BrokenTeam");
+    const hiddenLeaderTeamDir = path.join(configRoot, "tmp", "HiddenLeaderTeam");
+    const legacyWorktreeTeamDir = path.join(workspace, "AgentTeams", "LegacyTeam");
+
+    process.env.OPENCODE_CONFIG_DIR = configRoot;
+
+    writeFile(
+      path.join(configRoot, "crewbee.json"),
+      createCrewBeeConfig([
+        { id: "coding-team", enabled: true, priority: 0 },
+        { path: "@tmp/ValidTeam", enabled: true },
+        { path: "@tmp/BrokenTeam", enabled: true },
+        { path: "@tmp/HiddenLeaderTeam", enabled: true },
+      ]),
+    );
 
     writeFile(path.join(validTeamDir, "team.manifest.yaml"), createTeamManifest("valid-team", "ValidTeam", "valid-leader", "valid-executor"));
     writeFile(path.join(validTeamDir, "team.policy.yaml"), createTeamPolicy());
@@ -188,6 +207,30 @@ test("invalid file-based teams are skipped without blocking valid teams or plugi
     writeFile(path.join(invalidTeamDir, "team.manifest.yaml"), createTeamManifest("broken-team", "BrokenTeam", "broken-leader", "broken-executor"));
     writeFile(path.join(invalidTeamDir, "team.policy.yaml"), createTeamPolicy());
 
+    writeFile(path.join(hiddenLeaderTeamDir, "team.manifest.yaml"), createTeamManifest("hidden-leader-team", "HiddenLeaderTeam", "hidden-leader", "hidden-executor"));
+    writeFile(path.join(hiddenLeaderTeamDir, "team.policy.yaml"), createTeamPolicy());
+    writeFile(path.join(hiddenLeaderTeamDir, "TEAM.md"), "# HiddenLeaderTeam\n");
+    writeFile(
+      path.join(hiddenLeaderTeamDir, "hidden-leader.agent.md"),
+      createAgentProfile("hidden-leader", "Hidden Leader", "internal-only", "leader", "hidden-executor", "hidden-executor"),
+    );
+    writeFile(
+      path.join(hiddenLeaderTeamDir, "hidden-executor.agent.md"),
+      createAgentProfile("hidden-executor", "Hidden Executor", "internal-only", "executor", undefined, undefined),
+    );
+
+    writeFile(path.join(legacyWorktreeTeamDir, "team.manifest.yaml"), createTeamManifest("legacy-team", "LegacyTeam", "legacy-leader", "legacy-executor"));
+    writeFile(path.join(legacyWorktreeTeamDir, "team.policy.yaml"), createTeamPolicy());
+    writeFile(path.join(legacyWorktreeTeamDir, "TEAM.md"), "# LegacyTeam\n");
+    writeFile(
+      path.join(legacyWorktreeTeamDir, "legacy-leader.agent.md"),
+      createAgentProfile("legacy-leader", "Legacy Leader", "user-selectable", "leader", "legacy-executor", "legacy-executor"),
+    );
+    writeFile(
+      path.join(legacyWorktreeTeamDir, "legacy-executor.agent.md"),
+      createAgentProfile("legacy-executor", "Legacy Executor", "internal-only", "executor", undefined, undefined),
+    );
+
     const library = loadDefaultTeamLibrary(workspace);
     const issues = validateTeamLibrary(library);
     const logs = [];
@@ -199,12 +242,110 @@ test("invalid file-based teams are skipped without blocking valid teams or plugi
     assert.ok(library.teams.some((team) => team.manifest.id === "coding-team"));
     assert.ok(library.teams.some((team) => team.manifest.id === "valid-team"));
     assert.ok(!library.teams.some((team) => team.manifest.id === "broken-team"));
+    assert.ok(!library.teams.some((team) => team.manifest.id === "hidden-leader-team"));
+    assert.ok(!library.teams.some((team) => team.manifest.id === "legacy-team"));
     assert.ok(issues.some((issue) => issue.message.includes("Skipped Team 'BrokenTeam'")));
+    assert.ok(issues.some((issue) => issue.message.includes("Leader agent 'hidden-leader' must be user-selectable.")));
     assert.ok(config.agent["crewbee.coding-team.leader"]);
     assert.ok(config.agent["crewbee.valid-team.leader"]);
     assert.ok(!config.agent["crewbee.broken-team.leader"]);
+    assert.ok(!config.agent["crewbee.hidden-leader-team.leader"]);
+    assert.ok(!config.agent["crewbee.legacy-team.leader"]);
     assert.ok(logs.some((entry) => entry.message.includes("Skipped Team 'BrokenTeam'")));
+    assert.ok(logs.some((entry) => entry.message.includes("Leader agent 'hidden-leader' must be user-selectable.")));
   } finally {
+    if (previousConfigDir === undefined) {
+      delete process.env.OPENCODE_CONFIG_DIR;
+    } else {
+      process.env.OPENCODE_CONFIG_DIR = previousConfigDir;
+    }
+
+    rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("plugin startup auto-creates default crewbee.json when missing", async () => {
+  const workspace = mkdtempSync(path.join(os.tmpdir(), "crewbee-plugin-config-missing-"));
+  const previousConfigDir = process.env.OPENCODE_CONFIG_DIR;
+
+  try {
+    const configRoot = path.join(workspace, ".config", "opencode");
+    const logs = [];
+
+    process.env.OPENCODE_CONFIG_DIR = configRoot;
+
+    const plugin = await OpenCodeCrewBeePlugin(createPluginInput(workspace, logs));
+    const config = { agent: {} };
+
+    await plugin.config?.(config);
+
+    const configPath = path.join(configRoot, "crewbee.json");
+
+    assert.equal(existsSync(configPath), true);
+    assert.deepEqual(JSON.parse(readFileSync(configPath, "utf8")), {
+      teams: [
+        {
+          id: "coding-team",
+          enabled: true,
+          priority: 0,
+        },
+      ],
+    });
+    assert.ok(config.agent["crewbee.coding-team.leader"]);
+    assert.ok(logs.some((entry) => entry.message.includes("CrewBee auto-repaired Team config")));
+    assert.ok(logs.some((entry) => entry.extra?.reason === "created-default"));
+  } finally {
+    if (previousConfigDir === undefined) {
+      delete process.env.OPENCODE_CONFIG_DIR;
+    } else {
+      process.env.OPENCODE_CONFIG_DIR = previousConfigDir;
+    }
+
+    rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("plugin startup repairs invalid crewbee.json automatically", async () => {
+  const workspace = mkdtempSync(path.join(os.tmpdir(), "crewbee-plugin-config-invalid-"));
+  const previousConfigDir = process.env.OPENCODE_CONFIG_DIR;
+  const invalidContent = "{broken json";
+
+  try {
+    const configRoot = path.join(workspace, ".config", "opencode");
+    const logs = [];
+
+    process.env.OPENCODE_CONFIG_DIR = configRoot;
+    writeFile(path.join(configRoot, "crewbee.json"), invalidContent);
+
+    const plugin = await OpenCodeCrewBeePlugin(createPluginInput(workspace, logs));
+    const config = { agent: {} };
+
+    await plugin.config?.(config);
+
+    const configPath = path.join(configRoot, "crewbee.json");
+    const backupPath = `${configPath}.bak`;
+
+    assert.deepEqual(JSON.parse(readFileSync(configPath, "utf8")), {
+      teams: [
+        {
+          id: "coding-team",
+          enabled: true,
+          priority: 0,
+        },
+      ],
+    });
+    assert.equal(readFileSync(backupPath, "utf8"), invalidContent);
+    assert.ok(config.agent["crewbee.coding-team.leader"]);
+    assert.ok(logs.some((entry) => entry.message.includes("CrewBee auto-repaired Team config")));
+    assert.ok(logs.some((entry) => entry.extra?.reason === "repaired-invalid"));
+    assert.ok(logs.some((entry) => entry.extra?.backupPath === backupPath));
+  } finally {
+    if (previousConfigDir === undefined) {
+      delete process.env.OPENCODE_CONFIG_DIR;
+    } else {
+      process.env.OPENCODE_CONFIG_DIR = previousConfigDir;
+    }
+
     rmSync(workspace, { recursive: true, force: true });
   }
 });

@@ -27,6 +27,7 @@ export async function runInstallCommand(argv: string[], io: {
     io.stdout.write([
       result.dryRun ? "CrewBee user-level install plan generated." : "CrewBee user-level install completed.",
       `Config: ${result.configPath}`,
+      `CrewBee Team config: ${result.crewbeeConfigPath}`,
       `Install root: ${result.installRoot}`,
       result.tarballPath ? `Local tarball: ${result.tarballPath}` : undefined,
       `Plugin entry: ${result.pluginEntry}`,
@@ -36,6 +37,9 @@ export async function runInstallCommand(argv: string[], io: {
       result.dryRun
         ? (result.configChanged ? "Plugin array would be updated." : "Plugin array already up to date.")
         : (result.configChanged ? "Plugin array updated." : "Plugin array already up to date."),
+      result.dryRun
+        ? (result.crewbeeConfigChanged ? `crewbee.json would be updated (${result.crewbeeConfigReason}).` : "crewbee.json already usable.")
+        : (result.crewbeeConfigChanged ? `crewbee.json updated (${result.crewbeeConfigReason}).` : "crewbee.json already usable."),
       result.migratedEntries.length > 0
         ? `Migrated old entries: ${result.migratedEntries.join(", ")}`
         : undefined,

@@ -1,9 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
+import { ensureCrewBeeConfigFile, resolveCrewBeeConfigPath } from "../../dist/src/agent-teams/index.js";
 import { installCrewBee } from "../../dist/src/install/index.js";
 
 test("installCrewBee plans a user-level install without mutating files in dry-run mode", async () => {
@@ -34,5 +35,100 @@ test("installCrewBee plans a user-level install without mutating files in dry-ru
   assert.equal(result.workspaceCreated, true);
   assert.equal(result.tarballPath, tarballPath);
   assert.match(result.pluginEntry, /\/node_modules\/crewbee\/opencode-plugin\.mjs$/);
+  assert.equal(result.crewbeeConfigPath, path.join(path.dirname(configPath), "crewbee.json"));
+  assert.equal(result.crewbeeConfigChanged, true);
+  assert.equal(result.crewbeeConfigReason, "created-default");
   assert.equal(existsSync(configPath), false);
+  assert.equal(existsSync(result.crewbeeConfigPath), false);
+});
+
+test("ensureCrewBeeConfigFile adds default coding-team during install mode", () => {
+  const configRoot = mkdtempSync(path.join(os.tmpdir(), "crewbee-team-config-"));
+  const configPath = resolveCrewBeeConfigPath(configRoot);
+
+  writeFileSync(configPath, JSON.stringify({
+    teams: [
+      { path: "@tmp/custom-team", enabled: true, priority: 3 },
+    ],
+  }, null, 2) + "\n", "utf8");
+
+  const result = ensureCrewBeeConfigFile({
+    configRoot,
+    mode: "install",
+  });
+  const written = JSON.parse(readFileSync(configPath, "utf8"));
+
+  assert.equal(result.changed, true);
+  assert.equal(result.reason, "added-default-coding-team");
+  assert.deepEqual(written.teams[0], {
+    id: "coding-team",
+    enabled: true,
+    priority: 0,
+  });
+  assert.deepEqual(written.teams[1], {
+    path: "@tmp/custom-team",
+    enabled: true,
+    priority: 3,
+  });
+});
+
+test("ensureCrewBeeConfigFile preserves existing non-object team entries while adding coding-team", () => {
+  const configRoot = mkdtempSync(path.join(os.tmpdir(), "crewbee-team-config-preserve-"));
+  const configPath = resolveCrewBeeConfigPath(configRoot);
+
+  writeFileSync(configPath, JSON.stringify({
+    teams: [
+      "legacy-entry",
+      { path: "@tmp/custom-team", enabled: true },
+    ],
+  }, null, 2) + "\n", "utf8");
+
+  const result = ensureCrewBeeConfigFile({
+    configRoot,
+    mode: "install",
+  });
+  const written = JSON.parse(readFileSync(configPath, "utf8"));
+
+  assert.equal(result.changed, true);
+  assert.equal(result.reason, "added-default-coding-team");
+  assert.deepEqual(written.teams, [
+    {
+      id: "coding-team",
+      enabled: true,
+      priority: 0,
+    },
+    "legacy-entry",
+    {
+      path: "@tmp/custom-team",
+      enabled: true,
+    },
+  ]);
+});
+
+test("ensureCrewBeeConfigFile repairs invalid config during startup mode", () => {
+  const configRoot = mkdtempSync(path.join(os.tmpdir(), "crewbee-team-config-invalid-"));
+  const configPath = resolveCrewBeeConfigPath(configRoot);
+  const invalidContent = "{invalid json";
+
+  writeFileSync(configPath, invalidContent, "utf8");
+
+  const result = ensureCrewBeeConfigFile({
+    configRoot,
+    mode: "startup",
+  });
+  const written = JSON.parse(readFileSync(configPath, "utf8"));
+
+  assert.equal(result.changed, true);
+  assert.equal(result.reason, "repaired-invalid");
+  assert.equal(typeof result.backupPath, "string");
+  assert.equal(readFileSync(result.backupPath, "utf8"), invalidContent);
+  assert.deepEqual(written, {
+    teams: [
+      {
+        id: "coding-team",
+        enabled: true,
+        priority: 0,
+      },
+    ],
+  });
 });

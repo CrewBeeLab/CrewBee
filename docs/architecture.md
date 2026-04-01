@@ -99,7 +99,7 @@ flowchart LR
 关键文件：
 
 - `src/agent-teams/library.ts`：装配默认 Team 库
-- `src/agent-teams/filesystem.ts`：从磁盘发现 Team 目录
+- `src/agent-teams/filesystem.ts`：读取 `crewbee.json` 并解析文件型 Team 目录
 - `src/agent-teams/parsers.ts`：解析 manifest / agent profile / policy
 - `src/agent-teams/validation.ts`：校验 Team 结构与语义
 - `src/agent-teams/embedded/coding-team.ts`：内置 `CodingTeam`
@@ -107,7 +107,7 @@ flowchart LR
 当前的 Team 来源有两类：
 
 1. 内置 Team：`CodingTeam`
-2. 文件型 Team：`AgentTeams/*`
+2. 文件型 Team：由 `~/.config/opencode/crewbee.json` 配置
 
 当前文件型 Team 的标准结构为：
 
@@ -130,8 +130,8 @@ flowchart LR
 
 ```text
 loadDefaultTeamLibrary()
-  = createEmbeddedCodingTeam()
-  + loadTeamLibraryFromDirectory(AgentTeams/)
+  = load enabled Teams from ~/.config/opencode/crewbee.json
+  + sort by Team priority
 ```
 
 ### 4.3 `src/runtime`：宿主无关的中间投影层
@@ -212,7 +212,7 @@ loadDefaultTeamLibrary()
 
 ```mermaid
 sequenceDiagram
-    participant FS as AgentTeams/* + Embedded Team
+    participant FS as crewbee.json + Embedded Team
     participant TL as TeamLibrary
     participant RT as TeamLibrary Projection
     participant BS as OpenCode Bootstrap
@@ -238,10 +238,10 @@ sequenceDiagram
 
 步骤：
 
-1. 扫描 `AgentTeams/` 下的文件型 Team
+1. 读取 `~/.config/opencode/crewbee.json`，决定启用哪些 Team
 2. 解析 manifest / policy / agent profile
 3. 校验结构与语义
-4. 把内置 `CodingTeam` 放到默认库中
+4. 按 Team priority 排序，并把内置 `CodingTeam` 也纳入同一配置模型
 5. 输出 `TeamLibrary`
 
 输出对象：`TeamLibrary`
@@ -447,7 +447,7 @@ src/
     opencode/             # OpenCode 适配实现
   manager/                # 内部状态辅助层
 
-AgentTeams/               # 文件型 Team 资产
+docs/examples/crewbee.json# 文件型 Team 配置样例
 docs/                     # 架构与流程文档
 opencode-plugin.mjs       # OpenCode 包根入口
 package.json              # 发布入口与依赖

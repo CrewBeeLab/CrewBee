@@ -3,8 +3,15 @@ import path from "node:path";
 import type { AgentTeamDefinition, TeamLibrary } from "../core";
 
 import type { TeamValidationIssue } from "./types";
+import { BUILTIN_CODING_TEAM_ID } from "./constants";
 import { createEmbeddedCodingTeam } from "./embedded/coding-team";
-import { listTeamDirectories, loadTeamDefinitionFromDirectory, resolveTeamConfigRoot } from "./filesystem";
+import {
+  listConfiguredTeamSources,
+  listTeamDirectories,
+  loadTeamDefinitionFromDirectory,
+  resolveTeamConfigRoot,
+  type ConfiguredTeamSource,
+} from "./filesystem";
 import { validateTeamDefinition } from "./validation";
 
 function createSkippedTeamIssue(teamDir: string, message: string): TeamValidationIssue {
@@ -56,12 +63,84 @@ export function loadTeamLibraryFromDirectory(
 }
 
 export function loadDefaultTeamLibrary(baseDir: string = process.cwd()): TeamLibrary {
-  const configuredLibrary = loadTeamLibraryFromDirectory(resolveTeamConfigRoot(baseDir), baseDir);
+  const configured = listConfiguredTeamSources();
+  const orderedTeams: Array<{
+    team: AgentTeamDefinition;
+    priority: number;
+    order: number;
+  }> = [];
+
+  for (const source of configured.sources) {
+    if (!source.enabled) {
+      continue;
+    }
+
+    if (source.kind === "embedded") {
+      const embeddedTeam = loadEmbeddedTeam(source);
+      configured.issues.push(...embeddedTeam.issues);
+
+      if (!embeddedTeam.team) {
+        continue;
+      }
+
+      orderedTeams.push({
+        team: embeddedTeam.team,
+        priority: source.priority,
+        order: source.order,
+      });
+      continue;
+    }
+
+    const loaded = loadValidatedTeamDefinition({
+      teamDir: source.teamDir,
+      workspaceRoot: baseDir,
+    });
+    configured.issues.push(...loaded.issues);
+
+    if (!loaded.team) {
+      continue;
+    }
+
+    orderedTeams.push({
+      team: loaded.team,
+      priority: source.priority,
+      order: source.order,
+    });
+  }
+
+  orderedTeams.sort((left, right) => {
+    const priorityOrder = left.priority - right.priority;
+    if (priorityOrder !== 0) {
+      return priorityOrder;
+    }
+
+    return left.order - right.order;
+  });
 
   return {
-    version: "hybrid-v1",
-    teams: [createEmbeddedCodingTeam(), ...configuredLibrary.teams],
-    loadIssues: configuredLibrary.loadIssues,
+    version: "config-driven-v1",
+    teams: orderedTeams.map((entry) => entry.team),
+    loadIssues: configured.issues,
+  };
+}
+
+function loadEmbeddedTeam(source: Extract<ConfiguredTeamSource, { kind: "embedded" }>): {
+  team?: AgentTeamDefinition;
+  issues: TeamValidationIssue[];
+} {
+  if (source.teamId === BUILTIN_CODING_TEAM_ID) {
+    return {
+      team: createEmbeddedCodingTeam(),
+      issues: [],
+    };
+  }
+
+  return {
+    issues: [{
+      level: "warning",
+      filePath: source.teamId,
+      message: `Skipped embedded Team '${source.teamId}': unknown embedded Team id.`,
+    }],
   };
 }
 

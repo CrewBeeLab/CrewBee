@@ -121,18 +121,27 @@ function resolveBindingAgent(input: {
     }
   }
 
-  const fallbackTeamId = input.defaults.defaultTeamId ?? input.projection.teams[0]?.team.manifest.id;
-  const fallbackTeam = input.projection.teams.find((team) => team.team.manifest.id === fallbackTeamId);
-  const fallbackAgent = fallbackTeam ? pickDefaultUserSelectableAgent(fallbackTeam.team) : undefined;
+  const preferredFallbackTeamId = input.defaults.defaultTeamId ?? input.projection.teams[0]?.team.manifest.id;
+  const orderedFallbackTeams = preferredFallbackTeamId
+    ? [
+        ...input.projection.teams.filter((team) => team.team.manifest.id === preferredFallbackTeamId),
+        ...input.projection.teams.filter((team) => team.team.manifest.id !== preferredFallbackTeamId),
+      ]
+    : input.projection.teams;
 
-  if (!fallbackTeam || !fallbackAgent) {
-    return undefined;
+  for (const fallbackTeam of orderedFallbackTeams) {
+    const fallbackAgent = pickDefaultUserSelectableAgent(fallbackTeam.team);
+    if (!fallbackAgent) {
+      continue;
+    }
+
+    return {
+      teamId: fallbackTeam.team.manifest.id,
+      sourceAgentId: fallbackAgent.metadata.id,
+    };
   }
 
-  return {
-    teamId: fallbackTeam.team.manifest.id,
-    sourceAgentId: fallbackAgent.metadata.id,
-  };
+  return undefined;
 }
 
 function filterSafeProjectedAgents(

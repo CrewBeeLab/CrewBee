@@ -18,7 +18,7 @@
 在当前 CrewBee 里，一套 Team 本质上就是一个目录，里面放四类东西：
 
 ```text
-AgentTeams/<YourTeam>/
+<YourTeamDir>/
   team.manifest.yaml
   team.policy.yaml
   <agent-1>.agent.md
@@ -35,6 +35,24 @@ AgentTeams/<YourTeam>/
 - `*.agent.md`：每个 Agent 的定义文件
 
 > 当前实现里，`*.agent.md` 必须和 `team.manifest.yaml`、`team.policy.yaml` 放在同一目录；`TEAM.md` 也是同目录下的可选说明文件。当前不使用 `agents/` 或 `docs/` 子目录，也不会扫描这些子目录中的 Agent 文件。
+
+要让 CrewBee 加载这支 Team，还需要在 OpenCode 配置目录中的 `crewbee.json` 里注册它：
+
+```json
+{
+  "teams": [
+    { "id": "coding-team", "enabled": true, "priority": 0 },
+    { "path": "@tmp/ResearchOpsTeam", "enabled": true, "priority": 1 }
+  ]
+}
+```
+
+说明：
+
+- `coding-team` 是内置 Team，没有 `path`
+- 文件型 Team 的 `path` 指向 `team.manifest.yaml` 所在目录
+- `@...` 路径相对于 `~/.config/opencode`
+- 数字越小优先级越高；最高优先级 Team 的默认 leader 会成为 OpenCode 默认 Agent
 
 ---
 
@@ -193,7 +211,7 @@ CrewBee 当前设计里，每支 Team 都必须有一个 **formal leader**。
 目录结构如下：
 
 ```text
-AgentTeams/
+<any-configured-dir>/
   ResearchOpsTeam/
     team.manifest.yaml
     team.policy.yaml

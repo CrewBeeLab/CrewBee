@@ -1,0 +1,14 @@
+{
+  "teams": [
+    {
+      "id": "coding-team",
+      "enabled": true,
+      "priority": 0
+    },
+    {
+      "path": "@tmp/oh-my-opencode",
+      "enabled": true,
+      "priority": 1
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 import type { Plugin } from "@opencode-ai/plugin";
 
-import { loadDefaultTeamLibrary } from "../../agent-teams";
+import { ensureCrewBeeConfigFile, loadDefaultTeamLibrary } from "../../agent-teams";
+import { resolveOpenCodeConfigRoot } from "../../install";
 import { createSessionRuntimeBinding, type SessionRuntimeBinding } from "../../runtime";
 
 import { createChatMessageHook } from "./chat-message-hook";
@@ -14,6 +15,18 @@ import { createSystemTransformHook } from "./system-transform-hook";
 import { createToolDefinitionHook, createToolExecuteAfterHook, createToolExecuteBeforeHook } from "./tool-hooks";
 
 export const OpenCodeCrewBeePlugin: Plugin = async (ctx) => {
+  const crewbeeConfigUpdate = ensureCrewBeeConfigFile({
+    configRoot: resolveOpenCodeConfigRoot(),
+    mode: "startup",
+  });
+  if (crewbeeConfigUpdate.changed) {
+    await logCrewBee(ctx, "CrewBee auto-repaired Team config", {
+      backupPath: crewbeeConfigUpdate.backupPath,
+      configPath: crewbeeConfigUpdate.configPath,
+      reason: crewbeeConfigUpdate.reason,
+    }, "warn");
+  }
+
   const teamLibrary = loadDefaultTeamLibrary(ctx.worktree);
   await validateAndLogTeamLibrary(ctx, teamLibrary);
 
