@@ -16,7 +16,7 @@ test("runDoctor reports a healthy user-level install when config and files are c
   mkdirSync(installedPackageRoot, { recursive: true });
   writeFileSync(path.join(installRoot, "package.json"), '{"private":true}\n', "utf8");
   writeFileSync(path.join(installedPackageRoot, "package.json"), '{"name":"crewbee"}\n', "utf8");
-  writeFileSync(pluginPath, "export default {};\n", "utf8");
+  writeFileSync(pluginPath, 'const mod = await import("./dist/opencode-plugin.mjs");\n\nconst plugin = mod.default ?? mod;\n\nexport default plugin;\nexport const id = plugin.id;\nexport const server = plugin.server;\n', "utf8");
   writeFileSync(configPath, JSON.stringify({ plugin: [expectedEntry] }, null, 2) + "\n", "utf8");
 
   const result = await runDoctor({

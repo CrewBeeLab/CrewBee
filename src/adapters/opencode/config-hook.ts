@@ -5,9 +5,24 @@ import type { TeamLibrary } from "../../core";
 
 import { createOpenCodeBootstrap, type OpenCodeBootstrapOutput } from "./bootstrap";
 import type { OpenCodeConfigLike } from "./config-merge";
+import { logCrewBee } from "./logging";
 import { createProjectedAgentAliasIndex, type OpenCodeAgentAliasEntry } from "./projection";
 
 const DEFAULT_MODE = "single-executor" as const;
+
+function summarizeProjectedAgents(boot: OpenCodeBootstrapOutput): Array<{
+  configKey: string;
+  publicName: string;
+  hidden: boolean;
+  model?: string;
+}> {
+  return boot.projectedAgents.map((agent) => ({
+    configKey: agent.configKey,
+    publicName: agent.publicName,
+    hidden: agent.hidden,
+    model: agent.resolvedModel ? `${agent.resolvedModel.providerID}/${agent.resolvedModel.modelID}` : undefined,
+  }));
+}
 
 function getConfig(cfg: { agent?: Record<string, unknown> }): OpenCodeConfigLike {
   return cfg as OpenCodeConfigLike;
@@ -64,6 +79,14 @@ export function createConfigHook(input: {
 
     input.setBoot(next);
     input.setAliasIndex(createProjectedAgentAliasIndex(next.projectedAgents));
+
+    await logCrewBee(input.ctx, "CrewBee config hook rebuilding projected agents", {
+      projectedAgentCount: next.projectedAgents.length,
+      visibleAgentCount: next.projectedAgents.filter((agent) => !agent.hidden).length,
+      defaultAgent: next.mergedConfig?.default_agent ?? next.configPatch.defaultAgent,
+      projectedAgents: summarizeProjectedAgents(next),
+    });
+
     cfg.agent = (next.mergedConfig?.agent ?? next.configPatch.agent) as typeof cfg.agent;
 
     if (next.mergedConfig?.default_agent) {
@@ -74,17 +97,14 @@ export function createConfigHook(input: {
       return;
     }
 
-    await input.ctx.client.app.log({
-      body: {
-        service: "crewbee",
-        level: "info",
-        message: "CrewBee projected OpenCode agents into config",
-        extra: {
-          inserted: next.mergeResult.insertedAgentKeys,
-          updated: next.mergeResult.updatedAgentKeys,
-          skipped: next.mergeResult.skippedAgentKeys,
-        },
-      },
+    await logCrewBee(input.ctx, "CrewBee projected OpenCode agents into config", {
+      inserted: next.mergeResult.insertedAgentKeys,
+      updated: next.mergeResult.updatedAgentKeys,
+      skipped: next.mergeResult.skippedAgentKeys,
+      defaultAgent: next.mergedConfig?.default_agent ?? next.configPatch.defaultAgent,
+      projectedAgentCount: next.projectedAgents.length,
+      visibleAgentCount: next.projectedAgents.filter((agent) => !agent.hidden).length,
+      projectedAgents: summarizeProjectedAgents(next),
     });
   };
 }

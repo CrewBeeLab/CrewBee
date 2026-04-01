@@ -4,7 +4,12 @@ export { installCrewBee } from "./install";
 export { resolveOpenCodeConfigPath, resolveOpenCodeConfigRoot, resolveInstallRoot } from "./install-root";
 export { resolveLocalTarballPath } from "./local-tarball";
 export { installLocalTarball, uninstallCrewBeePackage } from "./package-manager";
-export { assertInstalledPluginExists, createCanonicalPluginEntry, resolveInstalledPackageRoot, resolveInstalledPluginPath } from "./plugin-entry";
+export {
+  assertInstalledPluginExists,
+  createCanonicalPluginEntry,
+  resolveInstalledPackageRoot,
+  resolveInstalledPluginPath,
+} from "./plugin-entry";
 export type { DoctorOptions, DoctorResult, InstallCommandContext, InstallCommandOptions, InstallResult, InstallSource, UninstallOptions, UninstallResult } from "./types";
 export { uninstallCrewBee } from "./uninstall";
 export { ensureInstallWorkspace } from "./workspace";

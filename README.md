@@ -231,8 +231,8 @@ This does four things:
 
 1. builds CrewBee
 2. packs a stable local tarball to `.artifacts/local/crewbee-local.tgz`
-3. installs it into the OpenCode user-level workspace
-4. rewrites OpenCode config to the canonical plugin entry
+3. installs it into the OpenCode user-level package workspace at `~/.cache/opencode`
+4. rewrites OpenCode config to the canonical package-local plugin entry
 
 ### Verify installation
 
@@ -262,8 +262,9 @@ Team Definitions
 
 User-level install
   -> local tarball
-  -> OpenCode user-level workspace
-  -> canonical file:// plugin entry
+  -> ~/.cache/opencode
+  -> node_modules/crewbee
+  -> canonical file:// package entry
   -> OpenCode config
 ```
 
@@ -409,8 +410,7 @@ The current OpenCode plugin chain is roughly:
 ```text
 package.json
   -> opencode-plugin.mjs
-  -> dist/src/adapters/opencode/plugin.js
-  -> src/adapters/opencode/plugin.ts
+  -> dist/opencode-plugin.mjs
 ```
 
 ### What happens during plugin initialization
@@ -533,7 +533,13 @@ npm run simulate:opencode
 
 ```text
 Config root:  ~/.config/opencode
-Install root: ~/.cache/opencode/crewbee
+Install root: ~/.cache/opencode
+```
+
+Canonical plugin entry:
+
+```text
+file://~/.cache/opencode/node_modules/crewbee/opencode-plugin.mjs
 ```
 
 On Windows, the default still prefers:

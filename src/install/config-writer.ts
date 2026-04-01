@@ -117,5 +117,6 @@ function isCrewBeePluginReference(value: string): boolean {
     return true;
   }
 
-  return value.replace(/\\/g, "/").toLowerCase().endsWith("/crewbee/opencode-plugin.mjs");
+  const normalized = value.replace(/\\/g, "/").toLowerCase();
+  return normalized.includes("/node_modules/crewbee/") || normalized.endsWith("/entry/crewbee-opencode-entry.mjs");
 }

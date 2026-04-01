@@ -26,7 +26,7 @@ const sessionID = args.values.session ?? "sim-session-1"
 const selected = args.values.agent
 const asJson = Boolean(args.values.json)
 const outroot = args.values.outdir ? path.resolve(args.values.outdir) : path.join(root, "simulators", "runs")
-const pluginEntry = pathToFileURL(path.join(root, "opencode-plugin.mjs")).href
+const pluginEntry = pathToFileURL(path.join(root, "dist", "opencode-plugin.mjs")).href
 
 function stamp(now = new Date()) {
   const pad = (n, size = 2) => String(n).padStart(size, "0")
@@ -275,7 +275,7 @@ const run = {
   timestamp,
   outputDir,
   worktree,
-  pluginEntry: "opencode-plugin.mjs",
+  pluginEntry: "dist/opencode-plugin.mjs",
   sessionID,
   selectedAgent: chosenAgent ?? null,
   loaded,

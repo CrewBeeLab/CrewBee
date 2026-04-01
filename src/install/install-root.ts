@@ -71,5 +71,5 @@ export function resolveInstallRoot(installRoot?: string): string {
     ? xdgCacheHome
     : path.join(os.homedir(), ".cache");
 
-  return path.join(cacheRoot, "opencode", "crewbee");
+  return path.join(cacheRoot, "opencode");
 }

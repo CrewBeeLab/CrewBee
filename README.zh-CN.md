@@ -237,8 +237,8 @@ npm run install:local:user
 
 1. 构建 CrewBee
 2. 打包稳定本地 tarball 到 `.artifacts/local/crewbee-local.tgz`
-3. 安装到 OpenCode 用户级 workspace
-4. 重写 OpenCode config 指向 canonical 插件入口
+3. 安装到 OpenCode 用户级 package workspace（`~/.cache/opencode`）
+4. 重写 OpenCode config 指向 canonical 包内插件入口
 
 ### 验证安装
 
@@ -268,8 +268,9 @@ Team Definitions
 
 User-level install
   -> local tarball
-  -> OpenCode user-level workspace
-  -> canonical file:// plugin entry
+  -> ~/.cache/opencode
+  -> node_modules/crewbee
+  -> canonical file:// package entry
   -> OpenCode config
 ```
 
@@ -415,8 +416,7 @@ prompt_projection:
 ```text
 package.json
   -> opencode-plugin.mjs
-  -> dist/src/adapters/opencode/plugin.js
-  -> src/adapters/opencode/plugin.ts
+  -> dist/opencode-plugin.mjs
 ```
 
 ### 插件初始化时会做什么
@@ -539,7 +539,13 @@ npm run simulate:opencode
 
 ```text
 Config root:  ~/.config/opencode
-Install root: ~/.cache/opencode/crewbee
+Install root: ~/.cache/opencode
+```
+
+Canonical 插件入口：
+
+```text
+file://~/.cache/opencode/node_modules/crewbee/opencode-plugin.mjs
 ```
 
 Windows 下默认仍优先使用：

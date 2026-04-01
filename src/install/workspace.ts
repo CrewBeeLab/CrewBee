@@ -9,7 +9,7 @@ export interface WorkspaceBootstrapResult {
 
 function createWorkspaceManifest() {
   return {
-    name: "crewbee-user-workspace",
+    name: "opencode-plugin-workspace",
     private: true,
     version: "0.0.0",
   };

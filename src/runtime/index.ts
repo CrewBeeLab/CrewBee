@@ -16,6 +16,8 @@ export type {
 } from "./types";
 
 export { createAvailableToolContext, isAvailableTool, listAvailableTools } from "./registries";
+export { isCrewBeeLoggingEnabled, shouldEmitCrewBeeLog } from "./logging";
+export type { CrewBeeLogEvent, CrewBeeLogLevel } from "./logging";
 export {
   getCrewBeePluginTool,
   listCrewBeePluginTools,

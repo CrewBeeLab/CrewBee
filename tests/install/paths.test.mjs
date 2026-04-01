@@ -15,7 +15,7 @@ test("install roots honor explicit overrides and XDG defaults", () => {
   try {
     assert.equal(resolveOpenCodeConfigRoot(), path.join(process.env.XDG_CONFIG_HOME, "opencode"));
     assert.equal(resolveOpenCodeConfigPath(), path.join(process.env.XDG_CONFIG_HOME, "opencode", "opencode.json"));
-    assert.equal(resolveInstallRoot(), path.join(process.env.XDG_CACHE_HOME, "opencode", "crewbee"));
+    assert.equal(resolveInstallRoot(), path.join(process.env.XDG_CACHE_HOME, "opencode"));
     assert.equal(resolveInstallRoot("./custom-install-root"), path.resolve("./custom-install-root"));
     assert.equal(resolveOpenCodeConfigPath("./custom-config.json"), path.resolve("./custom-config.json"));
   } finally {

@@ -1,6 +1,7 @@
-import mod from "./dist/src/adapters/opencode/plugin.js"
+const mod = await import("./dist/opencode-plugin.mjs")
 
-const plugin = mod.OpenCodeCrewBeePlugin ?? mod.default ?? mod
+const plugin = mod.default ?? mod
 
-export const OpenCodeCrewBeePlugin = plugin
 export default plugin
+export const id = plugin.id
+export const server = plugin.server

@@ -9,6 +9,7 @@ import { createConfigHook, createInitialBootstrap, validateAndLogTeamLibrary } f
 import { createEventHook } from "./event-hook";
 import { DelegateStateStore } from "./delegation/store";
 import { createDelegateTools } from "./delegation/tools";
+import { logCrewBee } from "./logging";
 import { createSystemTransformHook } from "./system-transform-hook";
 import { createToolDefinitionHook, createToolExecuteAfterHook, createToolExecuteBeforeHook } from "./tool-hooks";
 
@@ -17,6 +18,13 @@ export const OpenCodeCrewBeePlugin: Plugin = async (ctx) => {
   await validateAndLogTeamLibrary(ctx, teamLibrary);
 
   const initial = createInitialBootstrap(teamLibrary);
+  await logCrewBee(ctx, "CrewBee plugin initialized", {
+    worktree: ctx.worktree,
+    projectedAgentCount: initial.boot.projectedAgents.length,
+    visibleAgentCount: initial.boot.projectedAgents.filter((agent) => !agent.hidden).length,
+    defaultAgent: initial.boot.configPatch.defaultAgent,
+  });
+
   let boot = initial.boot;
   let aliasIndex = initial.aliasIndex;
   const bindings = new Map<string, SessionRuntimeBinding>();

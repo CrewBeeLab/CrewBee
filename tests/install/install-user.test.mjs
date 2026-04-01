@@ -33,6 +33,6 @@ test("installCrewBee plans a user-level install without mutating files in dry-ru
   assert.equal(result.dryRun, true);
   assert.equal(result.workspaceCreated, true);
   assert.equal(result.tarballPath, tarballPath);
-  assert.match(result.pluginEntry, /node_modules\/crewbee\/opencode-plugin\.mjs$|node_modules\/crewbee\/opencode-plugin\.mjs$/);
+  assert.match(result.pluginEntry, /\/node_modules\/crewbee\/opencode-plugin\.mjs$/);
   assert.equal(existsSync(configPath), false);
 });

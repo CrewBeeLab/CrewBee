@@ -4,13 +4,14 @@
   "private": true,
   "description": "A Team-first Agent System",
   "license": "MIT",
-  "main": "./opencode-plugin.mjs",
+  "main": "./dist/opencode-plugin.mjs",
   "types": "./dist/src/adapters/opencode/plugin.d.ts",
   "bin": {
     "crewbee": "bin/crewbee.js"
   },
   "exports": {
-    ".": "./opencode-plugin.mjs"
+    ".": "./dist/opencode-plugin.mjs",
+    "./server": "./dist/opencode-plugin.mjs"
   },
   "files": [
     "dist",
@@ -18,7 +19,8 @@
     "opencode-plugin.mjs"
   ],
   "scripts": {
-    "build": "npm run clean && tsc -p tsconfig.json",
+    "build": "npm run clean && tsc -p tsconfig.json && npm run build:opencode-plugin",
+    "build:opencode-plugin": "esbuild src/adapters/opencode/plugin.ts --bundle --platform=node --format=esm --target=node18 --outfile=dist/opencode-plugin.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
     "simulate:opencode": "npm run build && node ./simulators/opencode-runtime.mjs",
@@ -31,6 +33,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.3.5",
+    "esbuild": "^0.25.9",
     "typescript": "^5.7.3"
   },
   "dependencies": {

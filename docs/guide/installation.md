@@ -21,7 +21,7 @@ build local package -> install tarball into a target project -> run npx crewbee 
 ### Current user-level flow
 
 ```text
-build local package -> install tarball into ~/.cache/opencode/crewbee -> write plugin entry into ~/.config/opencode/opencode.json(c)
+build local package -> install tarball into ~/.cache/opencode -> write package-local plugin entry into ~/.config/opencode/opencode.json(c)
 ```
 
 The new flow is the one CrewBee supports and documents now.
@@ -77,7 +77,7 @@ The installer does all of the following:
 3. bootstraps a minimal user-level package workspace
 4. installs the local tarball into that workspace
 5. resolves the installed `opencode-plugin.mjs`
-6. rewrites OpenCode config to the canonical user-level plugin entry
+6. rewrites OpenCode config to the canonical package-local plugin entry
 
 ## Step 3: Understand the User-Level Paths
 
@@ -85,7 +85,7 @@ By default, CrewBee uses two different roots:
 
 ```text
 Config root:  ~/.config/opencode
-Install root: ~/.cache/opencode/crewbee
+Install root: ~/.cache/opencode
 ```
 
 On Windows, the config root still prefers the cross-platform `~/.config/opencode` location, with fallback to `%APPDATA%/opencode` when an existing OpenCode config already lives there.
@@ -123,6 +123,24 @@ The canonical plugin entry points at:
 file://<install-root>/node_modules/crewbee/opencode-plugin.mjs
 ```
 
+CrewBee now uses a standard Node package layout inside the OpenCode cache root:
+
+```text
+~/.cache/opencode/
+  package.json
+  node_modules/
+    crewbee/
+      package.json
+      opencode-plugin.mjs
+      dist/
+        opencode-plugin.mjs
+```
+
+This shape is compatible with both:
+
+- direct file entry loading via `.../node_modules/crewbee/opencode-plugin.mjs`
+- package-level entry resolution via the installed `package.json`
+
 ## Step 5: Use CrewBee in OpenCode
 
 After OpenCode loads the plugin:
@@ -148,6 +166,18 @@ npm run install:local:user
 ```
 
 CrewBee will replace that old project-local entry with the canonical user-level workspace entry.
+
+It also migrates the old standalone shim path used in earlier user-level installs, for example:
+
+```text
+file://~/.cache/opencode/crewbee/entry/crewbee-opencode-entry.mjs
+```
+
+to:
+
+```text
+file://~/.cache/opencode/node_modules/crewbee/opencode-plugin.mjs
+```
 
 ## Step 7: Uninstall From the User-Level Workspace
 
