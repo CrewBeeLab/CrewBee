@@ -10,9 +10,10 @@ export async function runDoctor(options: DoctorOptions): Promise<DoctorResult> {
   const configPath = resolveOpenCodeConfigPath(options.configPath);
   const installRoot = resolveInstallRoot(options.installRoot);
   const expectedPluginEntry = createCanonicalPluginEntry(installRoot);
+  const installedPackageRoot = resolveInstalledPackageRoot(installRoot);
   const currentPluginEntries = findCrewBeePluginEntries(readOpenCodeConfig(configPath).config);
   const hasWorkspaceManifest = existsSync(path.join(installRoot, "package.json"));
-  const hasInstalledPackage = existsSync(path.join(resolveInstalledPackageRoot(installRoot), "package.json"));
+  const hasInstalledPackage = existsSync(path.join(installedPackageRoot, "package.json"));
   const hasPluginFile = existsSync(resolveInstalledPluginPath(installRoot));
   const configMatchesCanonical = currentPluginEntries.length === 1 && currentPluginEntries[0] === expectedPluginEntry;
   const healthy = hasWorkspaceManifest && hasInstalledPackage && hasPluginFile && configMatchesCanonical;
@@ -26,6 +27,7 @@ export async function runDoctor(options: DoctorOptions): Promise<DoctorResult> {
     hasPluginFile,
     hasWorkspaceManifest,
     healthy,
+    installedPackageRoot,
     installRoot,
   };
 }

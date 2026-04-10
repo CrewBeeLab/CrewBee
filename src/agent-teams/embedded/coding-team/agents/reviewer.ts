@@ -100,7 +100,7 @@ export function createReviewerAgent(): AgentProfileSpec {
         { permission: "read", pattern: "*", action: "allow" },
         { permission: "glob", pattern: "*", action: "allow" },
         { permission: "grep", pattern: "*", action: "allow" },
-        { permission: "task", pattern: "*", action: "allow" },
+        // { permission: "task", pattern: "*", action: "allow" },
         { permission: "delegate_task", pattern: "*", action: "deny" },
         { permission: "delegate_status", pattern: "*", action: "deny" },
         { permission: "delegate_cancel", pattern: "*", action: "deny" },

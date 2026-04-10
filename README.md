@@ -238,7 +238,10 @@ This does four things:
 
 ```bash
 npm run doctor
+npm run version
 ```
+
+`npm run version` (or `crewbee version`) reads the package version directly from `package.json` for both the current package and the installed package copy.
 
 ### Use in OpenCode
 
@@ -550,6 +553,7 @@ npm run simulate:opencode
 * `pack:local`: pack a local tarball
 * `install:local:user`: run the full user-level install
 * `doctor`: verify OpenCode config and install state
+* `version`: show the current package version and installed package version
 * `uninstall:user`: uninstall the user-level install
 * `simulate:opencode`: run the local OpenCode runtime simulator
 

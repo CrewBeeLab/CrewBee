@@ -29,6 +29,7 @@
     "install:local:user": "npm run pack:local && node ./bin/crewbee.js install --source local --local-tarball ./.artifacts/local/crewbee-local.tgz",
     "uninstall:user": "node ./bin/crewbee.js uninstall:user",
     "doctor": "node ./bin/crewbee.js doctor",
+    "version": "node ./bin/crewbee.js version",
     "test": "npm run build && node --test tests/**/*.test.mjs"
   },
   "devDependencies": {

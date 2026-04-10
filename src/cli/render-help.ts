@@ -7,6 +7,7 @@ export function renderCliHelp(): string {
     "  crewbee install:local:user [--local-tarball <path>] [--install-root <path>] [--config-path <path>] [--dry-run]",
     "  crewbee uninstall:user [--install-root <path>] [--config-path <path>] [--dry-run]",
     "  crewbee doctor [--install-root <path>] [--config-path <path>]",
+    "  crewbee version [--install-root <path>] [--json]",
     "  crewbee help",
     "",
     "Current scope:",

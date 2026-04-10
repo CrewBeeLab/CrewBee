@@ -57,5 +57,6 @@ export interface DoctorResult {
   hasPluginFile: boolean;
   hasWorkspaceManifest: boolean;
   healthy: boolean;
+  installedPackageRoot: string;
   installRoot: string;
 }

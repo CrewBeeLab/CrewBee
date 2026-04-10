@@ -102,6 +102,7 @@ Use:
 
 ```bash
 npm run doctor
+npm run version
 ```
 
 Or directly:
@@ -116,6 +117,8 @@ You should see that:
 - the installed package exists
 - the plugin file exists
 - the OpenCode config entry matches the canonical user-level plugin entry
+
+`npm run version` / `crewbee version` reports the semantic version directly from `package.json`. CrewBee intentionally does not add an extra build-id layer at this stage.
 
 The canonical plugin entry points at:
 

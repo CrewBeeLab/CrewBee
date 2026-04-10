@@ -1,6 +1,7 @@
 import type { Writable } from "node:stream";
 
 import { runDoctor } from "../install";
+import { readPackageVersion } from "../version/package-version";
 
 import { parseCommandPathOptions } from "./parse-command-path-options";
 
@@ -14,9 +15,11 @@ export async function runDoctorCommand(argv: string[], io: {
       configPath: options.configPath,
       installRoot: options.installRoot,
     });
+    const installedVersion = readPackageVersion(result.installedPackageRoot);
 
     io.stdout.write([
       result.healthy ? "CrewBee doctor: healthy." : "CrewBee doctor: issues found.",
+      `Installed version: ${installedVersion}`,
       `Config: ${result.configPath}`,
       `Install root: ${result.installRoot}`,
       `Workspace manifest: ${result.hasWorkspaceManifest ? "yes" : "no"}`,

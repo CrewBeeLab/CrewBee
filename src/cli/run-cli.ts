@@ -4,6 +4,7 @@ import { runDoctorCommand } from "./doctor";
 import { runInstallCommand } from "./install";
 import { renderCliHelp } from "./render-help";
 import { runUninstallUserCommand } from "./uninstall-user";
+import { runVersionCommand } from "./version";
 
 export interface RunCliContext {
   packageRoot: string;
@@ -40,6 +41,15 @@ export async function runCli(argv: string[], context: RunCliContext): Promise<nu
     return runDoctorCommand(rest, {
       stderr: context.stderr,
       stdout: context.stdout,
+    });
+  }
+
+  if (command === "version") {
+    return runVersionCommand(rest, {
+      stderr: context.stderr,
+      stdout: context.stdout,
+    }, {
+      packageRoot: context.packageRoot,
     });
   }
 

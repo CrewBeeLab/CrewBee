@@ -244,7 +244,10 @@ npm run install:local:user
 
 ```bash
 npm run doctor
+npm run version
 ```
+
+`npm run version`（或 `crewbee version`）会直接从 `package.json` 读取当前包版本和已安装包版本。
 
 ### 在 OpenCode 中使用
 
@@ -532,6 +535,7 @@ npm run simulate:opencode
 * `pack:local`：打包本地 tarball
 * `install:local:user`：执行完整用户级安装
 * `doctor`：校验 OpenCode 配置与安装状态
+* `version`：显示当前包版本与已安装包版本
 * `uninstall:user`：卸载用户级安装
 * `simulate:opencode`：运行本地 OpenCode runtime simulator
 

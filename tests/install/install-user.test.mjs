@@ -4,8 +4,10 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 
 import os from "node:os";
 import path from "node:path";
 
-import { ensureCrewBeeConfigFile, resolveCrewBeeConfigPath } from "../../dist/src/agent-teams/index.js";
+import agentTeams from "../../dist/src/agent-teams/index.js";
 import { installCrewBee } from "../../dist/src/install/index.js";
+
+const { ensureCrewBeeConfigFile, resolveCrewBeeConfigPath } = agentTeams;
 
 test("installCrewBee plans a user-level install without mutating files in dry-run mode", async () => {
   const repoRoot = mkdtempSync(path.join(os.tmpdir(), "crewbee-repo-"));
