@@ -152,8 +152,37 @@ test("delegate_task background is finalized from session events and appears in c
 
   const compacting = { context: [], prompt: undefined };
   await plugin["experimental.session.compacting"]?.({ sessionID: "ses-parent" }, compacting);
+  assert.match(compacting.context.join("\n"), /Checkpointed Agent Configuration/);
+  assert.match(compacting.context.join("\n"), /agent=crewbee\.coding-team\.leader/);
+  assert.match(compacting.context.join("\n"), /Todo Snapshot/);
+  assert.match(compacting.context.join("\n"), /Ship feature/);
   assert.match(compacting.context.join("\n"), /Delegated Agent Sessions/);
   assert.match(compacting.context.join("\n"), new RegExp(launched.session_id));
+});
+
+test("delegate_task foreground sessions also appear in compaction context", async () => {
+  const fixture = createPluginInput();
+  const plugin = await OpenCodeCrewBeePlugin(fixture.input);
+  const config = { agent: {} };
+
+  await plugin.config?.(config);
+  await plugin["chat.message"]?.(
+    { sessionID: "ses-parent", agent: "crewbee.coding-team.leader" },
+    { message: { role: "user", parts: [] }, parts: [] },
+  );
+
+  const raw = await plugin.tool.delegate_task.execute(
+    { agent: "reviewer", prompt: "Review the current implementation.", mode: "foreground" },
+    createToolContext(fixture.worktree),
+  );
+  const result = parseJson(raw);
+
+  const compacting = { context: [], prompt: undefined };
+  await plugin["experimental.session.compacting"]?.({ sessionID: "ses-parent" }, compacting);
+
+  assert.equal(result.status, "completed");
+  assert.match(compacting.context.join("\n"), /foreground delegation/);
+  assert.match(compacting.context.join("\n"), new RegExp(result.session_id));
 });
 
 test("delegate_cancel marks a background delegation as cancelled", async () => {
@@ -254,7 +283,7 @@ test("delegated subagents cannot delegate again", async () => {
   assert.equal(nested.error_code, "nested_delegate_forbidden");
 });
 
-test("session.compacted triggers prompt checkpoint recovery", async () => {
+test("session.compacted records continuity state without injecting recovery prompts", async () => {
   const fixture = createPluginInput();
   const plugin = await OpenCodeCrewBeePlugin(fixture.input);
   const config = { agent: {} };
@@ -265,42 +294,9 @@ test("session.compacted triggers prompt checkpoint recovery", async () => {
     { message: { role: "user", parts: [] }, parts: [] },
   );
 
-  await plugin.event?.({ event: { type: "session.compacted", properties: { sessionID: "ses-parent" } } });
-
-  const parts = fixture.sessions.get("ses-parent").messages.at(-1)?.parts ?? [];
-  assert.match(parts[0]?.text ?? "", /prompt checkpoint refresh/);
-});
-
-test("session.compacted triggers todo restore prompt when todos were captured and current list is empty", async () => {
-  const fixture = createPluginInput();
-  const plugin = await OpenCodeCrewBeePlugin(fixture.input);
-  const config = { agent: {} };
-
-  await plugin.config?.(config);
-  await plugin["chat.message"]?.(
-    { sessionID: "ses-parent", agent: "crewbee.coding-team.leader" },
-    { message: { role: "user", parts: [] }, parts: [] },
-  );
-
-  // Step 1: Trigger compacting hook — captures current todos (["Ship feature"]) into store.
-  const compacting = { context: [], prompt: undefined };
-  await plugin["experimental.session.compacting"]?.({ sessionID: "ses-parent" }, compacting);
-
-  // Step 2: Now simulate compaction having wiped the todo list.
-  fixture.sessions.get("ses-parent").todos = [];
-
-  // Step 3: Fire session.compacted event — should call restoreTodoSnapshot,
-  //         find current list empty, and send a prompt to restore the todos.
   const messagesBefore = fixture.sessions.get("ses-parent").messages.length;
   await plugin.event?.({ event: { type: "session.compacted", properties: { sessionID: "ses-parent" } } });
 
-  const messagesAfter = fixture.sessions.get("ses-parent").messages;
-  // Find the todo restore prompt among messages added after compaction fired
-  const newMessages = messagesAfter.slice(messagesBefore);
-  const todoRestoreMsg = newMessages.find((m) => {
-    const text = m._promptText ?? "";
-    return text.includes("todo list") && text.includes("Ship feature");
-  });
-  assert.ok(todoRestoreMsg, "todo restore prompt was sent after compaction");
-  assert.match(todoRestoreMsg._promptText, /TodoWrite/);
+  const messagesAfter = fixture.sessions.get("ses-parent").messages.length;
+  assert.equal(messagesAfter, messagesBefore);
 });

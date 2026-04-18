@@ -1,6 +1,6 @@
 {
   "name": "crewbee",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "A Team-first Agent System",
   "license": "MIT",
@@ -24,6 +24,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
     "simulate:opencode": "npm run build && node ./simulators/opencode-runtime.mjs",
+    "simulate:compact": "npm run build && node ./simulators/opencode-compact-check.mjs",
     "prepack": "npm run build",
     "pack:local": "node ./scripts/pack-local.mjs",
     "install:local:user": "npm run pack:local && node ./bin/crewbee.js install --source local --local-tarball ./.artifacts/local/crewbee-local.tgz",

@@ -100,7 +100,7 @@ export function createCodingLeaderAgent(): AgentProfileSpec {
       ],
     },
     runtimeConfig: {
-      requestedTools: ["read", "glob", "grep", "skill", "task", "delegate_task", "delegate_status", "delegate_cancel", "edit", "write", "bash", "lsp_diagnostics"],
+      requestedTools: ["read", "glob", "grep", "skill", "delegate_task", "delegate_status", "delegate_cancel", "edit", "write", "bash", "lsp_diagnostics"],
       permission: [
         { permission: "read", pattern: "*", action: "allow" },
         { permission: "glob", pattern: "*", action: "allow" },

@@ -1,31 +1,52 @@
 import type { PluginInput } from "@opencode-ai/plugin";
 
 import { unwrapSdkResponse } from "./sdk-response";
-import { hasNoTextTail } from "./output";
 import type { DelegateStateStore } from "./store";
-import type { DelegateCheckpoint, TodoSnapshot } from "./types";
+import type { TodoSnapshot } from "./types";
 
 function formatDelegatedSessions(store: DelegateStateStore, sessionID: string): string {
-  const tasks = store.getTasksByParent(sessionID);
-  if (tasks.length === 0) {
+  const sessions = store.getSessionsByParent(sessionID);
+  if (sessions.length === 0) {
     return "- None";
   }
 
-  return tasks
-    .map((task) => `- ${task.sourceAgentId} | ${task.status} | ${task.description} | session_id=${task.sessionID} | resume, don't restart`)
+  return sessions
+    .map((session) => {
+      const task = store.getTaskBySession(session.sessionID);
+      return [
+        `- ${session.sourceAgentId}`,
+        task?.status ?? "completed",
+        task?.description ?? "foreground delegation",
+        `session_id=${session.sessionID}`,
+        "resume, don't restart",
+      ].join(" | ");
+    })
     .join("\n");
 }
 
-function formatTodoRestorePrompt(todos: TodoSnapshot[]): string {
-  const lines = todos.map((t) => `- [${t.status}][${t.priority ?? "medium"}] ${t.content}`).join("\n");
+function formatTodoSnapshot(store: DelegateStateStore, sessionID: string): string {
+  const todos = store.getTodos(sessionID);
+  if (todos.length === 0) {
+    return "- None";
+  }
+
+  return todos
+    .map((todo) => `- [${todo.status}][${todo.priority ?? "medium"}] ${todo.content}`)
+    .join("\n");
+}
+
+function formatCheckpointSummary(store: DelegateStateStore, sessionID: string): string {
+  const checkpoint = store.getCheckpoint(sessionID);
+  if (!checkpoint) {
+    return "- None";
+  }
+
   return [
-    "[CrewBee internal] Session compaction cleared your todo list.",
-    "Please restore it immediately using the TodoWrite tool. Todos to restore:",
-    "",
-    lines,
-    "",
-    "Restore all todos now. Do not reply with text — only call TodoWrite.",
-  ].join("\n");
+    `- agent=${checkpoint.agent}`,
+    checkpoint.sourceAgentId ? `- source_agent=${checkpoint.sourceAgentId}` : undefined,
+    checkpoint.model ? `- model=${checkpoint.model.providerID}/${checkpoint.model.modelID}` : undefined,
+    checkpoint.tools.length > 0 ? `- tools=${checkpoint.tools.join(", ")}` : "- tools=None",
+  ].filter(Boolean).join("\n");
 }
 
 export async function captureTodoSnapshot(ctx: PluginInput, store: DelegateStateStore, sessionID: string): Promise<void> {
@@ -37,79 +58,29 @@ export function buildCompactionContext(store: DelegateStateStore, sessionID: str
   return [
     "[CrewBee Continuity Context]",
     "",
+    "When summarizing this session, preserve the sections below in the compacted summary.",
+    "",
     "1. User Requests / Final Goal",
     "2. Work Completed",
     "3. Remaining Tasks",
     "4. Active Working Context",
     "5. Explicit Constraints",
     "6. Agent Verification State",
-    "7. Delegated Agent Sessions",
+    "7. Checkpointed Agent Configuration",
+    "   - include current agent / source agent / model / enabled tools when known",
+    "8. Todo Snapshot",
+    "   - preserve outstanding todos and their status/priority",
+    "9. Delegated Agent Sessions",
     "   - include agent, status, description, session_id",
     "   - instruction: resume, don't restart",
+    "",
+    "[Checkpointed agent configuration]",
+    formatCheckpointSummary(store, sessionID),
+    "",
+    "[Todo snapshot]",
+    formatTodoSnapshot(store, sessionID),
     "",
     "[Runtime-carried delegated sessions]",
     formatDelegatedSessions(store, sessionID),
   ].join("\n");
-}
-
-export async function recoverPromptCheckpoint(ctx: PluginInput, sessionID: string, checkpoint?: DelegateCheckpoint): Promise<void> {
-  if (!checkpoint) {
-    return;
-  }
-
-  await ctx.client.session.prompt({
-    path: { id: sessionID },
-    body: {
-      agent: checkpoint.agent,
-      model: checkpoint.model,
-      noReply: true,
-      tools: Object.fromEntries(checkpoint.tools.map((tool) => [tool, true])),
-      parts: [{ type: "text", text: "[CrewBee internal prompt checkpoint refresh]" }],
-    },
-  }).catch(() => undefined);
-}
-
-export async function restoreTodoSnapshot(ctx: PluginInput, store: DelegateStateStore, sessionID: string, checkpoint?: DelegateCheckpoint): Promise<void> {
-  const snapshot = store.getTodos(sessionID);
-  if (snapshot.length === 0) {
-    return;
-  }
-
-  const current = unwrapSdkResponse(await ctx.client.session.todo({ path: { id: sessionID } }).catch(() => []));
-  if (Array.isArray(current) && current.length > 0) {
-    return;
-  }
-
-  // The SDK has no todo write endpoint — todos are owned by the host and written
-  // by the model's TodoWrite tool. Inject a noReply prompt so the model restores
-  // its own todo list using the tool it already has.
-  await ctx.client.session.prompt({
-    path: { id: sessionID },
-    body: {
-      agent: checkpoint?.agent,
-      model: checkpoint?.model,
-      noReply: false,
-      tools: checkpoint ? Object.fromEntries(checkpoint.tools.map((tool) => [tool, true])) : {},
-      parts: [{ type: "text", text: formatTodoRestorePrompt(snapshot) }],
-    },
-  }).catch(() => undefined);
-}
-
-export async function recoverNoTextTail(ctx: PluginInput, store: DelegateStateStore, sessionID: string): Promise<void> {
-  const continuity = store.getContinuity(sessionID);
-  if (!continuity.compactedAt) {
-    return;
-  }
-
-  const noText = await hasNoTextTail(ctx.client, sessionID, continuity.compactedAt).catch(() => false);
-  if (!noText) {
-    store.setNoTextTailCount(sessionID, 0);
-    return;
-  }
-
-  const count = (continuity.noTextTailCount ?? 0) + 1;
-  store.setNoTextTailCount(sessionID, count);
-  if (count >= 2) {
-    await recoverPromptCheckpoint(ctx, sessionID, continuity.checkpoint);
-  }
 }

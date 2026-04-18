@@ -1,6 +1,5 @@
 import type { PluginInput } from "@opencode-ai/plugin";
 
-import { recoverNoTextTail, recoverPromptCheckpoint, restoreTodoSnapshot } from "./delegation/continuity";
 import { extractAssistantText } from "./delegation/output";
 import type { DelegateStateStore } from "./delegation/store";
 
@@ -51,7 +50,6 @@ export function createEventHook(ctx: PluginInput, store: DelegateStateStore) {
 
     if (input.event.type === "session.idle") {
       await finalizeBackgroundTask(ctx, store, sessionID);
-      await recoverNoTextTail(ctx, store, sessionID);
       return;
     }
 
@@ -65,9 +63,6 @@ export function createEventHook(ctx: PluginInput, store: DelegateStateStore) {
 
     if (input.event.type === "session.compacted") {
       store.markCompacted(sessionID);
-      const continuity = store.getContinuity(sessionID);
-      await recoverPromptCheckpoint(ctx, sessionID, continuity.checkpoint);
-      await restoreTodoSnapshot(ctx, store, sessionID, continuity.checkpoint);
       return;
     }
 

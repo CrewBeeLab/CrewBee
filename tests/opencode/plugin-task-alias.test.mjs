@@ -80,6 +80,24 @@ test("CrewBee projects CodingTeam shell permissions as allow by default", async 
   assert.equal(config.agent["crewbee.coding-team.coordination-leader"].permission.bash["*"], "allow");
 });
 
+test("CrewBee removes task from built-in coding leaders that use delegate_task", async () => {
+  const plugin = await OpenCodeCrewBeePlugin(createPluginInput());
+  const config = { agent: {} };
+
+  await plugin.config?.(config);
+
+  const leader = config.agent["crewbee.coding-team.leader"];
+  const coordinationLeader = config.agent["crewbee.coding-team.coordination-leader"];
+  const reviewer = config.agent["crewbee.coding-team.reviewer"];
+
+  assert.equal(leader.permission.task, undefined);
+  assert.equal(leader.permission.delegate_task["*"], "allow");
+  assert.equal(coordinationLeader.permission.task, undefined);
+  assert.equal(coordinationLeader.permission.delegate_task["*"], "allow");
+  assert.equal(reviewer.permission.task?.["*"] ?? "deny", "deny");
+  assert.equal(reviewer.permission.delegate_task["*"], "deny");
+});
+
 test("CrewBee upgrades web-researcher prompt and runtime for librarian-style research", async () => {
   const plugin = await OpenCodeCrewBeePlugin(createPluginInput());
   const config = { agent: {} };

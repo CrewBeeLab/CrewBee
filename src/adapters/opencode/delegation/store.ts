@@ -58,6 +58,10 @@ export class DelegateStateStore {
     return Object.values(this.read().tasks).filter((task) => task.parentSessionID === parentSessionID);
   }
 
+  getSessionsByParent(parentSessionID: string): DelegatedSessionRecord[] {
+    return Object.values(this.read().sessions).filter((session) => session.parentSessionID === parentSessionID);
+  }
+
   putTask(task: DelegateTaskRecord): void {
     const state = this.read();
     state.tasks[task.taskRef] = task;
