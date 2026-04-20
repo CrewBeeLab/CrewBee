@@ -30,6 +30,7 @@ export async function runInstallCommand(argv: string[], io: {
       `CrewBee Team config: ${result.crewbeeConfigPath}`,
       `Install root: ${result.installRoot}`,
       result.tarballPath ? `Local tarball: ${result.tarballPath}` : undefined,
+      result.packageSpec ? `Registry package: ${result.packageSpec}` : undefined,
       `Plugin entry: ${result.pluginEntry}`,
       result.dryRun
         ? (result.workspaceCreated ? "Workspace would be prepared." : "Workspace already present.")

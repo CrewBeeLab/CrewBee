@@ -36,12 +36,38 @@ test("installCrewBee plans a user-level install without mutating files in dry-ru
   assert.equal(result.dryRun, true);
   assert.equal(result.workspaceCreated, true);
   assert.equal(result.tarballPath, tarballPath);
-  assert.match(result.pluginEntry, /\/node_modules\/crewbee\/opencode-plugin\.mjs$/);
+  assert.equal(result.pluginEntry, "crewbee");
   assert.equal(result.crewbeeConfigPath, path.join(path.dirname(configPath), "crewbee.json"));
   assert.equal(result.crewbeeConfigChanged, true);
   assert.equal(result.crewbeeConfigReason, "created-default");
   assert.equal(existsSync(configPath), false);
   assert.equal(existsSync(result.crewbeeConfigPath), false);
+});
+
+test("installCrewBee supports registry source in dry-run mode", async () => {
+  const repoRoot = mkdtempSync(path.join(os.tmpdir(), "crewbee-repo-registry-"));
+  const installRoot = path.join(mkdtempSync(path.join(os.tmpdir(), "crewbee-install-registry-")), "workspace");
+  const configPath = path.join(mkdtempSync(path.join(os.tmpdir(), "crewbee-config-registry-")), "opencode.json");
+
+  writeFileSync(path.join(repoRoot, "package.json"), JSON.stringify({ name: "crewbee", version: "0.9.1" }, null, 2), "utf8");
+
+  const result = await installCrewBee({
+    context: {
+      cwd: repoRoot,
+      packageRoot: repoRoot,
+    },
+    options: {
+      configPath,
+      dryRun: true,
+      installRoot,
+      source: "registry",
+    },
+  });
+
+  assert.equal(result.pluginEntry, "crewbee");
+  assert.equal(result.packageSpec, "crewbee@0.9.1");
+  assert.equal(result.tarballPath, undefined);
+  assert.equal(existsSync(configPath), false);
 });
 
 test("ensureCrewBeeConfigFile adds default coding-team during install mode", () => {

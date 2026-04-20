@@ -29,4 +29,5 @@ test("runDoctor reports a healthy user-level install when config and files are c
   assert.equal(result.hasInstalledPackage, true);
   assert.equal(result.hasPluginFile, true);
   assert.equal(result.hasWorkspaceManifest, true);
+  assert.equal(result.expectedPluginEntry, "crewbee");
 });

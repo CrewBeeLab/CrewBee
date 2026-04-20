@@ -11,13 +11,13 @@ test("upsertCrewBeePluginEntry migrates project-local entries to the canonical u
     ],
   };
 
-  const result = upsertCrewBeePluginEntry(config, "file:///tmp/user/.cache/opencode/node_modules/crewbee/opencode-plugin.mjs");
+  const result = upsertCrewBeePluginEntry(config, "crewbee");
 
   assert.equal(result.changed, true);
   assert.deepEqual(result.migratedEntries, ["file:///tmp/project/node_modules/crewbee/opencode-plugin.mjs"]);
   assert.deepEqual(config.plugin, [
     "foreign-plugin",
-    "file:///tmp/user/.cache/opencode/node_modules/crewbee/opencode-plugin.mjs",
+    "crewbee",
   ]);
 });
 
@@ -49,11 +49,11 @@ test("upsertCrewBeePluginEntry preserves non-string plugin entries", () => {
     ],
   };
 
-  upsertCrewBeePluginEntry(config, "file:///tmp/user/.cache/opencode/node_modules/crewbee/opencode-plugin.mjs");
+  upsertCrewBeePluginEntry(config, "crewbee");
 
   assert.deepEqual(config.plugin, [
     customPlugin,
-    "file:///tmp/user/.cache/opencode/node_modules/crewbee/opencode-plugin.mjs",
+    "crewbee",
   ]);
 });
 
@@ -64,11 +64,11 @@ test("upsertCrewBeePluginEntry migrates package-internal js entries to the canon
     ],
   };
 
-  const result = upsertCrewBeePluginEntry(config, "file:///tmp/user/.cache/opencode/node_modules/crewbee/opencode-plugin.mjs");
+  const result = upsertCrewBeePluginEntry(config, "crewbee");
 
   assert.equal(result.changed, true);
   assert.deepEqual(result.migratedEntries, ["file:///tmp/user/.cache/opencode/crewbee/node_modules/crewbee/opencode-plugin.js"]);
-  assert.deepEqual(config.plugin, ["file:///tmp/user/.cache/opencode/node_modules/crewbee/opencode-plugin.mjs"]);
+  assert.deepEqual(config.plugin, ["crewbee"]);
 });
 
 test("upsertCrewBeePluginEntry migrates legacy standalone shim entries to the canonical package entry", () => {
@@ -78,9 +78,9 @@ test("upsertCrewBeePluginEntry migrates legacy standalone shim entries to the ca
     ],
   };
 
-  const result = upsertCrewBeePluginEntry(config, "file:///tmp/user/.cache/opencode/node_modules/crewbee/opencode-plugin.mjs");
+  const result = upsertCrewBeePluginEntry(config, "crewbee");
 
   assert.equal(result.changed, true);
   assert.deepEqual(result.migratedEntries, ["file:///tmp/user/.cache/opencode/crewbee/entry/crewbee-opencode-entry.mjs"]);
-  assert.deepEqual(config.plugin, ["file:///tmp/user/.cache/opencode/node_modules/crewbee/opencode-plugin.mjs"]);
+  assert.deepEqual(config.plugin, ["crewbee"]);
 });

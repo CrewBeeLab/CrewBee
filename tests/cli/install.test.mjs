@@ -57,6 +57,7 @@ test("runCli help output includes user-level commands", async () => {
 
   assert.equal(exitCode, 0);
   assert.match(stdout.getOutput(), /install:local:user/);
+  assert.match(stdout.getOutput(), /install:registry:user/);
   assert.match(stdout.getOutput(), /uninstall:user/);
   assert.match(stdout.getOutput(), /doctor/);
   assert.match(stdout.getOutput(), /version/);

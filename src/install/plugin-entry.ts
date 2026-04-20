@@ -1,17 +1,18 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+
+export const CREWBEE_PACKAGE_NAME = "crewbee";
 
 export function resolveInstalledPackageRoot(installRoot: string): string {
-  return path.join(installRoot, "node_modules", "crewbee");
+  return path.join(installRoot, "node_modules", CREWBEE_PACKAGE_NAME);
 }
 
 export function resolveInstalledPluginPath(installRoot: string): string {
   return path.join(resolveInstalledPackageRoot(installRoot), "opencode-plugin.mjs");
 }
 
-export function createCanonicalPluginEntry(installRoot: string): string {
-  return pathToFileURL(resolveInstalledPluginPath(installRoot)).href;
+export function createCanonicalPluginEntry(_installRoot?: string): string {
+  return CREWBEE_PACKAGE_NAME;
 }
 
 export function assertInstalledPluginExists(installRoot: string): void {

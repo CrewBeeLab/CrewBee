@@ -23,6 +23,7 @@ export interface InstallResult {
   installRoot: string;
   migratedEntries: string[];
   pluginEntry: string;
+  packageSpec?: string;
   source: InstallSource;
   tarballPath?: string;
   workspaceCreated: boolean;

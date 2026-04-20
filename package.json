@@ -1,9 +1,16 @@
 {
   "name": "crewbee",
   "version": "0.1.1",
-  "private": true,
   "description": "A Team-first Agent System",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CrewBeeLab/CrewBee.git"
+  },
+  "bugs": {
+    "url": "https://github.com/CrewBeeLab/CrewBee/issues"
+  },
+  "homepage": "https://github.com/CrewBeeLab/CrewBee#readme",
   "main": "./dist/opencode-plugin.mjs",
   "types": "./dist/src/adapters/opencode/plugin.d.ts",
   "bin": {
@@ -26,8 +33,12 @@
     "simulate:opencode": "npm run build && node ./simulators/opencode-runtime.mjs",
     "simulate:compact": "npm run build && node ./simulators/opencode-compact-check.mjs",
     "prepack": "npm run build",
+    "prepublishOnly": "npm run clean && npm run build",
     "pack:local": "node ./scripts/pack-local.mjs",
+    "pack:release": "node ./scripts/pack-release.mjs",
+    "release:registry:dry-run": "node ./scripts/release-registry.mjs --dryRun",
     "install:local:user": "npm run pack:local && node ./bin/crewbee.js install --source local --local-tarball ./.artifacts/local/crewbee-local.tgz",
+    "install:registry:user": "node ./bin/crewbee.js install --source registry",
     "uninstall:user": "node ./bin/crewbee.js uninstall:user",
     "doctor": "node ./bin/crewbee.js doctor",
     "version": "node ./bin/crewbee.js version",

@@ -15,10 +15,10 @@ function runNpmCommand(args: string[]): number {
   return result.status ?? 1;
 }
 
-export function installLocalTarball(input: {
+function installPackageSpec(input: {
   dryRun: boolean;
   installRoot: string;
-  tarballPath: string;
+  packageSpec: string;
 }): void {
   if (input.dryRun) {
     return;
@@ -28,7 +28,7 @@ export function installLocalTarball(input: {
     "install",
     "--prefix",
     input.installRoot,
-    input.tarballPath,
+    input.packageSpec,
     "--no-audit",
     "--no-fund",
   ]);
@@ -36,6 +36,26 @@ export function installLocalTarball(input: {
   if (exitCode !== 0) {
     throw new Error(`npm install failed with exit code ${exitCode}.`);
   }
+}
+
+export function installLocalTarball(input: {
+  dryRun: boolean;
+  installRoot: string;
+  tarballPath: string;
+}): void {
+  installPackageSpec({
+    dryRun: input.dryRun,
+    installRoot: input.installRoot,
+    packageSpec: input.tarballPath,
+  });
+}
+
+export function installRegistryPackage(input: {
+  dryRun: boolean;
+  installRoot: string;
+  packageSpec: string;
+}): void {
+  installPackageSpec(input);
 }
 
 export function uninstallCrewBeePackage(input: {

@@ -2,13 +2,12 @@
 
 ## Current Scope
 
-CrewBee currently supports this installation path only:
+CrewBee now supports both installation paths:
 
 ```text
-build local package -> install into the OpenCode user-level workspace -> write canonical file:// plugin entry -> use CrewBee from any OpenCode project
+local dev: build local package -> install into the OpenCode user-level workspace -> write canonical package-name plugin entry
+registry:  install the published npm package into the OpenCode user-level workspace -> write canonical package-name plugin entry
 ```
-
-Online publish and remote package install are not implemented yet. The command surface is reserved, but the actual registry flow is intentionally out of scope for now.
 
 ## New vs Old Flow
 
@@ -21,7 +20,7 @@ build local package -> install tarball into a target project -> run npx crewbee 
 ### Current user-level flow
 
 ```text
-build local package -> install tarball into ~/.cache/opencode -> write package-local plugin entry into ~/.config/opencode/opencode.json(c)
+build local package -> install tarball into ~/.cache/opencode -> write package-name plugin entry into ~/.config/opencode/opencode.json(c)
 ```
 
 The new flow is the one CrewBee supports and documents now.
@@ -32,12 +31,12 @@ If you are using an agent, paste this:
 
 ```text
 Install CrewBee by following docs/guide/installation.md in this repository.
-Use the OpenCode user-level workspace flow only.
+Prefer the registry flow when CrewBee has already been published; otherwise use the local user-level flow.
 ```
 
 ## For LLM Agents
 
-Follow the local user-level flow below. Do not invent a registry publish step and do not install CrewBee into a business project's node_modules.
+Follow the registry flow when available, or the local user-level flow for development. Do not install CrewBee into a business project's node_modules.
 
 ## Step 1: Build and Pack CrewBee Locally
 
@@ -58,6 +57,24 @@ This produces a stable local tarball at:
 
 ## Step 2: Install Into the OpenCode User-Level Workspace
 
+### Preferred published / registry flow
+
+When `crewbee` is published to npm, install it with:
+
+```bash
+npm run install:registry:user
+```
+
+This is equivalent to:
+
+```bash
+node ./bin/crewbee.js install --source registry
+```
+
+The installer will install the published `crewbee` package into the OpenCode user-level workspace and write the canonical plugin entry `"crewbee"` into OpenCode config.
+
+### Local development flow
+
 From the CrewBee repository root, the simplest path is:
 
 ```bash
@@ -77,7 +94,7 @@ The installer does all of the following:
 3. bootstraps a minimal user-level package workspace
 4. installs the local tarball into that workspace
 5. resolves the installed `opencode-plugin.mjs`
-6. rewrites OpenCode config to the canonical package-local plugin entry
+6. rewrites OpenCode config to the canonical package-name plugin entry
 
 ## Step 3: Understand the User-Level Paths
 
@@ -120,10 +137,10 @@ You should see that:
 
 `npm run version` / `crewbee version` reports the semantic version directly from `package.json`. CrewBee intentionally does not add an extra build-id layer at this stage.
 
-The canonical plugin entry points at:
+The canonical plugin entry is:
 
 ```text
-file://<install-root>/node_modules/crewbee/opencode-plugin.mjs
+crewbee
 ```
 
 CrewBee now uses a standard Node package layout inside the OpenCode cache root:
@@ -139,10 +156,7 @@ CrewBee now uses a standard Node package layout inside the OpenCode cache root:
         opencode-plugin.mjs
 ```
 
-This shape is compatible with both:
-
-- direct file entry loading via `.../node_modules/crewbee/opencode-plugin.mjs`
-- package-level entry resolution via the installed `package.json`
+OpenCode should resolve CrewBee from config by package name, while the user-level workspace keeps the installed package available under `node_modules/crewbee`.
 
 ## Step 5: Use CrewBee in OpenCode
 
@@ -168,7 +182,7 @@ run the new installer once:
 npm run install:local:user
 ```
 
-CrewBee will replace that old project-local entry with the canonical user-level workspace entry.
+CrewBee will replace that old project-local entry with the canonical user-level package entry.
 
 It also migrates the old standalone shim path used in earlier user-level installs, for example:
 
@@ -179,7 +193,7 @@ file://~/.cache/opencode/crewbee/entry/crewbee-opencode-entry.mjs
 to:
 
 ```text
-file://~/.cache/opencode/node_modules/crewbee/opencode-plugin.mjs
+crewbee
 ```
 
 ## Step 7: Uninstall From the User-Level Workspace
@@ -198,16 +212,22 @@ node ./bin/crewbee.js uninstall:user
 
 This removes CrewBee entries from OpenCode config and removes the installed package from the user-level workspace.
 
-## Reserved Future Flow
+## Publish and Package-Name Install
 
-CrewBee keeps a reserved framework entry for future online distribution:
+CrewBee is designed to be published as the npm package `crewbee`.
 
-```bash
-crewbee install --source registry
+After publishing, OpenCode config can reference the plugin directly by package name:
+
+```json
+{
+  "plugin": ["crewbee"]
+}
 ```
 
-That flow is intentionally not implemented yet. Today, CrewBee only supports:
+This matches the same package-name-first installation model used by `oh-my-openagent`.
 
-```bash
-crewbee install --source local
+For the full publish workflow and operational checklist, see:
+
+```text
+docs/guide/release.md
 ```

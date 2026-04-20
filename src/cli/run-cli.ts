@@ -20,8 +20,14 @@ export async function runCli(argv: string[], context: RunCliContext): Promise<nu
     return 0;
   }
 
-  if (command === "install" || command === "install:local:user") {
-    return runInstallCommand(rest, {
+  if (command === "install" || command === "install:local:user" || command === "install:registry:user") {
+    const installArgv = command === "install:local:user"
+      ? ["--source", "local", ...rest]
+      : command === "install:registry:user"
+        ? ["--source", "registry", ...rest]
+        : rest;
+
+    return runInstallCommand(installArgv, {
       stderr: context.stderr,
       stdout: context.stdout,
     }, {

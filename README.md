@@ -190,6 +190,7 @@ Read and follow:
 
 ```text
 docs/guide/installation.md
+docs/guide/release.md
 ```
 
 ### One-click local install script for Windows
@@ -232,7 +233,23 @@ This does four things:
 1. builds CrewBee
 2. packs a stable local tarball to `.artifacts/local/crewbee-local.tgz`
 3. installs it into the OpenCode user-level package workspace at `~/.cache/opencode`
-4. rewrites OpenCode config to the canonical package-local plugin entry
+4. rewrites OpenCode config to the canonical plugin entry `crewbee`
+
+### Published registry install
+
+After `crewbee` is published to npm:
+
+```bash
+npm run install:registry:user
+```
+
+OpenCode config can also reference the plugin directly by package name:
+
+```json
+{
+  "plugin": ["crewbee"]
+}
+```
 
 ### Verify installation
 
@@ -267,7 +284,7 @@ User-level install
   -> local tarball
   -> ~/.cache/opencode
   -> node_modules/crewbee
-  -> canonical file:// package entry
+  -> canonical package-name entry (crewbee)
   -> OpenCode config
 ```
 
@@ -539,10 +556,14 @@ npm run build
 npm run typecheck
 npm run test
 npm run pack:local
+npm run pack:release
+npm run release:registry:dry-run
 npm run install:local:user
+npm run install:registry:user
 npm run doctor
 npm run uninstall:user
 npm run simulate:opencode
+npm run simulate:compact
 ```
 
 ### What they do
@@ -551,11 +572,15 @@ npm run simulate:opencode
 * `typecheck`: run TypeScript type checks
 * `test`: run tests
 * `pack:local`: pack a local tarball
+* `pack:release`: pack a versioned release tarball
+* `release:registry:dry-run`: run the registry release preflight locally without publishing
 * `install:local:user`: run the full user-level install
+* `install:registry:user`: install the published npm package into the user-level workspace
 * `doctor`: verify OpenCode config and install state
 * `version`: show the current package version and installed package version
 * `uninstall:user`: uninstall the user-level install
 * `simulate:opencode`: run the local OpenCode runtime simulator
+* `simulate:compact`: run the compact scenario verification simulator
 
 ### Default user-level workspace paths
 
@@ -567,7 +592,13 @@ Install root: ~/.cache/opencode
 Canonical plugin entry:
 
 ```text
-file://~/.cache/opencode/node_modules/crewbee/opencode-plugin.mjs
+crewbee
+```
+
+Release handbook:
+
+```text
+docs/guide/release.md
 ```
 
 On Windows, the default still prefers:
