@@ -6,6 +6,10 @@
   <img src="assets/crewbee-icon.png" alt="CrewBee icon" width="220" />
 </p>
 
+<p align="center">
+  <img src="assets/crewbee-intro.png" alt="Turn scattered agents into real teams" width="100%" />
+</p>
+
 <p align="center"><strong>面向真实宿主运行时的 Team-first Agent 工程框架。</strong></p>
 
 CrewBee 是一个 **Team-first（团队优先）** 的 Agent Team 框架。

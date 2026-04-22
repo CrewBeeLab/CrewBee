@@ -6,6 +6,10 @@
   <img src="assets/crewbee-icon.png" alt="CrewBee icon" width="220" />
 </p>
 
+<p align="center">
+  <img src="assets/crewbee-intro.png" alt="Turn scattered agents into real teams" width="100%" />
+</p>
+
 <p align="center"><strong>Team-first agent engineering for real host runtimes.</strong></p>
 
 CrewBee is a **Team-first** Agent Team framework.
