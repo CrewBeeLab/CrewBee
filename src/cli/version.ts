@@ -1,6 +1,6 @@
 import type { Writable } from "node:stream";
 
-import { resolveInstalledPackageRoot, resolveInstallRoot } from "../install";
+import { detectInstalledPackageRoot, resolveInstallRoot } from "../install";
 import { readPackageName, readPackageVersion } from "../version/package-version";
 
 interface VersionOptions {
@@ -46,7 +46,7 @@ export async function runVersionCommand(argv: string[], io: {
 }, context: { packageRoot: string }): Promise<number> {
   try {
     const options = parseVersionOptions(argv);
-    const installedPackageRoot = resolveInstalledPackageRoot(resolveInstallRoot(options.installRoot));
+    const installedPackageRoot = detectInstalledPackageRoot(resolveInstallRoot(options.installRoot));
     const current = {
       packageName: readPackageName(context.packageRoot),
       version: readPackageVersion(context.packageRoot),

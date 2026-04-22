@@ -6,7 +6,7 @@ plan:
   objective: "Initialize an execution-ready CrewBee Team framework"
   success_criteria:
     - "Team manifest/policy/shared-capabilities/agent-profile contracts exist in src/"
-    - "A file-based Team template exists under AgentTeamTemplate/ and defined Teams exist under AgentTeams/"
+    - "A file-based Team template exists under teams/template/ and defined Teams exist under teams/"
     - "Canonical docs and .agent docs reflect the aligned V1 model"
     - "Framework prompt and planning prompt exist for future sessions"
     - "Typecheck passes after framework updates"
@@ -34,7 +34,7 @@ steps:
     status: "done"
     depends_on: ["S2"]
     acceptance:
-      - "AgentTeamTemplate files exist for manifest, policy, shared capabilities, agents, and TEAM.md"
+      - "teams/template files exist for manifest, policy, shared capabilities, agents, and TEAM.md"
       - "Framework prompt and planning prompt guide future implementation cycles"
       - ".agent docs point future sessions at the aligned framework"
 

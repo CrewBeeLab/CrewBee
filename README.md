@@ -2,9 +2,24 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
+<p align="center">
+  <img src="assets/crewbee-icon.png" alt="CrewBee icon" width="220" />
+</p>
+
+<p align="center"><strong>Team-first agent engineering for real host runtimes.</strong></p>
+
 CrewBee is a **Team-first** Agent Team framework.
 
 It provides a Team-oriented way to define, project, and adapt agent systems to host runtimes, turning scattered prompts, rules, and collaboration conventions into maintainable, portable, and runnable Team assets.
+
+**Current focus:** make Team-based agent systems portable, composable, and actually runnable inside OpenCode.
+
+## Why CrewBee
+
+- **Team-first, not prompt-first** — model leaders, members, workflow, and policy as durable engineering assets.
+- **Host-agnostic core** — keep Team definitions independent from any single runtime.
+- **Projection-based runtime model** — map one Team definition into a concrete host safely and repeatably.
+- **OpenCode-ready today** — includes the full plugin, agent projection, install, doctor, and release path.
 
 The current version already delivers a complete **CrewBee → OpenCode** MVP path:
 
@@ -18,6 +33,12 @@ The current version already delivers a complete **CrewBee → OpenCode** MVP pat
 > In short:
 >
 > **CrewBee = Agent Team definition framework + Runtime Projection layer + host adapter layer (currently OpenCode)**
+
+## Quick Links
+
+- [Installation Guide](docs/guide/installation.md)
+- [Release Guide](docs/guide/release.md)
+- [Architecture](docs/architecture.md)
 
 ---
 

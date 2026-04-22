@@ -178,7 +178,7 @@ test("invalid configured file-based teams are skipped without blocking valid tea
     const validTeamDir = path.join(configRoot, "tmp", "ValidTeam");
     const invalidTeamDir = path.join(configRoot, "tmp", "BrokenTeam");
     const hiddenLeaderTeamDir = path.join(configRoot, "tmp", "HiddenLeaderTeam");
-    const legacyWorktreeTeamDir = path.join(workspace, "AgentTeams", "LegacyTeam");
+    const legacyWorktreeTeamDir = path.join(workspace, "teams", "LegacyTeam");
 
     process.env.OPENCODE_CONFIG_DIR = configRoot;
 

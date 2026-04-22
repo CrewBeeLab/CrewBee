@@ -34,3 +34,25 @@ test("uninstallCrewBee removes CrewBee entries while preserving foreign plugins 
     "file:///tmp/project/node_modules/crewbee/opencode-plugin.mjs",
   ]);
 });
+
+test("uninstallCrewBee detects cached package-layout installs in dry-run mode", async () => {
+  const installRoot = mkdtempSync(path.join(os.tmpdir(), "crewbee-uninstall-cache-install-"));
+  const configPath = path.join(mkdtempSync(path.join(os.tmpdir(), "crewbee-uninstall-cache-config-")), "opencode.json");
+  const cachedPackageRoot = path.join(installRoot, "packages", "crewbee@latest", "node_modules", "crewbee");
+
+  mkdirSync(cachedPackageRoot, { recursive: true });
+  writeFileSync(path.join(cachedPackageRoot, "package.json"), '{"name":"crewbee"}\n', "utf8");
+  writeFileSync(configPath, JSON.stringify({
+    plugin: ["crewbee"],
+  }, null, 2) + "\n", "utf8");
+
+  const result = await uninstallCrewBee({
+    configPath,
+    dryRun: true,
+    installRoot,
+  });
+
+  assert.equal(result.configChanged, true);
+  assert.equal(result.packageRemoved, true);
+  assert.deepEqual(result.removedEntries, ["crewbee"]);
+});

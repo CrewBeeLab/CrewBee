@@ -13,11 +13,11 @@ Agent Team -> manifest + policy + shared-capabilities + agent profiles + TEAM.md
 ## Module responsibilities
 
 - `src/core`: shared Team-oriented contracts for manifests, policies, capabilities, agent profiles, and runtime selection.
-- `src/agent-teams`: hybrid Team library assembly; embeds `CodingTeam` and loads public teams from `AgentTeams/`.
+- `src/agent-teams`: hybrid Team library assembly; embeds `CodingTeam` and loads public teams from `teams/`.
 - `src/adapters`: host capability mapping, Team injection, and runtime event/log integration.
 - `src/manager`: Team selection, configuration, status visibility, and debug-friendly control surface.
-- `AgentTeams`: file-authored public teams such as `GeneralTeam` and `WukongTeam`.
-- `AgentTeamTemplate`: reusable Team template aligned to the intended authoring model.
+- `teams`: file-authored public teams such as `general-team` and `wukong-team`.
+- `teams/template`: reusable Team template aligned to the intended authoring model.
 - `.agent/prompts`: compact prompts for framework evolution and implementation planning.
 
 ## V1 object model
@@ -66,7 +66,7 @@ Within a Team, V1 expects:
 
 - `README.md`
 - `docs/architecture.md`
-- `AgentTeamTemplate/team.manifest.yaml`
+- `teams/template/team.manifest.yaml`
 - `.agent/prompts/FRAMEWORK_PROMPT.md`
 - `.agent/prompts/PLAN_PROMPT.md`
 - `.agent/DECISIONS.md`

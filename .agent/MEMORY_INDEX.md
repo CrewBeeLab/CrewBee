@@ -26,6 +26,6 @@ Store only high-signal memory for cross-session continuity.
 
 - ID: `M-0003`
   - Type: `decision`
-  - Summary: "The executable framework shape is composed Team assets: manifest, policy, shared capabilities, and agent profiles, mirrored by AgentTeams and AgentTeamTemplate directories"
-  - Affects: `src/core`, `src/agent-teams`, `AgentTeams`, `AgentTeamTemplate`, `.agent`
-  - References: `src/core/index.ts`, `src/agent-teams/index.ts`, `AgentTeamTemplate/team.manifest.yaml`, `.agent/prompts/FRAMEWORK_PROMPT.md`
+  - Summary: "The executable framework shape is composed Team assets: manifest, policy, shared capabilities, and agent profiles, mirrored by teams and teams/template directories"
+  - Affects: `src/core`, `src/agent-teams`, `teams`, `teams/template`, `.agent`
+  - References: `src/core/index.ts`, `src/agent-teams/index.ts`, `teams/template/team.manifest.yaml`, `.agent/prompts/FRAMEWORK_PROMPT.md`

@@ -86,3 +86,25 @@ test("runCli version reports current and installed package versions", async () =
   assert.match(stdout.getOutput(), /Installed version: 9\.8\.7/);
   assert.equal(stderr.getOutput(), "");
 });
+
+test("runCli version detects installed package in the OpenCode package cache", async () => {
+  const stdout = createCaptureStream();
+  const stderr = createCaptureStream();
+  const currentRoot = mkdtempSync(path.join(os.tmpdir(), "crewbee-cli-current-cache-"));
+  const installRoot = mkdtempSync(path.join(os.tmpdir(), "crewbee-cli-install-cache-"));
+  const installedRoot = path.join(installRoot, "packages", "crewbee@latest", "node_modules", "crewbee");
+
+  writeFileSync(path.join(currentRoot, "package.json"), JSON.stringify({ name: "crewbee", version: "1.2.3" }, null, 2), "utf8");
+  mkdirSync(installedRoot, { recursive: true });
+  writeFileSync(path.join(installedRoot, "package.json"), JSON.stringify({ name: "crewbee", version: "0.1.3" }, null, 2), "utf8");
+
+  const exitCode = await runCli(["version", "--install-root", installRoot], {
+    packageRoot: currentRoot,
+    stderr,
+    stdout,
+  });
+
+  assert.equal(exitCode, 0);
+  assert.match(stdout.getOutput(), /Installed version: 0\.1\.3/);
+  assert.equal(stderr.getOutput(), "");
+});

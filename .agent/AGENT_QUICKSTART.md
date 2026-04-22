@@ -33,7 +33,7 @@ Start from the compact `.agent` execution view, then jump into the Team-first V1
 - `.agent/` files are compact execution views
 - Link to canonical docs instead of duplicating long text
 - Current canonical design direction is Team-first V1, not Pack-first scaffolding
-- Use `AgentTeamTemplate/` as the default reference shape for file-authored Teams
+- Use `teams/template/` as the default reference shape for file-authored Teams
 
 ## Session done checklist
 

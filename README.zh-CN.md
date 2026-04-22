@@ -2,9 +2,24 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
+<p align="center">
+  <img src="assets/crewbee-icon.png" alt="CrewBee icon" width="220" />
+</p>
+
+<p align="center"><strong>面向真实宿主运行时的 Team-first Agent 工程框架。</strong></p>
+
 CrewBee 是一个 **Team-first（团队优先）** 的 Agent Team 框架。
 
 它提供一套面向 Team 的定义、投影与宿主适配方式，用来把零散的 Agent prompt、规则和协作约定沉淀为可维护、可迁移、可运行的 Team 资产。
+
+**当前重点：**让 Team 级 Agent 系统能够被稳定定义、跨宿主投影，并真正运行在 OpenCode 中。
+
+## 为什么是 CrewBee
+
+- **Team-first，而不是 prompt-first** —— Leader、members、workflow、policy 都是可维护的工程对象。
+- **宿主无关核心** —— Team 定义不被某一个运行时绑死。
+- **基于 Projection 的运行模型** —— 一套 Team 定义可以稳定映射到具体宿主。
+- **今天就能接入 OpenCode** —— 已具备插件、agent 投影、安装、doctor 和 release 链路。
 
 当前版本已经打通了 **CrewBee → OpenCode** 的完整 MVP 链路：
 
@@ -18,6 +33,12 @@ CrewBee 是一个 **Team-first（团队优先）** 的 Agent Team 框架。
 > 简单理解：
 >
 > **CrewBee = Agent Team 定义框架 + Runtime Projection 层 + 宿主适配层（当前为 OpenCode）**
+
+## 快速入口
+
+- [安装指南](docs/guide/installation.md)
+- [发布指南](docs/guide/release.md)
+- [架构文档](docs/architecture.md)
 
 ---
 
@@ -303,7 +324,7 @@ User-level install
 当前真实可运行的文件型 Team 结构是：
 
 ```text
-AgentTeams/<TeamName>/
+teams/<team-name>/
   team.manifest.yaml
   team.policy.yaml
   <agent>.agent.md

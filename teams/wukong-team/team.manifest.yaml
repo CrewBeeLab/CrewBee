@@ -1,0 +1,110 @@
+id: wukong-team
+version: 1.0.0
+name: Wukong Team
+
+description: 面向高不确定性、探索性与长周期任务的突破型团队。
+
+mission:
+  objective: 通过 Leader 驱动的探索、借力、破局与复盘流程推进复杂任务。
+  success_definition:
+    - 团队打开一条可行推进路径。
+    - 风险、经验与下一步选项被明确记录。
+    - 最终结果仍然保持清晰职责边界与可复用性。
+
+scope:
+  in_scope:
+    - exploration
+    - uncertain planning
+    - multi-step investigation
+  out_of_scope:
+    - simple execution tasks that fit Coding or General Team better
+
+leader:
+  agent_ref: wukong-leader
+  responsibilities:
+    - 接收复杂探索型任务。
+    - 组织突破式的委派与借力。
+    - 汇总阶段性成果、风险与下一步建议。
+
+members:
+  wukong-monk:
+    responsibility: 使命锚定
+    delegate_when: 任务目标容易漂移、需要反复校准初心或长期目标不能丢失时。
+    delegate_mode: 使命校准式委派；给当前局势和候选路径，要求返回是否偏离目标及应坚持的主线。
+  wukong-bajie:
+    responsibility: 现实约束与权衡压力
+    delegate_when: 路径选择涉及成本、资源、现实阻力或明显 trade-off，需要把代价摊开时。
+    delegate_mode: 约束评估式委派；给候选方案和约束条件，要求指出现实阻力、成本与权衡建议。
+  wukong-wujing:
+    responsibility: 稳定执行
+    delegate_when: 路线已经确定，但需要稳扎稳打推进、持续落地、减少波动时。
+    delegate_mode: 稳定执行式委派；明确步骤、边界和完成标准，要求按节奏推进并回报结果。
+  wukong-dragon:
+    responsibility: 上下文连续性
+    delegate_when: 任务跨阶段、跨线索或跨回合较长，担心上下文断裂或信息散落时。
+    delegate_mode: 连续性维护式委派；给已有上下文和当前问题，要求梳理主线、衔接断点并保持连续性。
+
+workflow:
+  stages:
+    - make-vow
+    - explore
+    - borrow-strength
+    - break-through
+    - clear-gate
+    - review
+
+governance:
+  instruction_precedence:
+    - platform rules
+    - repository rules
+    - team rules
+    - agent rules
+    - task rules
+  approval_policy:
+    required_for:
+      - destructive actions
+      - external side effects
+      - commit
+    allow_assume_for:
+      - low-risk implementation details
+  forbidden_actions:
+    - fabricate evidence
+    - claim done without verification
+    - ignore hard constraints
+    - pretend to have read unread code
+  quality_floor:
+    required_checks:
+      - diagnostics
+      - build
+      - tests
+    evidence_required: true
+  working_rules:
+    - leader is the primary interface
+    - support agents report back to the leader or active owner
+    - final user-facing summary comes from the role holding closure responsibility
+
+agent_runtime:
+  wukong-leader:
+    provider: openai
+    model: gpt-5.4
+  wukong-monk:
+    provider: openai
+    model: gpt-5.4
+  wukong-bajie:
+    provider: openai
+    model: gpt-5.4
+  wukong-wujing:
+    provider: openai
+    model: gpt-5.4
+  wukong-dragon:
+    provider: openai
+    model: gpt-5.4
+
+tags:
+  - exploration
+  - uncertainty
+  - breakthrough
+prompt_projection:
+  include:
+    - mission
+    - governance

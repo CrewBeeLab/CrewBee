@@ -24,7 +24,7 @@ Evolve the repository without drifting from the V1 Team-first model:
 - Put baseline composed Team definitions in `src/agent-teams/`.
 - Put host bridge logic in `src/adapters/`.
 - Put selection/control/visibility logic in `src/manager/`.
-- Mirror file-authored Team assets in `AgentTeams/` and `AgentTeamTemplate/`.
+- Mirror file-authored Team assets in `teams/` and `teams/template/`.
 
 ## Do
 

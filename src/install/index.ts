@@ -7,7 +7,10 @@ export { installLocalTarball, installRegistryPackage, uninstallCrewBeePackage } 
 export {
   assertInstalledPluginExists,
   createCanonicalPluginEntry,
+  detectInstalledPackageRoot,
+  detectInstalledPluginPath,
   resolveInstalledPackageRoot,
+  resolveInstalledPackageRootCandidates,
   resolveInstalledPluginPath,
 } from "./plugin-entry";
 export type { DoctorOptions, DoctorResult, InstallCommandContext, InstallCommandOptions, InstallResult, InstallSource, UninstallOptions, UninstallResult } from "./types";

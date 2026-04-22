@@ -12,3 +12,8 @@ tmp/
 NUL
 .artifacts/
 .sisyphus/
+%TEMP%/
+DOCUMENTATION_INDEX.md
+INVESTIGATION_SUMMARY.md
+opencode_plugin_quick_reference.md
+opencode_plugin_stages.md

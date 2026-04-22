@@ -22,7 +22,7 @@
 
 - Status: accepted
 - Context: The repo had Team-first positioning, but the implementation framework still lacked a concrete authoring model for Team manifests, Team policy, shared capabilities, and agent profiles. Future sessions also lacked explicit framework/planning prompts.
-- Decision: Align the framework around a composed Team definition (`manifest + policy + sharedCapabilities + agents`) in `src/`, add a reusable Team template under `AgentTeamTemplate/`, and add `.agent` prompts for framework evolution and planning.
+- Decision: Align the framework around a composed Team definition (`manifest + policy + sharedCapabilities + agents`) in `src/`, add a reusable Team template under `teams/template/`, and add `.agent` prompts for framework evolution and planning.
 - Consequences:
   - Pros: the repo is now ready for Team loaders, OpenCode mapping, and manager flow implementation without inventing the model again
   - Cons: there is more static framework surface to keep synchronized as the framework evolves

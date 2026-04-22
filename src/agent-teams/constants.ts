@@ -1,4 +1,4 @@
-export const TEAM_CONFIG_ROOT = "AgentTeams";
+export const TEAM_CONFIG_ROOT = "teams";
 export const CREWBEE_CONFIG_FILE = "crewbee.json";
 export const BUILTIN_CODING_TEAM_ID = "coding-team";
 export const DEFAULT_EMBEDDED_TEAM_PRIORITY = 0;

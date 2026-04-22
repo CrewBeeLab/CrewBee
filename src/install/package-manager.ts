@@ -1,6 +1,8 @@
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync, rmSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+
+import { CREWBEE_PACKAGE_NAME } from "./plugin-entry";
 
 function runNpmCommand(args: string[]): number {
   const result = spawnSync("npm", args, {
@@ -62,9 +64,15 @@ export function uninstallCrewBeePackage(input: {
   dryRun: boolean;
   installRoot: string;
 }): boolean {
-  const installedPackageRoot = path.join(input.installRoot, "node_modules", "crewbee");
+  const installedPackageRoot = path.join(input.installRoot, "node_modules", CREWBEE_PACKAGE_NAME);
+  const packageCacheRoot = path.join(input.installRoot, "packages");
+  const cachedPackageDirs = existsSync(packageCacheRoot)
+    ? readdirSync(packageCacheRoot, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory() && entry.name.startsWith(`${CREWBEE_PACKAGE_NAME}@`))
+        .map((entry) => path.join(packageCacheRoot, entry.name))
+    : [];
 
-  if (!existsSync(installedPackageRoot)) {
+  if (!existsSync(installedPackageRoot) && cachedPackageDirs.length === 0) {
     return false;
   }
 
@@ -72,11 +80,18 @@ export function uninstallCrewBeePackage(input: {
     return true;
   }
 
+  if (cachedPackageDirs.length > 0) {
+    for (const cachedPackageDir of cachedPackageDirs) {
+      rmSync(cachedPackageDir, { recursive: true, force: true });
+    }
+    return true;
+  }
+
   const exitCode = runNpmCommand([
     "uninstall",
     "--prefix",
     input.installRoot,
-    "crewbee",
+    CREWBEE_PACKAGE_NAME,
     "--no-audit",
     "--no-fund",
   ]);

@@ -6,7 +6,7 @@ execution:
   last_checkpoint: "CP-0004"
   blockers: []
   next_actions:
-    - "Implement a loader for AgentTeams and AgentTeamTemplate style Team assets"
+    - "Implement a loader for teams and teams/template style Team assets"
     - "Add adapter and manager tests over the aligned Team definition model"
 
 sync:
