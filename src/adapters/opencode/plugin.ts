@@ -13,6 +13,7 @@ import { createDelegateTools } from "./delegation/tools";
 import { logCrewBee } from "./logging";
 import { createSystemTransformHook } from "./system-transform-hook";
 import { createToolDefinitionHook, createToolExecuteAfterHook, createToolExecuteBeforeHook } from "./tool-hooks";
+import { startBackgroundReleaseRefresh } from "../../update/refresh";
 
 export const OpenCodeCrewBeePlugin: Plugin = async (ctx) => {
   const crewbeeConfigUpdate = ensureCrewBeeConfigFile({
@@ -37,6 +38,7 @@ export const OpenCodeCrewBeePlugin: Plugin = async (ctx) => {
     visibleAgentCount: initial.boot.projectedAgents.filter((agent) => !agent.hidden).length,
     defaultAgent: initial.boot.configPatch.defaultAgent,
   });
+  startBackgroundReleaseRefresh(ctx);
 
   let boot = initial.boot;
   let aliasIndex = initial.aliasIndex;

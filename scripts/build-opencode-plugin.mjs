@@ -8,6 +8,6 @@ await esbuild.build({
   target: ["node18"],
   outfile: "dist/opencode-plugin.mjs",
   banner: {
-    js: "import { createRequire as __createRequire } from 'node:module'; const require = __createRequire(import.meta.url);",
+    js: "import { createRequire as __createRequire } from 'node:module'; import { fileURLToPath as __fileURLToPath } from 'node:url'; import { dirname as __pathDirname } from 'node:path'; const require = __createRequire(import.meta.url); const __dirname = __pathDirname(__fileURLToPath(import.meta.url));",
   },
 });
