@@ -47,7 +47,7 @@ export async function runInstallCommand(argv: string[], io: {
       "",
       "Next:",
       "1. Start OpenCode in the project where you want CrewBee to run.",
-      "2. Select a CrewBee projected agent such as [CodingTeam]leader.",
+      "2. Select a CrewBee projected agent such as coding-leader.",
       "3. Use `crewbee doctor` if you want to verify the user-level install state.",
     ].filter(Boolean).join("\n") + "\n");
 

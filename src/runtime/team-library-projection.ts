@@ -18,10 +18,6 @@ function isLeaderAgent(team: AgentTeamDefinition, agent: AgentProfileSpec): bool
   return team.manifest.leader.agentRef === agent.metadata.id;
 }
 
-function getSurfaceLabel(agent: AgentProfileSpec): string {
-  return agent.entryPoint?.selectionLabel ?? agent.metadata.id;
-}
-
 function getExposure(agent: AgentProfileSpec): ProjectedAgent["exposure"] {
   return agent.entryPoint?.exposure ?? "internal-only";
 }
@@ -62,16 +58,16 @@ export function createProjectedAgent(
   agent: AgentProfileSpec,
 ): ProjectedAgent {
   const roleKind: TeamRoleKind = isLeaderAgent(team, agent) ? "leader" : "member";
+  const canonicalAgentId = agent.canonicalAgentId ?? agent.metadata.id;
 
   return {
     teamId: team.manifest.id,
     teamName: team.manifest.name,
     sourceTeam: team,
-    sourceAgentId: agent.metadata.id,
+    canonicalAgentId,
     roleKind,
     exposure: getExposure(agent),
     selectionPriority: agent.entryPoint?.selectionPriority,
-    surfaceLabel: getSurfaceLabel(agent),
     description: getProjectionDescription(agent),
     sourceAgent: agent,
   };
@@ -101,32 +97,31 @@ export function createTeamLibraryProjection(library: TeamLibrary): TeamLibraryPr
 export function findProjectedAgent(
   projection: TeamLibraryProjection,
   teamId: string,
-  sourceAgentId: string,
+  canonicalAgentId: string,
 ): ProjectedAgent | undefined {
-  return projection.agents.find((agent) => agent.teamId === teamId && agent.sourceAgentId === sourceAgentId);
+  return projection.agents.find((agent) => agent.teamId === teamId && agent.canonicalAgentId === canonicalAgentId);
 }
 
 export function createSessionRuntimeBinding(input: {
   projection: TeamLibraryProjection;
   sessionID: string;
   teamId: string;
-  sourceAgentId: string;
+  canonicalAgentId: string;
   mode: ExecutionMode;
   source: SessionBindingSource;
 }): SessionRuntimeBinding {
-  const selectedAgent = findProjectedAgent(input.projection, input.teamId, input.sourceAgentId);
+  const selectedAgent = findProjectedAgent(input.projection, input.teamId, input.canonicalAgentId);
 
   if (!selectedAgent) {
-    throw new Error(`Unknown projected agent ${input.teamId}/${input.sourceAgentId}.`);
+    throw new Error(`Unknown projected agent ${input.teamId}/${input.canonicalAgentId}.`);
   }
 
   return {
     sessionID: input.sessionID,
     teamId: input.teamId,
-    selectedAgentId: selectedAgent.sourceAgentId,
-    selectedSurfaceLabel: selectedAgent.surfaceLabel,
+    selectedAgentId: selectedAgent.canonicalAgentId,
     mode: input.mode,
-    activeOwnerId: selectedAgent.sourceAgentId,
+    activeOwnerId: selectedAgent.canonicalAgentId,
     source: input.source,
   };
 }

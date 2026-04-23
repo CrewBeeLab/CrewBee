@@ -342,7 +342,6 @@ tool_skill_strategy:
 
 entry_point:
   exposure: user-selectable
-  selection_label: coordination-leader
   selection_description: CodingTeam 的协调型 Leader 投影；适合高模糊、范围待收束、多子任务编排的开局路径。
 
 prompt_projection:

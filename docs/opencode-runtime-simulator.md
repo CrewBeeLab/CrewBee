@@ -96,7 +96,7 @@ If the same timestamp directory already exists, the simulator automatically appe
 Select a specific agent:
 
 ```bash
-npm run simulate:opencode -- --agent crewbee.coding-team.leader
+npm run simulate:opencode -- --agent coding-leader
 ```
 
 Print JSON instead of human-readable text:

@@ -14,7 +14,7 @@ function formatDelegatedSessions(store: DelegateStateStore, sessionID: string): 
     .map((session) => {
       const task = store.getTaskBySession(session.sessionID);
       return [
-        `- ${session.sourceAgentId}`,
+        `- ${session.canonicalAgentId}`,
         task?.status ?? "completed",
         task?.description ?? "foreground delegation",
         `session_id=${session.sessionID}`,
@@ -43,7 +43,6 @@ function formatCheckpointSummary(store: DelegateStateStore, sessionID: string): 
 
   return [
     `- agent=${checkpoint.agent}`,
-    checkpoint.sourceAgentId ? `- source_agent=${checkpoint.sourceAgentId}` : undefined,
     checkpoint.model ? `- model=${checkpoint.model.providerID}/${checkpoint.model.modelID}` : undefined,
     checkpoint.tools.length > 0 ? `- tools=${checkpoint.tools.join(", ")}` : "- tools=None",
   ].filter(Boolean).join("\n");

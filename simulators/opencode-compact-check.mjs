@@ -67,7 +67,7 @@ function createToolContext(sessionID) {
   return {
     sessionID,
     messageID: "msg-parent",
-    agent: "crewbee.coding-team.leader",
+    agent: "coding-leader",
     directory: worktree,
     worktree,
     abort: new AbortController().signal,
@@ -198,16 +198,16 @@ const config = { agent: {} }
 
 await plugin.config?.(config)
 await plugin["chat.message"]?.(
-  { sessionID: "ses-parent", agent: "crewbee.coding-team.leader", model: { providerID: "openai", modelID: "gpt-5.4" } },
+  { sessionID: "ses-parent", agent: "coding-leader", model: { providerID: "openai", modelID: "gpt-5.4" } },
   { message: { role: "user", parts: [] }, parts: [] },
 )
 
 const foreground = parseJson(await plugin.tool.delegate_task.execute(
-  { agent: "reviewer", prompt: "Review the current implementation.", mode: "foreground" },
+  { agent: "coding-reviewer", prompt: "Review the current implementation.", mode: "foreground" },
   createToolContext("ses-parent"),
 ))
 const background = parseJson(await plugin.tool.delegate_task.execute(
-  { agent: "reviewer", prompt: "Review the current implementation.", mode: "background" },
+  { agent: "coding-reviewer", prompt: "Review the current implementation.", mode: "background" },
   createToolContext("ses-parent"),
 ))
 

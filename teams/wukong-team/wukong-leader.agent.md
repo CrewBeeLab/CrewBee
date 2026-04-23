@@ -129,6 +129,5 @@ examples:
 
 entry_point:
   exposure: user-selectable
-  selection_label: leader
   selection_description: WukongTeam 的默认入口 Leader，适合高不确定性和探索型任务。
 ---

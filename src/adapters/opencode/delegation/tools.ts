@@ -63,7 +63,7 @@ async function resolveChildSession(input: {
   parentSessionID: string;
   title: string;
   store: DelegateStateStore;
-  sourceAgentId: string;
+  canonicalAgentId: string;
   configKey: string;
 }): Promise<{ sessionID: string; existing: boolean } | DelegateTaskResult> {
   if (!input.args.session_id) {
@@ -74,7 +74,7 @@ async function resolveChildSession(input: {
     input.store.putSession({
       sessionID,
       parentSessionID: input.parentSessionID,
-      sourceAgentId: input.sourceAgentId,
+      canonicalAgentId: input.canonicalAgentId,
       configKey: input.configKey,
     });
     return { sessionID, existing: false };
@@ -89,7 +89,7 @@ async function resolveChildSession(input: {
     return createFailedResult(input.args.session_id, "invalid_session_id", "Use a delegated session_id created from the current parent session.");
   }
 
-  if (known.sourceAgentId !== input.sourceAgentId) {
+  if (known.canonicalAgentId !== input.canonicalAgentId) {
     return createFailedResult(input.args.session_id, "agent_session_mismatch", "The delegated session is already bound to a different agent.");
   }
 
@@ -112,7 +112,7 @@ async function runForeground(input: {
   const anchor = await getSessionAnchor(input.client, input.sessionID);
   const model = resolveDelegateModel(input.target, input.store.getCheckpoint(input.ctx.sessionID)?.model);
   const envelope = createDelegationEnvelope({
-    agent: input.target.sourceAgentId,
+    agent: input.target.canonicalAgentId,
     parentSessionID: input.parentSessionID,
     sessionID: input.sessionID,
     prompt: input.args.prompt,
@@ -133,7 +133,7 @@ async function runForeground(input: {
     message,
     resume_supported: true,
   };
-  input.ctx.metadata({ title: input.title, metadata: { sessionId: input.sessionID, agent: input.target.sourceAgentId } });
+  input.ctx.metadata({ title: input.title, metadata: { sessionId: input.sessionID, agent: input.target.canonicalAgentId } });
   return result;
 }
 
@@ -150,7 +150,7 @@ function createBackgroundRecord(input: {
     sessionID: input.sessionID,
     parentSessionID: input.ctx.sessionID,
     parentMessageID: input.ctx.messageID,
-    sourceAgentId: input.target.sourceAgentId,
+    canonicalAgentId: input.target.canonicalAgentId,
     configKey: input.target.configKey,
     description: input.description,
     status: "queued",
@@ -171,7 +171,7 @@ function launchBackground(input: {
 }): void {
   const model = resolveDelegateModel(input.target, input.store.getCheckpoint(input.ctx.sessionID)?.model);
   const envelope = createDelegationEnvelope({
-    agent: input.target.sourceAgentId,
+    agent: input.target.canonicalAgentId,
     parentSessionID: input.ctx.sessionID,
     sessionID: input.sessionID,
     prompt: input.args.prompt,
@@ -225,18 +225,18 @@ export function createDelegateTools(input: CreateDelegateToolsInput) {
       }
 
       const binding = input.bindings.get(ctx.sessionID);
-      if (isSelfDelegate(binding, target.sourceAgentId)) {
+      if (isSelfDelegate(binding, target.canonicalAgentId)) {
         return stringifyDelegateTaskResult(createFailedResult(ctx.sessionID, "self_delegate_forbidden", "Do not delegate a CrewBee session back to the same active agent."));
       }
 
-      const title = createDelegatedTitle(target.sourceAgentId, args.prompt);
+      const title = createDelegatedTitle(target.canonicalAgentId, args.prompt);
       const child = await resolveChildSession({
         args,
         client: input.client,
         parentSessionID: ctx.sessionID,
         title,
         store: input.store,
-        sourceAgentId: target.sourceAgentId,
+        canonicalAgentId: target.canonicalAgentId,
         configKey: target.configKey,
       }).catch((error: DelegateTaskResult) => error);
       if (typeof child === "object" && "status" in child && child.status === "failed") {
@@ -282,7 +282,7 @@ export function createDelegateTools(input: CreateDelegateToolsInput) {
         sessionID,
         taskRef: record.taskRef,
       });
-      ctx.metadata({ title, metadata: { sessionId: sessionID, taskRef: record.taskRef, agent: target.sourceAgentId } });
+      ctx.metadata({ title, metadata: { sessionId: sessionID, taskRef: record.taskRef, agent: target.canonicalAgentId } });
       return stringifyDelegateTaskResult({
         status: "running",
         session_id: sessionID,

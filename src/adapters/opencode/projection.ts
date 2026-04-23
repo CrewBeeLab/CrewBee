@@ -48,17 +48,16 @@ export interface OpenCodeResolvedToolConfig {
 export interface OpenCodeAgentMetadata {
   teamId: string;
   teamName: string;
-  sourceAgentId: string;
-  surfaceLabel: string;
+  canonicalAgentId: string;
+  sourceAgentId?: string;
   roleKind: ProjectedAgent["roleKind"];
   exposure: ProjectedAgent["exposure"];
 }
 
 export interface OpenCodeAgentConfig {
   configKey: string;
-  publicName: string;
   teamId: string;
-  sourceAgentId: string;
+  canonicalAgentId: string;
   mode: OpenCodeAgentMode;
   hidden: boolean;
   description: string;
@@ -91,7 +90,6 @@ export interface OpenCodeAgentConfigPatch {
 
 export interface OpenCodeAgentSelectionInput {
   configKey?: string;
-  publicName?: string;
 }
 
 export interface OpenCodeProjectionOptions {
@@ -101,12 +99,11 @@ export interface OpenCodeProjectionOptions {
 export interface OpenCodeAgentAliasEntry {
   alias: string;
   agent: OpenCodeAgentConfig;
-  kind: "config-key" | "public-name" | "source-agent-id";
+  kind: "config-key";
 }
 
 export interface OpenCodeProjectionIdentityEntry {
   configKey: string;
-  publicName: string;
 }
 
 function sanitizeSegment(value: string): string {
@@ -117,16 +114,8 @@ function sanitizeSegment(value: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-export function createOpenCodePublicAgentName(agent: ProjectedAgent): string {
-  return `[${agent.teamName}]${agent.surfaceLabel}`;
-}
-
 export function createOpenCodeConfigKey(agent: ProjectedAgent): string {
-  return `crewbee.${sanitizeSegment(agent.teamId)}.${sanitizeSegment(agent.surfaceLabel)}`;
-}
-
-export function createOpenCodePublicNameAliasKey(agent: OpenCodeAgentConfig): string {
-  return agent.publicName;
+  return agent.canonicalAgentId;
 }
 
 export function createOpenCodeAgentConfig(
@@ -134,7 +123,7 @@ export function createOpenCodeAgentConfig(
   options: OpenCodeProjectionOptions = {},
 ): OpenCodeAgentConfig {
   const runtimeConfig = agent.sourceAgent.runtimeConfig;
-  const runtimeOverride = agent.sourceTeam.manifest.agentRuntime?.[agent.sourceAgentId];
+  const runtimeOverride = agent.sourceTeam.manifest.agentRuntime?.[agent.canonicalAgentId];
   const availableToolContext = createAvailableToolContext(options.availableTools);
   const requestedTools = mapOpenCodeToolNames(runtimeConfig.requestedTools);
   const availableTools = availableToolContext.hasExplicitTools
@@ -146,9 +135,8 @@ export function createOpenCodeAgentConfig(
 
   return {
     configKey: createOpenCodeConfigKey(agent),
-    publicName: createOpenCodePublicAgentName(agent),
     teamId: agent.teamId,
-    sourceAgentId: agent.sourceAgentId,
+    canonicalAgentId: agent.canonicalAgentId,
     mode: agent.exposure === "user-selectable" ? "primary" : "subagent",
     hidden: agent.exposure !== "user-selectable",
     description: agent.description,
@@ -184,8 +172,8 @@ export function createOpenCodeAgentConfig(
     metadata: {
       teamId: agent.teamId,
       teamName: agent.teamName,
-      sourceAgentId: agent.sourceAgentId,
-      surfaceLabel: agent.surfaceLabel,
+      canonicalAgentId: agent.canonicalAgentId,
+      sourceAgentId: agent.sourceAgent.metadata.sourceId,
       roleKind: agent.roleKind,
       exposure: agent.exposure,
     },
@@ -201,7 +189,7 @@ export function createOpenCodeAgentConfigs(
 
 export function createOpenCodeAgentDefinition(agent: OpenCodeAgentConfig): OpenCodeAgentDefinition {
   return {
-    name: agent.publicName,
+    name: agent.configKey,
     description: agent.description,
     mode: agent.mode,
     hidden: agent.hidden || undefined,
@@ -217,24 +205,10 @@ export function createOpenCodeAgentDefinition(agent: OpenCodeAgentConfig): OpenC
   };
 }
 
-export function createOpenCodePublicNameAliasDefinition(agent: OpenCodeAgentConfig): OpenCodeAgentDefinition {
-  return {
-    ...createOpenCodeAgentDefinition(agent),
-    hidden: true,
-  };
-}
-
 export function createOpenCodeProjectedIdentities(agent: OpenCodeAgentConfig): OpenCodeProjectionIdentityEntry[] {
-  return [
-    {
-      configKey: agent.configKey,
-      publicName: agent.publicName,
-    },
-    {
-      configKey: createOpenCodePublicNameAliasKey(agent),
-      publicName: agent.publicName,
-    },
-  ];
+  return [{
+    configKey: agent.configKey,
+  }];
 }
 
 export function createOpenCodeAgentConfigPatch(input: {
@@ -243,10 +217,7 @@ export function createOpenCodeAgentConfigPatch(input: {
 }): OpenCodeAgentConfigPatch {
   return {
     agent: Object.fromEntries(
-      input.agents.flatMap((agent) => [
-        [agent.configKey, createOpenCodeAgentDefinition(agent)],
-        [createOpenCodePublicNameAliasKey(agent), createOpenCodePublicNameAliasDefinition(agent)],
-      ]),
+      input.agents.map((agent) => [agent.configKey, createOpenCodeAgentDefinition(agent)]),
     ),
     defaultAgent: input.defaultAgentConfigKey,
   };
@@ -257,13 +228,6 @@ export function findProjectedAgentByConfigKey(
   configKey: string,
 ): OpenCodeAgentConfig | undefined {
   return agents.find((agent) => agent.configKey === configKey);
-}
-
-export function findProjectedAgentByPublicName(
-  agents: OpenCodeAgentConfig[],
-  publicName: string,
-): OpenCodeAgentConfig | undefined {
-  return agents.find((agent) => agent.publicName === publicName);
 }
 
 export function resolveProjectedAgentSelection(
@@ -277,10 +241,6 @@ export function resolveProjectedAgentSelection(
     }
   }
 
-  if (selection.publicName) {
-    return findProjectedAgentByPublicName(agents, selection.publicName);
-  }
-
   return undefined;
 }
 
@@ -289,11 +249,7 @@ function normalizeAlias(value: string): string {
 }
 
 export function createProjectedAgentAliasEntries(agent: OpenCodeAgentConfig): OpenCodeAgentAliasEntry[] {
-  return [
-    { alias: agent.configKey, agent, kind: "config-key" },
-    { alias: agent.publicName, agent, kind: "public-name" },
-    { alias: agent.sourceAgentId, agent, kind: "source-agent-id" },
-  ];
+  return [{ alias: agent.configKey, agent, kind: "config-key" }];
 }
 
 export function createProjectedAgentAliasIndex(
@@ -328,7 +284,6 @@ export function resolveProjectedAgentAlias(
 
 export function createProjectedAgentTaskAliasHelpLines(agents: OpenCodeAgentConfig[]): string[] {
   return agents.map((agent) => {
-    const aliases = [agent.sourceAgentId, agent.publicName, agent.configKey];
-    return `- ${agent.sourceAgentId} => ${agent.configKey} (${agent.publicName}; accepts: ${aliases.join(" | ")})`;
+    return `- ${agent.configKey}`;
   });
 }

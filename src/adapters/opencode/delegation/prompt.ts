@@ -54,7 +54,6 @@ export function createDelegationEnvelope(input: {
 export function createCheckpoint(agent: OpenCodeAgentConfig, model?: DelegatePromptModel): DelegateCheckpoint {
   return {
     agent: agent.configKey,
-    sourceAgentId: agent.sourceAgentId,
     model,
     tools: [...agent.runtimeConfig.requestedTools],
   };

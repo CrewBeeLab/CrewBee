@@ -14,7 +14,7 @@ function createToolContext(worktree, sessionID = "ses-parent") {
   return {
     sessionID,
     messageID: "msg-parent",
-    agent: "crewbee.coding-team.leader",
+    agent: "coding-leader",
     directory: worktree,
     worktree,
     abort: new AbortController().signal,
@@ -108,18 +108,18 @@ test("delegate_task foreground returns structured result with resume hint", asyn
 
   await plugin.config?.(config);
   await plugin["chat.message"]?.(
-    { sessionID: "ses-parent", agent: "crewbee.coding-team.leader" },
+    { sessionID: "ses-parent", agent: "coding-leader" },
     { message: { role: "user", parts: [] }, parts: [] },
   );
 
   const raw = await plugin.tool.delegate_task.execute(
-    { agent: "reviewer", prompt: "Review the current implementation.", mode: "foreground" },
+    { agent: "coding-reviewer", prompt: "Review the current implementation.", mode: "foreground" },
     createToolContext(fixture.worktree),
   );
   const result = await runAfterHook(plugin, { title: "delegate_task", output: raw, metadata: {} });
 
   assert.equal(result.status, "completed");
-  assert.match(result.message, /done by crewbee\.coding-team\.reviewer/);
+  assert.match(result.message, /done by coding-reviewer/);
   assert.match(result.resume_hint, /delegate_task\(session_id=/);
 });
 
@@ -130,12 +130,12 @@ test("delegate_task background is finalized from session events and appears in c
 
   await plugin.config?.(config);
   await plugin["chat.message"]?.(
-    { sessionID: "ses-parent", agent: "crewbee.coding-team.leader" },
+    { sessionID: "ses-parent", agent: "coding-leader" },
     { message: { role: "user", parts: [] }, parts: [] },
   );
 
   const raw = await plugin.tool.delegate_task.execute(
-    { agent: "reviewer", prompt: "Review the current implementation.", mode: "background" },
+    { agent: "coding-reviewer", prompt: "Review the current implementation.", mode: "background" },
     createToolContext(fixture.worktree),
   );
   const launched = parseJson(raw);
@@ -148,12 +148,12 @@ test("delegate_task background is finalized from session events and appears in c
 
   const status = parseJson(await plugin.tool.delegate_status.execute({ task_ref: launched.task_ref }, createToolContext(fixture.worktree)));
   assert.equal(status.status, "completed");
-  assert.match(status.message, /done by crewbee\.coding-team\.reviewer/);
+  assert.match(status.message, /done by coding-reviewer/);
 
   const compacting = { context: [], prompt: undefined };
   await plugin["experimental.session.compacting"]?.({ sessionID: "ses-parent" }, compacting);
   assert.match(compacting.context.join("\n"), /Checkpointed Agent Configuration/);
-  assert.match(compacting.context.join("\n"), /agent=crewbee\.coding-team\.leader/);
+  assert.match(compacting.context.join("\n"), /agent=coding-leader/);
   assert.match(compacting.context.join("\n"), /Todo Snapshot/);
   assert.match(compacting.context.join("\n"), /Ship feature/);
   assert.match(compacting.context.join("\n"), /Delegated Agent Sessions/);
@@ -167,12 +167,12 @@ test("delegate_task foreground sessions also appear in compaction context", asyn
 
   await plugin.config?.(config);
   await plugin["chat.message"]?.(
-    { sessionID: "ses-parent", agent: "crewbee.coding-team.leader" },
+    { sessionID: "ses-parent", agent: "coding-leader" },
     { message: { role: "user", parts: [] }, parts: [] },
   );
 
   const raw = await plugin.tool.delegate_task.execute(
-    { agent: "reviewer", prompt: "Review the current implementation.", mode: "foreground" },
+    { agent: "coding-reviewer", prompt: "Review the current implementation.", mode: "foreground" },
     createToolContext(fixture.worktree),
   );
   const result = parseJson(raw);
@@ -192,12 +192,12 @@ test("delegate_cancel marks a background delegation as cancelled", async () => {
 
   await plugin.config?.(config);
   await plugin["chat.message"]?.(
-    { sessionID: "ses-parent", agent: "crewbee.coding-team.leader" },
+    { sessionID: "ses-parent", agent: "coding-leader" },
     { message: { role: "user", parts: [] }, parts: [] },
   );
 
   const launched = parseJson(await plugin.tool.delegate_task.execute(
-    { agent: "reviewer", prompt: "Review the current implementation.", mode: "background" },
+    { agent: "coding-reviewer", prompt: "Review the current implementation.", mode: "background" },
     createToolContext(fixture.worktree),
   ));
   const cancelled = parseJson(await plugin.tool.delegate_cancel.execute({ task_ref: launched.task_ref }, createToolContext(fixture.worktree)));
@@ -214,18 +214,18 @@ test("background resume updates the latest task for a reused delegated session",
 
   await plugin.config?.(config);
   await plugin["chat.message"]?.(
-    { sessionID: "ses-parent", agent: "crewbee.coding-team.leader" },
+    { sessionID: "ses-parent", agent: "coding-leader" },
     { message: { role: "user", parts: [] }, parts: [] },
   );
 
   const first = parseJson(await plugin.tool.delegate_task.execute(
-    { agent: "reviewer", prompt: "First review pass.", mode: "background" },
+    { agent: "coding-reviewer", prompt: "First review pass.", mode: "background" },
     createToolContext(fixture.worktree),
   ));
   await plugin.event?.({ event: { type: "session.idle", properties: { sessionID: first.session_id } } });
 
   const second = parseJson(await plugin.tool.delegate_task.execute(
-    { agent: "reviewer", prompt: "Second review pass.", mode: "background", session_id: first.session_id },
+    { agent: "coding-reviewer", prompt: "Second review pass.", mode: "background", session_id: first.session_id },
     createToolContext(fixture.worktree),
   ));
   await plugin.event?.({ event: { type: "session.status", properties: { sessionID: second.session_id, status: { type: "busy" } } } });
@@ -242,7 +242,7 @@ test("delegate_task failure adds retry guidance", async () => {
 
   await plugin.config?.(config);
   await plugin["chat.message"]?.(
-    { sessionID: "ses-parent", agent: "crewbee.coding-team.leader" },
+    { sessionID: "ses-parent", agent: "coding-leader" },
     { message: { role: "user", parts: [] }, parts: [] },
   );
 
@@ -264,17 +264,17 @@ test("delegated subagents cannot delegate again", async () => {
 
   await plugin.config?.(config);
   await plugin["chat.message"]?.(
-    { sessionID: "ses-parent", agent: "crewbee.coding-team.leader" },
+    { sessionID: "ses-parent", agent: "coding-leader" },
     { message: { role: "user", parts: [] }, parts: [] },
   );
 
   const first = parseJson(await plugin.tool.delegate_task.execute(
-    { agent: "reviewer", prompt: "Review the current implementation.", mode: "foreground" },
+    { agent: "coding-reviewer", prompt: "Review the current implementation.", mode: "foreground" },
     createToolContext(fixture.worktree),
   ));
 
   const nestedRaw = await plugin.tool.delegate_task.execute(
-    { agent: "principal-advisor", prompt: "Escalate this review.", mode: "foreground" },
+    { agent: "coding-principal-advisor", prompt: "Escalate this review.", mode: "foreground" },
     createToolContext(fixture.worktree, first.session_id),
   );
   const nested = parseJson(nestedRaw);
@@ -290,7 +290,7 @@ test("session.compacted records continuity state without injecting recovery prom
 
   await plugin.config?.(config);
   await plugin["chat.message"]?.(
-    { sessionID: "ses-parent", agent: "crewbee.coding-team.leader", model: { providerID: "openai", modelID: "gpt-5.4" } },
+    { sessionID: "ses-parent", agent: "coding-leader", model: { providerID: "openai", modelID: "gpt-5.4" } },
     { message: { role: "user", parts: [] }, parts: [] },
   );
 

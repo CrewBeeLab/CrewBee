@@ -247,7 +247,7 @@ test("default user-selectable agent comes from the formal leader instead of raw 
 
   assert.equal(pickDefaultUserSelectableAgent(team)?.metadata.id, "leader-agent");
   assert.deepEqual(
-    createTeamLibraryProjection({ version: "test", teams: [team] }).teams[0].userSelectableAgents.map((agent) => agent.sourceAgentId),
+    createTeamLibraryProjection({ version: "test", teams: [team] }).teams[0].userSelectableAgents.map((agent) => agent.canonicalAgentId),
     ["leader-agent", "member-agent"],
   );
 });
@@ -258,8 +258,8 @@ test("CodingTeam user-selectable agents respect leader-first priority ordering i
 
   assert.ok(codingTeam, "expected coding-team to be present");
   assert.deepEqual(
-    codingTeam.userSelectableAgents.map((agent) => agent.sourceAgentId),
-    ["coding-leader", "coordination-leader", "coding-executor"],
+    codingTeam.userSelectableAgents.map((agent) => agent.canonicalAgentId),
+    ["coding-leader", "coding-coordination-leader", "coding-executor"],
   );
 });
 
@@ -272,7 +272,25 @@ test("OpenCode bootstrap defaults to the formal CodingTeam leader", () => {
     },
   });
 
-  assert.equal(bootstrap.configPatch.defaultAgent, "crewbee.coding-team.leader");
+  assert.equal(bootstrap.configPatch.defaultAgent, "coding-leader");
+});
+
+test("OpenCode bootstrap force-overwrites a foreign default agent", () => {
+  const bootstrap = createOpenCodeBootstrap({
+    teamLibrary: loadDefaultTeamLibrary(process.cwd()),
+    defaults: {
+      defaultMode: "single-executor",
+      defaultTeamId: "coding-team",
+    },
+    existingConfig: {
+      default_agent: "foreign.plugin.agent",
+      agent: {},
+    },
+    existingDefaultAgent: "foreign.plugin.agent",
+  });
+
+  assert.equal(bootstrap.configPatch.defaultAgent, "coding-leader");
+  assert.equal(bootstrap.mergedConfig?.default_agent, "coding-leader");
 });
 
 test("team priority controls projected agent order and bootstrap default agent", () => {
@@ -318,10 +336,10 @@ test("team priority controls projected agent order and bootstrap default agent",
       ["priority-team", "coding-team"],
     );
     assert.deepEqual(
-      projection.agents.slice(0, 2).map((agent) => `${agent.teamId}/${agent.sourceAgentId}`),
+      projection.agents.slice(0, 2).map((agent) => `${agent.teamId}/${agent.canonicalAgentId}`),
       ["priority-team/priority-leader", "priority-team/priority-executor"],
     );
-    assert.equal(bootstrap.configPatch.defaultAgent, "crewbee.priority-team.leader");
+    assert.equal(bootstrap.configPatch.defaultAgent, "priority-leader");
   } finally {
     if (previousConfigDir === undefined) {
       delete process.env.OPENCODE_CONFIG_DIR;
@@ -465,5 +483,5 @@ test("bootstrap falls back to the next team when the highest-priority team has n
     },
   });
 
-  assert.equal(bootstrap.configPatch.defaultAgent, "crewbee.ready-team.ready-leader");
+  assert.equal(bootstrap.configPatch.defaultAgent, "ready-leader");
 });

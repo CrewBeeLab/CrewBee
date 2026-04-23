@@ -15,6 +15,7 @@ export {
   type OpenCodeBootstrapOutput,
 } from "./bootstrap";
 export { OpenCodeCrewBeePlugin } from "./plugin";
+export { createChatMessageHook } from "./chat-message-hook";
 export {
   createOpenCodeAgentConfig,
   createOpenCodeAgentConfigs,
@@ -25,11 +26,7 @@ export {
   createOpenCodeConfigKey,
   createOpenCodeAgentConfigPatch,
   createOpenCodeAgentDefinition,
-  createOpenCodePublicNameAliasDefinition,
-  createOpenCodePublicNameAliasKey,
-  createOpenCodePublicAgentName,
   findProjectedAgentByConfigKey,
-  findProjectedAgentByPublicName,
   resolveProjectedAgentAlias,
   resolveProjectedAgentSelection,
   type OpenCodeAgentSelectionInput,

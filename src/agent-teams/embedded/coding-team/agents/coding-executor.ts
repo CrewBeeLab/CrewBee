@@ -181,7 +181,6 @@ export function createCodingExecutorAgent(): AgentProfileSpec {
       },
       entryPoint: {
         exposure: "user-selectable",
-        selectionLabel: "executor",
         selectionDescription: "CodingTeam 的直接执行入口；适合边界清晰、希望直接进入实现闭环的用户路径。",
         selectionPriority: 2,
       },

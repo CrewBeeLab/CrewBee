@@ -12,13 +12,11 @@ const DEFAULT_MODE = "single-executor" as const;
 
 function summarizeProjectedAgents(boot: OpenCodeBootstrapOutput): Array<{
   configKey: string;
-  publicName: string;
   hidden: boolean;
   model?: string;
 }> {
   return boot.projectedAgents.map((agent) => ({
     configKey: agent.configKey,
-    publicName: agent.publicName,
     hidden: agent.hidden,
     model: agent.resolvedModel ? `${agent.resolvedModel.providerID}/${agent.resolvedModel.modelID}` : undefined,
   }));

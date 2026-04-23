@@ -693,7 +693,6 @@ function mapEntryPoint(raw: UnknownRecord | undefined): AgentEntryPointSpec | un
 
   return {
     exposure: asString(raw.exposure, "entry_point.exposure") as AgentEntryPointSpec["exposure"],
-    selectionLabel: asOptionalString(raw.selection_label ?? raw.selectionLabel),
     selectionDescription: asOptionalString(raw.selection_description ?? raw.selectionDescription),
     selectionPriority: asOptionalNumber(raw.selection_priority ?? raw.selectionPriority, "entry_point.selection_priority"),
   };

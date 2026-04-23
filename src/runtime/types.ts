@@ -11,11 +11,10 @@ export interface ProjectedAgent {
   teamId: string;
   teamName: string;
   sourceTeam: AgentTeamDefinition;
-  sourceAgentId: string;
+  canonicalAgentId: string;
   roleKind: TeamRoleKind;
   exposure: AgentExposure;
   selectionPriority?: number;
-  surfaceLabel: string;
   description: string;
   sourceAgent: AgentProfileSpec;
 }
@@ -39,7 +38,6 @@ export interface SessionRuntimeBinding {
   sessionID: string;
   teamId: string;
   selectedAgentId: string;
-  selectedSurfaceLabel: string;
   mode: ExecutionMode;
   activeOwnerId: string;
   delegatedAgentId?: string;

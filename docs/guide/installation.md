@@ -163,7 +163,7 @@ OpenCode should resolve CrewBee from config by package name, while the user-leve
 After OpenCode loads the plugin:
 
 1. open any project in OpenCode
-2. select a CrewBee projected agent such as `[CodingTeam]leader`
+2. select a CrewBee projected agent such as `coding-leader`
 3. send your request normally
 
 CrewBee is no longer tied to a specific target project's `node_modules` installation.

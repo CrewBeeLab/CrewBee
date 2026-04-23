@@ -12,18 +12,6 @@ import type { ProjectedAgent } from "../../runtime";
 
 type UnknownRecord = Record<string, unknown>;
 
-function sanitizeSegment(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
-function createProjectedConfigKey(teamId: string, surfaceLabel: string): string {
-  return `crewbee.${sanitizeSegment(teamId)}.${sanitizeSegment(surfaceLabel)}`;
-}
-
 function resolveTargetAgent(team: ProjectedAgent["sourceTeam"], agentRef: string) {
   return team.agents.find((candidate) => candidate.metadata.id === agentRef);
 }
@@ -39,7 +27,7 @@ function createCollaborationPromptValue(agent: ProjectedAgent): unknown {
 
     return {
       id: targetAgent
-        ? createProjectedConfigKey(team.manifest.id, targetAgent.entryPoint?.selectionLabel ?? targetAgent.metadata.id)
+        ? targetAgent.canonicalAgentId ?? targetAgent.metadata.id
         : agentRef,
       description: member?.responsibility ?? targetAgent?.responsibilityCore.description ?? fallbackDescription ?? agentRef,
       ...(member?.delegateWhen ? { when_to_delegate: member.delegateWhen } : {}),

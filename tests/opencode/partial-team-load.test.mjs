@@ -246,11 +246,11 @@ test("invalid configured file-based teams are skipped without blocking valid tea
     assert.ok(!library.teams.some((team) => team.manifest.id === "legacy-team"));
     assert.ok(issues.some((issue) => issue.message.includes("Skipped Team 'BrokenTeam'")));
     assert.ok(issues.some((issue) => issue.message.includes("Leader agent 'hidden-leader' must be user-selectable.")));
-    assert.ok(config.agent["crewbee.coding-team.leader"]);
-    assert.ok(config.agent["crewbee.valid-team.leader"]);
-    assert.ok(!config.agent["crewbee.broken-team.leader"]);
-    assert.ok(!config.agent["crewbee.hidden-leader-team.leader"]);
-    assert.ok(!config.agent["crewbee.legacy-team.leader"]);
+    assert.ok(config.agent["coding-leader"]);
+    assert.ok(config.agent["valid-leader"]);
+    assert.ok(!config.agent["broken-leader"]);
+    assert.ok(!config.agent["hidden-leader"]);
+    assert.ok(!config.agent["legacy-leader"]);
     assert.ok(logs.some((entry) => entry.message.includes("Skipped Team 'BrokenTeam'")));
     assert.ok(logs.some((entry) => entry.message.includes("Leader agent 'hidden-leader' must be user-selectable.")));
   } finally {
@@ -291,7 +291,7 @@ test("plugin startup auto-creates default crewbee.json when missing", async () =
         },
       ],
     });
-    assert.ok(config.agent["crewbee.coding-team.leader"]);
+    assert.ok(config.agent["coding-leader"]);
     assert.ok(logs.some((entry) => entry.message.includes("CrewBee auto-repaired Team config")));
     assert.ok(logs.some((entry) => entry.extra?.reason === "created-default"));
   } finally {
@@ -335,7 +335,7 @@ test("plugin startup repairs invalid crewbee.json automatically", async () => {
       ],
     });
     assert.equal(readFileSync(backupPath, "utf8"), invalidContent);
-    assert.ok(config.agent["crewbee.coding-team.leader"]);
+    assert.ok(config.agent["coding-leader"]);
     assert.ok(logs.some((entry) => entry.message.includes("CrewBee auto-repaired Team config")));
     assert.ok(logs.some((entry) => entry.extra?.reason === "repaired-invalid"));
     assert.ok(logs.some((entry) => entry.extra?.backupPath === backupPath));

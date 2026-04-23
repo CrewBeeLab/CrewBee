@@ -1,7 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
+import { createChatMessageHook, createOpenCodeBootstrap } from "../../dist/src/adapters/opencode/index.js";
 import { OpenCodeCrewBeePlugin } from "../../dist/src/adapters/opencode/plugin.js";
+import { loadDefaultTeamLibrary } from "../../dist/src/agent-teams/index.js";
 
 function createPluginInput() {
   return {
@@ -23,7 +25,7 @@ function createPluginInput() {
   };
 }
 
-test("CrewBee rewrites CodingTeam source-agent task aliases to projected config keys", async () => {
+test("CrewBee accepts canonical task target ids directly", async () => {
   const plugin = await OpenCodeCrewBeePlugin(createPluginInput());
   const config = { agent: {} };
 
@@ -31,7 +33,7 @@ test("CrewBee rewrites CodingTeam source-agent task aliases to projected config 
   await plugin["chat.message"]?.(
     {
       sessionID: "ses-test-1",
-      agent: "crewbee.coding-team.leader",
+      agent: "coding-leader",
     },
     {
       message: { role: "user", parts: [] },
@@ -54,19 +56,31 @@ test("CrewBee rewrites CodingTeam source-agent task aliases to projected config 
     output,
   );
 
-  assert.equal(output.args.subagent_type, "crewbee.coding-team.executor");
+  assert.equal(output.args.subagent_type, "coding-executor");
 });
 
-test("CrewBee injects hidden public-name aliases for OpenCode round-trip lookups", async () => {
+test("CrewBee projects canonical config keys and display names", async () => {
   const plugin = await OpenCodeCrewBeePlugin(createPluginInput());
   const config = { agent: {} };
 
   await plugin.config?.(config);
 
-  assert.equal(config.agent["crewbee.coding-team.leader"].name, "[CodingTeam]leader");
-  assert.equal(config.agent["crewbee.coding-team.leader"].hidden, undefined);
-  assert.equal(config.agent["[CodingTeam]leader"].name, "[CodingTeam]leader");
-  assert.equal(config.agent["[CodingTeam]leader"].hidden, true);
+  assert.equal(config.agent["coding-leader"].name, "coding-leader");
+  assert.equal(config.agent["coding-executor"].name, "coding-executor");
+  assert.equal(config.agent["coding-coordination-leader"].name, "coding-coordination-leader");
+  assert.equal(config.agent["[CodingTeam]leader"], undefined);
+});
+
+test("CrewBee config hook force-overwrites a foreign default agent", async () => {
+  const plugin = await OpenCodeCrewBeePlugin(createPluginInput());
+  const config = {
+    agent: {},
+    default_agent: "foreign.plugin.agent",
+  };
+
+  await plugin.config?.(config);
+
+  assert.equal(config.default_agent, "coding-leader");
 });
 
 test("CrewBee projects CodingTeam shell permissions as allow by default", async () => {
@@ -75,9 +89,9 @@ test("CrewBee projects CodingTeam shell permissions as allow by default", async 
 
   await plugin.config?.(config);
 
-  assert.equal(config.agent["crewbee.coding-team.leader"].permission.bash["*"], "allow");
-  assert.equal(config.agent["crewbee.coding-team.executor"].permission.bash["*"], "allow");
-  assert.equal(config.agent["crewbee.coding-team.coordination-leader"].permission.bash["*"], "allow");
+  assert.equal(config.agent["coding-leader"].permission.bash["*"], "allow");
+  assert.equal(config.agent["coding-executor"].permission.bash["*"], "allow");
+  assert.equal(config.agent["coding-coordination-leader"].permission.bash["*"], "allow");
 });
 
 test("CrewBee removes task from built-in coding leaders that use delegate_task", async () => {
@@ -86,9 +100,9 @@ test("CrewBee removes task from built-in coding leaders that use delegate_task",
 
   await plugin.config?.(config);
 
-  const leader = config.agent["crewbee.coding-team.leader"];
-  const coordinationLeader = config.agent["crewbee.coding-team.coordination-leader"];
-  const reviewer = config.agent["crewbee.coding-team.reviewer"];
+  const leader = config.agent["coding-leader"];
+  const coordinationLeader = config.agent["coding-coordination-leader"];
+  const reviewer = config.agent["coding-reviewer"];
 
   assert.equal(leader.permission.task, undefined);
   assert.equal(leader.permission.delegate_task["*"], "allow");
@@ -104,7 +118,7 @@ test("CrewBee upgrades web-researcher prompt and runtime for librarian-style res
 
   await plugin.config?.(config);
 
-  const agent = config.agent["crewbee.coding-team.web-researcher"];
+  const agent = config.agent["coding-web-researcher"];
 
   assert.equal(agent.permission.bash["*"], "allow");
   assert.match(agent.prompt, /### Date Awareness/);
@@ -121,7 +135,7 @@ test("CrewBee upgrades reviewer prompt and runtime for blocker-oriented approval
 
   await plugin.config?.(config);
 
-  const agent = config.agent["crewbee.coding-team.reviewer"];
+  const agent = config.agent["coding-reviewer"];
 
   assert.equal(agent.permission.lsp["*"], "allow");
   assert.equal(agent.permission.edit["*"], "deny");
@@ -140,7 +154,7 @@ test("CrewBee upgrades principal-advisor prompt and runtime for oracle-style con
 
   await plugin.config?.(config);
 
-  const agent = config.agent["crewbee.coding-team.principal-advisor"];
+  const agent = config.agent["coding-principal-advisor"];
 
   assert.equal(agent.permission.task["*"], "allow");
   assert.equal(agent.permission.edit["*"], "deny");
@@ -156,7 +170,7 @@ test("CrewBee upgrades principal-advisor prompt and runtime for oracle-style con
   assert.doesNotMatch(agent.prompt, /Good fit/);
 });
 
-test("CrewBee rewrites projected public task aliases case-insensitively", async () => {
+test("CrewBee leaves canonical task ids unchanged", async () => {
   const plugin = await OpenCodeCrewBeePlugin(createPluginInput());
   const config = { agent: {} };
 
@@ -164,7 +178,7 @@ test("CrewBee rewrites projected public task aliases case-insensitively", async 
   await plugin["chat.message"]?.(
     {
       sessionID: "ses-test-2",
-      agent: "crewbee.coding-team.leader",
+      agent: "coding-leader",
     },
     {
       message: { role: "user", parts: [] },
@@ -174,7 +188,7 @@ test("CrewBee rewrites projected public task aliases case-insensitively", async 
 
   const output = {
     args: {
-      subagent_type: "[CodingTeam]EXECUTOR",
+      subagent_type: "coding-executor",
     },
   };
 
@@ -187,10 +201,10 @@ test("CrewBee rewrites projected public task aliases case-insensitively", async 
     output,
   );
 
-  assert.equal(output.args.subagent_type, "crewbee.coding-team.executor");
+  assert.equal(output.args.subagent_type, "coding-executor");
 });
 
-test("CrewBee binds sessions selected by projected public agent names", async () => {
+test("CrewBee binds sessions selected by canonical agent ids", async () => {
   const plugin = await OpenCodeCrewBeePlugin(createPluginInput());
   const config = { agent: {} };
 
@@ -198,7 +212,7 @@ test("CrewBee binds sessions selected by projected public agent names", async ()
   await plugin["chat.message"]?.(
     {
       sessionID: "ses-test-3",
-      agent: "[CodingTeam]leader",
+      agent: "coding-leader",
     },
     {
       message: { role: "user", parts: [] },
@@ -221,5 +235,43 @@ test("CrewBee binds sessions selected by projected public agent names", async ()
     output,
   );
 
-  assert.equal(output.args.subagent_type, "crewbee.coding-team.executor");
+  assert.equal(output.args.subagent_type, "coding-executor");
+});
+
+test("session explicit agent selection overrides the forced default agent", async () => {
+  const bindings = new Map();
+  const checkpoints = new Map();
+  const boot = createOpenCodeBootstrap({
+    teamLibrary: loadDefaultTeamLibrary(process.cwd()),
+    defaults: { defaultMode: "single-executor", defaultTeamId: "coding-team" },
+    existingConfig: {
+      default_agent: "foreign.plugin.agent",
+      agent: {},
+    },
+    existingDefaultAgent: "foreign.plugin.agent",
+  });
+  const hook = createChatMessageHook({
+    bindings,
+    store: {
+      setCheckpoint(sessionID, checkpoint) {
+        checkpoints.set(sessionID, checkpoint);
+      },
+    },
+    getBoot() {
+      return boot;
+    },
+  });
+
+  await hook(
+    {
+      sessionID: "ses-explicit-agent",
+      agent: "coding-executor",
+    },
+    { message: { role: "user", parts: [] }, parts: [] },
+  );
+
+  assert.equal(boot.mergedConfig?.default_agent, "coding-leader");
+  assert.equal(bindings.get("ses-explicit-agent")?.selectedAgentId, "coding-executor");
+  assert.equal(bindings.get("ses-explicit-agent")?.source, "host-agent-selection");
+  assert.equal(checkpoints.get("ses-explicit-agent")?.agent, "coding-executor");
 });

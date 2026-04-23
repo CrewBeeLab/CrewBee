@@ -5,14 +5,14 @@
   "uiModel": "no-custom-manager-entry-v1",
   "projectionModel": "projected-user-selectable-agents",
   "visibleCodingTeamAgents": [
-    "[CodingTeam]leader",
-    "[CodingTeam]coordination-leader",
-    "[CodingTeam]executor"
+    "coding-leader",
+    "coding-coordination-leader",
+    "coding-executor"
   ],
   "supportAgentModel": "internal-support-agents",
   "sessionBindingModel": "selected-opencode-agent-binds-team-path",
   "modeModel": "host-selection-plus-internal-runtime-binding",
-  "defaultAgentPolicy": "do-not-override-foreign-defaults-by-default",
+  "defaultAgentPolicy": "crewbee-canonical-default-overwrites-config-default",
   "permissionModel": "active-role-least-privilege",
   "crossTeamRouting": "deny-by-default"
 }

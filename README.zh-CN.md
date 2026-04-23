@@ -40,6 +40,18 @@ CrewBee 是一个 **Team-first（团队优先）** 的 Agent Team 框架。
 - [发布指南](docs/guide/release.md)
 - [架构文档](docs/architecture.md)
 
+## OpenCode 中的 Agent ID
+
+CrewBee 统一使用单一的 **canonical agent id**，贯穿投影、默认选择、session binding、delegation 和用户可见名称。
+
+例如：
+
+- `coding-leader`
+- `coding-executor`
+- `coding-reviewer`
+
+同一个 id 会同时用于 OpenCode `default_agent`、session 中显式选择的 agent、delegation 目标，以及用户可见的运行时/配置 id。
+
 ---
 
 ## 目录
@@ -292,7 +304,7 @@ npm run version
 安装完成后：
 
 1. 打开任意项目
-2. 选择 CrewBee 投影出的 agent（例如 `[CodingTeam]leader`）
+2. 选择 CrewBee 投影出的 agent（例如 `coding-leader`）
 3. 正常发送请求
 
 ---

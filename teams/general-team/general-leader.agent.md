@@ -131,7 +131,6 @@ examples:
 
 entry_point:
   exposure: user-selectable
-  selection_label: leader
   selection_description: GeneralTeam 的默认入口 Leader，适合大多数非代码主导型任务。
 ---
 

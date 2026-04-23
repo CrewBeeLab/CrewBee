@@ -242,6 +242,7 @@ export type AgentGuardrails = Record<string, unknown> & {
 export interface AgentMetadata {
   id: string;
   name: string;
+  sourceId?: string;
   archetype?: AgentArchetype;
   owner?: string;
   tags?: string[];
@@ -251,7 +252,6 @@ export type AgentExposure = "user-selectable" | "internal-only";
 
 export interface AgentEntryPointSpec {
   exposure: AgentExposure;
-  selectionLabel?: string;
   selectionDescription?: string;
   // Lower numbers rank earlier within the same role group. Omitted values sort
   // after explicit priorities and fall back to original declaration order.
@@ -260,6 +260,7 @@ export interface AgentEntryPointSpec {
 
 export interface AgentProfileSpec {
   metadata: AgentMetadata;
+  canonicalAgentId?: string;
   personaCore: PersonaCore;
   responsibilityCore: ResponsibilityCore;
   corePrinciple?: PromptValue;

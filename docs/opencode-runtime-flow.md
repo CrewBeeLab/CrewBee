@@ -73,7 +73,7 @@ config hook
 
 - 不是直接硬写配置，而是先经过 `createOpenCodeBootstrap()`
 - 如果宿主已有 foreign agents，会经过 collision 检查和安全过滤
-- 只有在安全条件满足时才会回填 `default_agent`
+- `default_agent` 使用 CrewBee 计算出的 canonical agent id
 - CrewBee 计算默认入口时会优先使用 Team 的 formal leader（若该 leader 是 user-selectable）
 - OpenCode 最终列表顺序仍由宿主控制，所以 CrewBee 可靠控制的是 `default_agent` 与投影结果本身
 
@@ -102,7 +102,6 @@ chat.message hook
 
 - `teamId`
 - `selectedAgentId`
-- `selectedSurfaceLabel`
 - `mode`
 - `activeOwnerId`
 - `source`
@@ -147,7 +146,7 @@ chat.message hook
 其中：
 
 - `tool.definition`：给原生 `task` 追加 CrewBee alias 帮助文本
-- `tool.execute.before`：把 `subagent_type` alias 重写成 projected config key
+- `tool.execute.before`：把 `subagent_type` 解析成 projected canonical agent id
 - `tool.execute.after`：对 delegation 工具结果做 result hardening
 
 ### 4.6 `experimental.chat.system.transform`
@@ -187,11 +186,11 @@ OpenCode 中每个 projected agent 的 prompt 都由 `src/adapters/opencode/prom
   - `responsibility`
   - `delegate_when`
   - `delegate_mode`
-- OpenCode projection 提供运行时真实可用的 projected config key
+- OpenCode projection 提供运行时真实可用的 canonical agent id
 
 最终在 prompt 中，Collaboration 会显示：
 
-- `Id`：如 `crewbee.coding-team.codebase-explorer`
+- `Id`：如 `coding-codebase-explorer`
 - `Description`
 - `When To Delegate`
 
@@ -251,7 +250,7 @@ TeamLibrary
 其中 `resolveBindingAgent()` 的默认路径是：
 
 1. 先看宿主当前选中的 agent
-2. 再看显式传入的 `teamId + sourceAgentId`
+2. 再看显式传入的 `teamId + canonicalAgentId`
 3. 都没有时，回退到默认 Team，并由 `pickDefaultUserSelectableAgent()` 选择默认入口
 
 而 `pickDefaultUserSelectableAgent()` 当前的语义是：
@@ -276,7 +275,7 @@ TeamLibrary
 主要映射内容：
 
 - `configKey`
-- `publicName`
+- `publicName`（兼容字段，当前与 canonical agent id 等值）
 - `mode`
 - `hidden`
 - `description`
@@ -291,7 +290,7 @@ TeamLibrary
 2. `internal-only` -> `subagent` + `hidden`
 3. `agent_runtime` 会被映射成 `model / temperature / top_p / variant / options`
 4. Agent 请求工具会先走 `permission-mapper.ts` 的宿主工具名映射
-5. OpenCode 最终可见列表顺序不是由 CrewBee 的插入顺序直接决定；CrewBee 主要控制 default agent 与 projected names
+5. OpenCode 最终可见列表顺序不是由 CrewBee 的插入顺序直接决定；CrewBee 主要控制 canonical agent id、default agent 与投影结果本身
 
 ---
 

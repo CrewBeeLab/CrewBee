@@ -40,6 +40,18 @@ The current version already delivers a complete **CrewBee → OpenCode** MVP pat
 - [Release Guide](docs/guide/release.md)
 - [Architecture](docs/architecture.md)
 
+## Agent IDs in OpenCode
+
+CrewBee uses a single **canonical agent id** across projection, default selection, session binding, delegation, and user-facing selection.
+
+Examples:
+
+- `coding-leader`
+- `coding-executor`
+- `coding-reviewer`
+
+The same id is used for OpenCode `default_agent`, session-level selection, delegation targets, and projected runtime/config ids shown to users.
+
 ---
 
 ## Table of Contents
@@ -286,7 +298,7 @@ npm run version
 After installation:
 
 1. open any project
-2. select a CrewBee projected agent (for example `[CodingTeam]leader`)
+2. select a CrewBee projected agent (for example `coding-leader`)
 3. send requests normally
 
 ---

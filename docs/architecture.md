@@ -153,7 +153,7 @@ loadDefaultTeamLibrary()
    - 结果类型是 `TeamLibraryProjection`
 
 2. **Session Binding**
-   - 根据 `teamId + sourceAgentId + mode + source` 生成会话绑定结果
+   - 根据 `teamId + canonicalAgentId + mode + source` 生成会话绑定结果
    - 结果类型是 `SessionRuntimeBinding`
 
 它解决的是：“把 Team-first 世界翻译成 adapter 能接得住的中间表示”。
@@ -287,7 +287,7 @@ sequenceDiagram
 
 - `Collaboration` 不仅来自 Agent Profile 声明的合作 subagent 列表；
 - 还会结合 `team.manifest.members` 的 `responsibility` 与 `delegateWhen`；
-- 并使用 OpenCode 运行时实际可解析的 projected config key 作为 `Id` 暴露给模型。
+- 并使用 OpenCode 运行时实际可解析的 canonical agent id 作为 `Id` 暴露给模型。
 
 这样生成出来的 Collaboration 更接近可直接委派的 agent 清单，而不是单纯的角色文本描述。
 
@@ -325,7 +325,7 @@ sequenceDiagram
    - 存入当前插件运行时的 `bindings` map
 
 5. `tool.definition`
-   - 给 OpenCode 原生 `task` 补充 CrewBee alias 提示
+   - 给 OpenCode 原生 `task` 补充 CrewBee canonical agent id 提示
 
 6. `tool.execute.before`
    - 把 CrewBee alias 重写成 projected config key

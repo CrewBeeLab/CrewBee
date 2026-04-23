@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { createEmbeddedCodingTeam } from "../../dist/src/agent-teams/embedded/coding-team.js";
+import { loadDefaultTeamLibrary } from "../../dist/src/agent-teams/index.js";
 import { createOpenCodeAgentPrompt, createOpenCodePromptFromRawDocuments } from "../../dist/src/adapters/opencode/prompt-builder.js";
 import { buildPromptCatalog } from "../../dist/src/catalog/build-prompt-catalog.js";
 import { loadAgentProfile } from "../../dist/src/loader/profile-loader.js";
@@ -15,8 +16,15 @@ function createProjectionForTeam(team) {
   return createTeamLibraryProjection({ version: "test", teams: [team] });
 }
 
+function getLoadedCodingTeam() {
+  const library = loadDefaultTeamLibrary(process.cwd());
+  const team = library.teams.find((entry) => entry.manifest.id === "coding-team");
+  assert.ok(team, "expected coding-team to be present in default library");
+  return team;
+}
+
 function getProjectedAgent(team, agentId) {
-  return createProjectionForTeam(team).agents.find((agent) => agent.sourceAgentId === agentId);
+  return createProjectionForTeam(team).agents.find((agent) => agent.canonicalAgentId === agentId);
 }
 
 function createMinimalTeam(agent) {
@@ -217,7 +225,7 @@ test("generic normalize and catalog keep arbitrary blocks without schema", () =>
 });
 
 test("coding-leader prompt renders final semantic section ordering with strong content", () => {
-  const projected = getProjectedAgent(createEmbeddedCodingTeam(), "coding-leader");
+  const projected = getProjectedAgent(getLoadedCodingTeam(), "coding-leader");
   assert.ok(projected);
 
   const prompt = createOpenCodeAgentPrompt(projected);
@@ -242,7 +250,7 @@ test("coding-leader prompt renders final semantic section ordering with strong c
   assert.match(prompt, /Approval Required For/);
   assert.match(prompt, /Allow Assume For/);
   assert.match(prompt, /Default Consults:\n  - Item 1:/);
-  assert.match(prompt, /- Id: crewbee\.coding-team\.codebase-explorer/);
+  assert.match(prompt, /- Id: coding-codebase-explorer/);
   assert.match(prompt, /- Description: 定位实现位置、调用链、入口与既有模式。/);
   assert.match(prompt, /- When To Delegate: 实现位置或调用链不清时。/);
   assert.match(prompt, /持续推进，解决问题；只有在真实不可推进时才提问/);
@@ -251,7 +259,7 @@ test("coding-leader prompt renders final semantic section ordering with strong c
 });
 
 test("coordination-leader prompt renders coordination-specific sections structurally", () => {
-  const projected = getProjectedAgent(createEmbeddedCodingTeam(), "coordination-leader");
+  const projected = getProjectedAgent(getLoadedCodingTeam(), "coding-coordination-leader");
   assert.ok(projected);
 
   const prompt = createOpenCodeAgentPrompt(projected);
@@ -263,9 +271,9 @@ test("coordination-leader prompt renders coordination-specific sections structur
 });
 
 test("executor explorer reviewer and web researcher prompts all render", () => {
-  const team = createEmbeddedCodingTeam();
+  const team = getLoadedCodingTeam();
 
-  for (const agentId of ["coding-executor", "codebase-explorer", "reviewer", "web-researcher"]) {
+  for (const agentId of ["coding-executor", "coding-codebase-explorer", "coding-reviewer", "coding-web-researcher"]) {
     const projected = getProjectedAgent(team, agentId);
     assert.ok(projected, `expected projected agent ${agentId}`);
 

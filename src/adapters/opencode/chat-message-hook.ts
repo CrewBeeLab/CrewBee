@@ -41,7 +41,6 @@ export function createChatMessageHook(input: {
 
     const agent = resolveProjectedAgentSelection(boot.projectedAgents, {
       configKey: selected,
-      publicName: selected,
     });
     if (!agent) {
       return;
@@ -51,7 +50,7 @@ export function createChatMessageHook(input: {
       projection: boot.projection,
       sessionID: message.sessionID,
       teamId: agent.teamId,
-      sourceAgentId: agent.sourceAgentId,
+      canonicalAgentId: agent.canonicalAgentId,
       mode: "single-executor",
       source: message.agent ? "host-agent-selection" : "plugin-default",
     });

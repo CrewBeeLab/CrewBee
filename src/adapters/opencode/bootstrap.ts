@@ -21,7 +21,6 @@ import {
   createOpenCodeAgentConfigs,
   createOpenCodeAgentConfigPatch,
   createOpenCodeProjectedIdentities,
-  createOpenCodePublicNameAliasKey,
   type OpenCodeAgentConfig,
   resolveProjectedAgentSelection,
   type OpenCodeAgentConfigPatch,
@@ -80,7 +79,6 @@ export function createOpenCodeAdapterDefinition(): AdapterDefinition {
     coexistence: {
       independentFromForeignPlugins: true,
       safeWhenCoInstalled: coexistence.safeWhenCoInstalled,
-      reservedAgentNamePrefix: coexistence.reservedPublicNamePrefix,
       reservedConfigKeyPrefix: coexistence.reservedConfigKeyPrefix,
     },
   };
@@ -100,24 +98,23 @@ function resolveBindingAgent(input: {
       : input.selectedHostAgent;
     const hostSelection = resolveProjectedAgentSelection(input.projectedAgents, {
       configKey: normalizedHostAgent,
-      publicName: input.selectedHostAgent,
     });
 
     if (hostSelection) {
-      return {
-        teamId: hostSelection.teamId,
-        sourceAgentId: hostSelection.sourceAgentId,
-      };
+        return {
+          teamId: hostSelection.teamId,
+          sourceAgentId: hostSelection.canonicalAgentId,
+        };
     }
   }
 
   if (input.selectedTeamId && input.selectedSourceAgentId) {
     const explicit = findProjectedAgent(input.projection, input.selectedTeamId, input.selectedSourceAgentId);
     if (explicit) {
-      return {
-        teamId: explicit.teamId,
-        sourceAgentId: explicit.sourceAgentId,
-      };
+        return {
+          teamId: explicit.teamId,
+          sourceAgentId: explicit.canonicalAgentId,
+        };
     }
   }
 
@@ -135,10 +132,10 @@ function resolveBindingAgent(input: {
       continue;
     }
 
-    return {
-      teamId: fallbackTeam.team.manifest.id,
-      sourceAgentId: fallbackAgent.metadata.id,
-    };
+        return {
+          teamId: fallbackTeam.team.manifest.id,
+          sourceAgentId: fallbackAgent.canonicalAgentId ?? fallbackAgent.metadata.id,
+        };
   }
 
   return undefined;
@@ -149,18 +146,13 @@ function filterSafeProjectedAgents(
   collisions: OpenCodeProjectionCollisionReport,
 ): OpenCodeAgentConfig[] {
   const blockedConfigKeys = new Set(collisions.configKeyCollisions);
-  const blockedPublicNames = new Set(collisions.publicNameCollisions);
 
   return agents.filter((agent) => {
     if (blockedConfigKeys.has(agent.configKey)) {
       return false;
     }
 
-    if (blockedConfigKeys.has(createOpenCodePublicNameAliasKey(agent))) {
-      return false;
-    }
-
-    return !blockedPublicNames.has(agent.publicName);
+    return true;
   });
 }
 
@@ -168,66 +160,27 @@ function isCompatibleCrewBeeOwnedKey(key: string): boolean {
   return key.startsWith(CURRENT_PLUGIN_KEY_PREFIX) || key.startsWith(LEGACY_PLUGIN_KEY_PREFIX);
 }
 
-function getConfiguredAgentName(definition: unknown): string | undefined {
-  if (typeof definition !== "object" || definition === null || !("name" in definition)) {
-    return undefined;
-  }
-
-  const candidate = definition.name;
-  return typeof candidate === "string" ? candidate : undefined;
-}
-
-function isCrewBeePublicNameAliasEntry(
-  key: string,
-  definition: unknown,
-  allAgents: Record<string, unknown>,
-): boolean {
-  const publicName = getConfiguredAgentName(definition);
-
-  if (!publicName || key !== publicName || !publicName.startsWith("[")) {
-    return false;
-  }
-
-  return Object.entries(allAgents).some(([otherKey, otherDefinition]) => {
-    if (!isCompatibleCrewBeeOwnedKey(otherKey)) {
-      return false;
-    }
-
-    return getConfiguredAgentName(otherDefinition) === publicName;
-  });
-}
-
 function getForeignCollisionInputs(input: {
   existingConfig?: OpenCodeConfigLike;
   existingConfigKeys?: string[];
-  existingPublicNames?: string[];
-}): { existingConfigKeys?: string[]; existingPublicNames?: string[] } {
+}): { existingConfigKeys?: string[] } {
   if (!input.existingConfig?.agent) {
     return {
       existingConfigKeys: input.existingConfigKeys,
-      existingPublicNames: input.existingPublicNames,
     };
   }
 
   const compatibleOwnedConfigKeys = new Set<string>();
-  const compatibleOwnedPublicNames = new Set<string>();
-
   for (const [key, definition] of Object.entries(input.existingConfig.agent)) {
-    if (!isCompatibleCrewBeeOwnedKey(key) && !isCrewBeePublicNameAliasEntry(key, definition, input.existingConfig.agent)) {
+    if (!isCompatibleCrewBeeOwnedKey(key)) {
       continue;
     }
 
     compatibleOwnedConfigKeys.add(key);
-
-    const publicName = getConfiguredAgentName(definition);
-    if (publicName) {
-      compatibleOwnedPublicNames.add(publicName);
-    }
   }
 
   return {
     existingConfigKeys: input.existingConfigKeys?.filter((key) => !compatibleOwnedConfigKeys.has(key)),
-    existingPublicNames: input.existingPublicNames?.filter((name) => !compatibleOwnedPublicNames.has(name)),
   };
 }
 
@@ -235,19 +188,7 @@ function shouldSetDefaultAgent(input: {
   existingDefaultAgent?: string;
   defaultAgentConfigKey?: string;
 }): string | undefined {
-  if (!input.defaultAgentConfigKey) {
-    return undefined;
-  }
-
-  if (!input.existingDefaultAgent) {
-    return input.defaultAgentConfigKey;
-  }
-
-  if (isCompatibleCrewBeeOwnedKey(input.existingDefaultAgent)) {
-    return input.defaultAgentConfigKey;
-  }
-
-  return undefined;
+  return input.defaultAgentConfigKey;
 }
 
 export function createOpenCodeBootstrap(input: OpenCodeBootstrapInput): OpenCodeBootstrapOutput {
@@ -259,12 +200,10 @@ export function createOpenCodeBootstrap(input: OpenCodeBootstrapInput): OpenCode
   const foreignCollisions = getForeignCollisionInputs({
     existingConfig: input.existingConfig,
     existingConfigKeys: input.existingConfigKeys,
-    existingPublicNames: input.existingPublicNames,
   });
   const collisions = detectOpenCodeProjectionCollisions({
     projectedAgents: projectedAgents.flatMap((agent) => createOpenCodeProjectedIdentities(agent)),
     existingConfigKeys: foreignCollisions.existingConfigKeys,
-    existingPublicNames: foreignCollisions.existingPublicNames,
   });
   const safeProjectedAgents = filterSafeProjectedAgents(projectedAgents, collisions);
 
@@ -280,17 +219,17 @@ export function createOpenCodeBootstrap(input: OpenCodeBootstrapInput): OpenCode
   const sessionBinding = input.sessionID && bindingAgent
     ? createSessionRuntimeBinding({
         projection,
-        sessionID: input.sessionID,
-        teamId: bindingAgent.teamId,
-        sourceAgentId: bindingAgent.sourceAgentId,
-        mode: input.selectedMode ?? input.defaults.defaultMode,
-        source: input.selectedHostAgent || input.selectedSourceAgentId ? "host-agent-selection" : "plugin-default",
-      })
+      sessionID: input.sessionID,
+      teamId: bindingAgent.teamId,
+      canonicalAgentId: bindingAgent.sourceAgentId,
+      mode: input.selectedMode ?? input.defaults.defaultMode,
+      source: input.selectedHostAgent || input.selectedSourceAgentId ? "host-agent-selection" : "plugin-default",
+    })
     : undefined;
 
   const defaultProjectedAgent = bindingAgent
     ? safeProjectedAgents.find(
-        (agent) => agent.teamId === bindingAgent.teamId && agent.sourceAgentId === bindingAgent.sourceAgentId,
+        (agent) => agent.teamId === bindingAgent.teamId && agent.canonicalAgentId === bindingAgent.sourceAgentId,
       )
     : undefined;
 

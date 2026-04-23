@@ -160,7 +160,6 @@ examples:
 
 entry_point:
   exposure: user-selectable
-  selection_label: leader
   selection_description: Primary user-facing leader entry for a file-based CrewBee team.
 
 prompt_projection:

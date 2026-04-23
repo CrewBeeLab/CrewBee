@@ -302,15 +302,14 @@ export interface DelegateCancelResult {
 
 解析顺序位于 `src/adapters/opencode/delegation/resolve-agent.ts`：
 
-1. 先按 `sourceAgentId` 查找
-2. 再按 projected `configKey` / `publicName` 查找
+1. 先按 projected canonical agent id 查找
+2. 再按 alias index 查找
 3. 最后按 alias index 查找
 
 这样做的意义是：
 
-- 允许 Team 内部使用 source-agent 语义进行委派
-- 允许通过 OpenCode 投影名/公开名恢复目标
-- 允许依赖 alias 做 host 轮转后的稳定定位
+- 允许直接使用 canonical agent id 进行委派
+- 允许依赖 alias index 做兼容性解析与 host 轮转后的稳定定位
 
 ### 7.2 self-delegate 防护
 

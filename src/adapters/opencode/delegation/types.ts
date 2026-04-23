@@ -58,7 +58,6 @@ export interface DelegatePromptModel {
 
 export interface DelegateCheckpoint {
   agent: string;
-  sourceAgentId?: string;
   model?: DelegatePromptModel;
   tools: string[];
 }
@@ -73,7 +72,7 @@ export interface TodoSnapshot {
 export interface DelegatedSessionRecord {
   sessionID: string;
   parentSessionID: string;
-  sourceAgentId: string;
+  canonicalAgentId: string;
   configKey: string;
   lastTaskRef?: string;
 }
@@ -83,7 +82,7 @@ export interface DelegateTaskRecord {
   sessionID: string;
   parentSessionID: string;
   parentMessageID: string;
-  sourceAgentId: string;
+  canonicalAgentId: string;
   configKey: string;
   description: string;
   status: DelegateBackgroundStatus;
@@ -112,5 +111,5 @@ export interface DelegateStateData {
 export interface ResolvedDelegateAgent {
   agent: OpenCodeAgentConfig;
   configKey: string;
-  sourceAgentId: string;
+  canonicalAgentId: string;
 }
