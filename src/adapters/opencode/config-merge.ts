@@ -27,35 +27,6 @@ function isCompatibleCrewBeeOwnedKey(key: string): boolean {
   return isCrewBeeOwnedKey(key) || isLegacyCrewBeeOwnedKey(key);
 }
 
-function getConfiguredAgentName(definition: unknown): string | undefined {
-  if (typeof definition !== "object" || definition === null || !("name" in definition)) {
-    return undefined;
-  }
-
-  const candidate = definition.name;
-  return typeof candidate === "string" ? candidate : undefined;
-}
-
-function isCrewBeePublicNameAliasEntry(
-  key: string,
-  definition: unknown,
-  allAgents: Record<string, unknown>,
-): boolean {
-  const publicName = getConfiguredAgentName(definition);
-
-  if (!publicName || key !== publicName || !publicName.startsWith("[")) {
-    return false;
-  }
-
-  return Object.entries(allAgents).some(([otherKey, otherDefinition]) => {
-    if (!isCompatibleCrewBeeOwnedKey(otherKey)) {
-      return false;
-    }
-
-    return getConfiguredAgentName(otherDefinition) === publicName;
-  });
-}
-
 export function applyOpenCodeAgentConfigPatch(
   config: OpenCodeConfigLike,
   patch: OpenCodeAgentConfigPatch,
@@ -64,18 +35,6 @@ export function applyOpenCodeAgentConfigPatch(
   const insertedAgentKeys: string[] = [];
   const updatedAgentKeys: string[] = [];
   const skippedAgentKeys: string[] = [];
-  const nextPublicNames = new Set(
-    Object.values(patch.agent as Record<string, OpenCodeAgentDefinition>)
-      .map((definition) => definition.name)
-      .filter((name): name is string => Boolean(name)),
-  );
-
-  for (const [key, definition] of Object.entries(nextAgents)) {
-    const publicName = getConfiguredAgentName(definition);
-    if (publicName && isLegacyCrewBeeOwnedKey(key) && nextPublicNames.has(publicName)) {
-      delete nextAgents[key];
-    }
-  }
 
   for (const [key, definition] of Object.entries(patch.agent)) {
     if (!(key in nextAgents)) {
@@ -86,7 +45,7 @@ export function applyOpenCodeAgentConfigPatch(
 
     const existingDefinition = nextAgents[key];
 
-    if (isCrewBeeOwnedKey(key) || isCrewBeePublicNameAliasEntry(key, existingDefinition, nextAgents)) {
+    if (isCompatibleCrewBeeOwnedKey(key)) {
       nextAgents[key] = definition;
       updatedAgentKeys.push(key);
       continue;
@@ -100,7 +59,7 @@ export function applyOpenCodeAgentConfigPatch(
     agent: nextAgents,
   };
 
-  if (patch.defaultAgent && (!config.default_agent || isCompatibleCrewBeeOwnedKey(config.default_agent))) {
+  if (patch.defaultAgent) {
     nextConfig.default_agent = patch.defaultAgent;
   }
 

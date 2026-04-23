@@ -759,7 +759,6 @@ output_contract:
 
 entry_point:
   exposure: user-selectable
-  selection_label: leader
   selection_description: 研究与方案类任务的默认入口
 
 prompt_projection:

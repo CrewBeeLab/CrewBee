@@ -304,7 +304,6 @@ export interface DelegateCancelResult {
 
 1. 先按 projected canonical agent id 查找
 2. 再按 alias index 查找
-3. 最后按 alias index 查找
 
 这样做的意义是：
 
@@ -318,7 +317,7 @@ export interface DelegateCancelResult {
 判定逻辑在 `isSelfDelegate()`：
 
 - 当前会话存在 binding
-- `binding.selectedAgentId === target.sourceAgentId`
+- `binding.selectedAgentId === target.canonicalAgentId`
 
 满足时返回 `self_delegate_forbidden`。
 
