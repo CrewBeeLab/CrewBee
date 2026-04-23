@@ -13,6 +13,7 @@ import {
   type OpenCodePermissionConfig,
   type OpenCodePermissionRule,
 } from "./permission-mapper";
+import { createManagedCrewBeeAgentOptions } from "./ownership";
 import { createOpenCodeAgentPrompt } from "./prompt-builder";
 
 export type OpenCodeAgentMode = "primary" | "subagent";
@@ -201,7 +202,11 @@ export function createOpenCodeAgentDefinition(agent: OpenCodeAgentConfig): OpenC
     variant: agent.resolvedModel?.variant,
     prompt: agent.prompt,
     permission: createOpenCodePermissionConfig(agent.permission),
-    options: agent.resolvedModel?.options,
+    options: createManagedCrewBeeAgentOptions({
+      teamId: agent.teamId,
+      canonicalAgentId: agent.canonicalAgentId,
+      existingOptions: agent.resolvedModel?.options,
+    }),
   };
 }
 

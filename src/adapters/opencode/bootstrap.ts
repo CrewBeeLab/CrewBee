@@ -25,6 +25,7 @@ import {
   resolveProjectedAgentSelection,
   type OpenCodeAgentConfigPatch,
 } from "./projection";
+import { isManagedCrewBeeAgentDefinition } from "./ownership";
 import { createOpenCodeToolDomainPlan, type OpenCodeToolDomainPlan } from "./tool-domain";
 
 export interface OpenCodeBootstrapDefaults {
@@ -59,9 +60,6 @@ export interface OpenCodeBootstrapOutput {
   sessionBinding?: SessionRuntimeBinding;
 }
 
-const CURRENT_PLUGIN_KEY_PREFIX = "crewbee.";
-const LEGACY_PLUGIN_KEY_PREFIX = "agentscroll.";
-
 export function createOpenCodeAdapterDefinition(): AdapterDefinition {
   const coexistence = createOpenCodeCoexistencePolicy();
 
@@ -93,11 +91,8 @@ function resolveBindingAgent(input: {
   defaults: OpenCodeBootstrapDefaults;
 }): { teamId: string; sourceAgentId: string } | undefined {
   if (input.selectedHostAgent) {
-    const normalizedHostAgent = input.selectedHostAgent.startsWith(LEGACY_PLUGIN_KEY_PREFIX)
-      ? `${CURRENT_PLUGIN_KEY_PREFIX}${input.selectedHostAgent.slice(LEGACY_PLUGIN_KEY_PREFIX.length)}`
-      : input.selectedHostAgent;
     const hostSelection = resolveProjectedAgentSelection(input.projectedAgents, {
-      configKey: normalizedHostAgent,
+      configKey: input.selectedHostAgent,
     });
 
     if (hostSelection) {
@@ -156,31 +151,30 @@ function filterSafeProjectedAgents(
   });
 }
 
-function isCompatibleCrewBeeOwnedKey(key: string): boolean {
-  return key.startsWith(CURRENT_PLUGIN_KEY_PREFIX) || key.startsWith(LEGACY_PLUGIN_KEY_PREFIX);
-}
-
 function getForeignCollisionInputs(input: {
   existingConfig?: OpenCodeConfigLike;
   existingConfigKeys?: string[];
 }): { existingConfigKeys?: string[] } {
+  const fallbackKeys = input.existingConfig?.agent ? Object.keys(input.existingConfig.agent) : input.existingConfigKeys;
+
   if (!input.existingConfig?.agent) {
     return {
-      existingConfigKeys: input.existingConfigKeys,
+      existingConfigKeys: fallbackKeys,
     };
   }
 
-  const compatibleOwnedConfigKeys = new Set<string>();
-  for (const [key, definition] of Object.entries(input.existingConfig.agent)) {
-    if (!isCompatibleCrewBeeOwnedKey(key)) {
-      continue;
+  const foreignKeys = (fallbackKeys ?? []).filter((key) => {
+    const definition = input.existingConfig?.agent?.[key];
+
+    if (isManagedCrewBeeAgentDefinition(definition)) {
+      return false;
     }
 
-    compatibleOwnedConfigKeys.add(key);
-  }
+    return true;
+  });
 
   return {
-    existingConfigKeys: input.existingConfigKeys?.filter((key) => !compatibleOwnedConfigKeys.has(key)),
+    existingConfigKeys: foreignKeys,
   };
 }
 

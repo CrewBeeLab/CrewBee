@@ -293,6 +293,47 @@ test("OpenCode bootstrap force-overwrites a foreign default agent", () => {
   assert.equal(bootstrap.mergedConfig?.default_agent, "coding-leader");
 });
 
+test("OpenCode bootstrap refreshes managed canonical ids while preserving foreign agents", () => {
+  const bootstrap = createOpenCodeBootstrap({
+    teamLibrary: loadDefaultTeamLibrary(process.cwd()),
+    defaults: {
+      defaultMode: "single-executor",
+      defaultTeamId: "coding-team",
+    },
+    existingConfig: {
+      default_agent: "coding-leader",
+      agent: {
+        "coding-leader": {
+          name: "coding-leader",
+          description: "stale managed leader",
+          mode: "primary",
+          prompt: "stale",
+          permission: {},
+          options: {
+            crewbee: {
+              managed: true,
+              teamId: "coding-team",
+              canonicalAgentId: "coding-leader",
+            },
+          },
+        },
+        "foreign.agent": {
+          name: "foreign.agent",
+          description: "foreign",
+          mode: "primary",
+          prompt: "foreign",
+          permission: {},
+        },
+      },
+    },
+  });
+
+  assert.equal(bootstrap.mergedConfig?.default_agent, "coding-leader");
+  assert.equal(bootstrap.mergedConfig?.agent?.["foreign.agent"]?.name, "foreign.agent");
+  assert.equal(bootstrap.mergedConfig?.agent?.["coding-leader"]?.name, "coding-leader");
+  assert.notEqual(bootstrap.mergedConfig?.agent?.["coding-leader"]?.prompt, "stale");
+});
+
 test("team priority controls projected agent order and bootstrap default agent", () => {
   const workspace = mkdtempSync(path.join(os.tmpdir(), "crewbee-agent-priority-"));
   const previousConfigDir = process.env.OPENCODE_CONFIG_DIR;

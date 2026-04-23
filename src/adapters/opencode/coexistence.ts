@@ -21,7 +21,7 @@ export function createOpenCodeCoexistencePolicy(): OpenCodeCoexistencePolicy {
     dependsOnOhMyOpenCode: false,
     featureDevelopmentMode: "mutually-exclusive",
     safeWhenCoInstalled: true,
-    reservedConfigKeyPrefix: "crewbee.",
+    reservedConfigKeyPrefix: "",
     neverMutateForeignAgents: true,
   };
 }

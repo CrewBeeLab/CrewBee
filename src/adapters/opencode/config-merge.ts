@@ -1,4 +1,5 @@
-import type { OpenCodeAgentConfigPatch, OpenCodeAgentDefinition } from "./projection";
+import type { OpenCodeAgentConfigPatch } from "./projection";
+import { isManagedCrewBeeAgentDefinition } from "./ownership";
 
 export interface OpenCodeConfigLike {
   agent?: Record<string, unknown>;
@@ -12,26 +13,20 @@ export interface OpenCodeConfigMergeResult {
   skippedAgentKeys: string[];
 }
 
-const CURRENT_PLUGIN_KEY_PREFIX = "crewbee.";
-const LEGACY_PLUGIN_KEY_PREFIX = "agentscroll.";
-
-function isLegacyCrewBeeOwnedKey(key: string): boolean {
-  return key.startsWith(LEGACY_PLUGIN_KEY_PREFIX);
-}
-
-function isCrewBeeOwnedKey(key: string): boolean {
-  return key.startsWith(CURRENT_PLUGIN_KEY_PREFIX);
-}
-
-function isCompatibleCrewBeeOwnedKey(key: string): boolean {
-  return isCrewBeeOwnedKey(key) || isLegacyCrewBeeOwnedKey(key);
-}
-
 export function applyOpenCodeAgentConfigPatch(
   config: OpenCodeConfigLike,
   patch: OpenCodeAgentConfigPatch,
 ): OpenCodeConfigMergeResult {
-  const nextAgents = { ...(config.agent ?? {}) };
+  const patchKeys = new Set(Object.keys(patch.agent));
+  const nextAgents = Object.fromEntries(
+    Object.entries(config.agent ?? {}).filter(([key, definition]) => {
+      if (isManagedCrewBeeAgentDefinition(definition) && !patchKeys.has(key)) {
+        return false;
+      }
+
+      return true;
+    }),
+  );
   const insertedAgentKeys: string[] = [];
   const updatedAgentKeys: string[] = [];
   const skippedAgentKeys: string[] = [];
@@ -45,7 +40,7 @@ export function applyOpenCodeAgentConfigPatch(
 
     const existingDefinition = nextAgents[key];
 
-    if (isCompatibleCrewBeeOwnedKey(key)) {
+    if (isManagedCrewBeeAgentDefinition(existingDefinition)) {
       nextAgents[key] = definition;
       updatedAgentKeys.push(key);
       continue;

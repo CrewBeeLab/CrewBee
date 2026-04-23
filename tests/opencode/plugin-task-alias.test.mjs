@@ -65,6 +65,10 @@ test("CrewBee projects canonical config keys and display names", async () => {
 
   await plugin.config?.(config);
 
+  assert.deepEqual(
+    Object.keys(config.agent).slice(0, 3),
+    ["coding-leader", "coding-coordination-leader", "coding-executor"],
+  );
   assert.equal(config.agent["coding-leader"].name, "coding-leader");
   assert.equal(config.agent["coding-executor"].name, "coding-executor");
   assert.equal(config.agent["coding-coordination-leader"].name, "coding-coordination-leader");
