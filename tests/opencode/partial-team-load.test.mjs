@@ -104,10 +104,10 @@ governance:
 agent_runtime:
   ${leaderId}:
     provider: openai
-    model: gpt-5.4
+    model: gpt-5.5
   ${memberId}:
     provider: openai
-    model: gpt-5.4
+    model: gpt-5.5
 tags:
   - tests
 `;

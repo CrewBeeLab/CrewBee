@@ -87,7 +87,7 @@ test("CrewBee config hook force-overwrites a foreign default agent", async () =>
   assert.equal(config.default_agent, "coding-leader");
 });
 
-test("CrewBee projects CodingTeam shell permissions as allow by default", async () => {
+test("CrewBee projects CodingTeam executor edit/write permissions as allow by default", async () => {
   const plugin = await OpenCodeCrewBeePlugin(createPluginInput());
   const config = { agent: {} };
 
@@ -95,6 +95,7 @@ test("CrewBee projects CodingTeam shell permissions as allow by default", async 
 
   assert.equal(config.agent["coding-leader"].permission.bash["*"], "allow");
   assert.equal(config.agent["coding-executor"].permission.bash["*"], "allow");
+  assert.equal(config.agent["coding-executor"].permission.edit["*"], "allow");
   assert.equal(config.agent["coding-coordination-leader"].permission.bash["*"], "allow");
 });
 

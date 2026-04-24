@@ -82,13 +82,13 @@ governance:
 agent_runtime:
   leader:
     provider: openai
-    model: gpt-5.4
+    model: gpt-5.5
   researcher:
     provider: openai
-    model: gpt-5.4
+    model: gpt-5.5
   executor:
     provider: openai
-    model: gpt-5.4
+    model: gpt-5.5
 
 tags:
   - template

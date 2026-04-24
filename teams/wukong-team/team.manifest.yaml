@@ -86,19 +86,19 @@ governance:
 agent_runtime:
   wukong-leader:
     provider: openai
-    model: gpt-5.4
+    model: gpt-5.5
   wukong-monk:
     provider: openai
-    model: gpt-5.4
+    model: gpt-5.5
   wukong-bajie:
     provider: openai
-    model: gpt-5.4
+    model: gpt-5.5
   wukong-wujing:
     provider: openai
-    model: gpt-5.4
+    model: gpt-5.5
   wukong-dragon:
     provider: openai
-    model: gpt-5.4
+    model: gpt-5.5
 
 tags:
   - exploration

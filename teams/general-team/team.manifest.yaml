@@ -92,22 +92,22 @@ governance:
 agent_runtime:
   general-leader:
     provider: openai
-    model: gpt-5.4
+    model: gpt-5.5
   general-researcher:
     provider: openai
-    model: gpt-5.4
+    model: gpt-5.5
   general-analyst:
     provider: openai
-    model: gpt-5.4
+    model: gpt-5.5
   general-writer:
     provider: openai
-    model: gpt-5.4
+    model: gpt-5.5
   general-editor:
     provider: openai
-    model: gpt-5.4
+    model: gpt-5.5
   general-operator:
     provider: openai
-    model: gpt-5.4
+    model: gpt-5.5
 
 tags:
   - general

@@ -290,7 +290,7 @@ test("session.compacted records continuity state without injecting recovery prom
 
   await plugin.config?.(config);
   await plugin["chat.message"]?.(
-    { sessionID: "ses-parent", agent: "coding-leader", model: { providerID: "openai", modelID: "gpt-5.4" } },
+    { sessionID: "ses-parent", agent: "coding-leader", model: { providerID: "openai", modelID: "gpt-5.5" } },
     { message: { role: "user", parts: [] }, parts: [] },
   );
 
