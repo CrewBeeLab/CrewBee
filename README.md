@@ -36,9 +36,10 @@ The current version already delivers a complete **CrewBee → OpenCode** MVP pat
 
 ## Quick Links
 
+- [CrewBeeLab Website](https://crewbeelab.github.io)
 - [Installation Guide](docs/guide/installation.md)
+- [Custom Agent Team Guide](docs/guide/custom-agent-team.md)
 - [Release Guide](docs/guide/release.md)
-- [Architecture](docs/architecture.md)
 
 ## Agent IDs in OpenCode
 
@@ -61,7 +62,6 @@ The same id is used for OpenCode `default_agent`, session-level selection, deleg
 * [Core Features](#core-features)
 * [Installation](#installation)
 * [Quick Start](#quick-start)
-* [Architecture at a Glance](#architecture-at-a-glance)
 * [How Agent Teams and Agent Profiles Are Defined](#how-agent-teams-and-agent-profiles-are-defined)
 * [How the OpenCode Runtime Works](#how-the-opencode-runtime-works)
 * [Built-in Coding Team Design](#built-in-coding-team-design)
@@ -301,29 +301,9 @@ After installation:
 2. select a CrewBee projected agent (for example `coding-leader`)
 3. send requests normally
 
----
-
-## Architecture at a Glance
-
-```text
-Team Definitions
-  -> TeamLibrary
-  -> TeamLibrary Projection
-  -> OpenCode Bootstrap
-  -> OpenCode Config Patch + Session Binding
-  -> OpenCode Plugin Hooks
-
-User-level install
-  -> local tarball
-  -> ~/.cache/opencode
-  -> node_modules/crewbee
-  -> canonical package-name entry (crewbee)
-  -> OpenCode config
-```
-
----
-
 ## How Agent Teams and Agent Profiles Are Defined
+
+To design and register your own file-based Team, start with the [Custom Agent Team Guide](docs/guide/custom-agent-team.md). It walks through the real runnable directory layout, `crewbee.json` registration, Team policy design, agent role boundaries, and validation checklist.
 
 ### Actual file-based Team structure
 
@@ -352,7 +332,7 @@ Example:
 {
   "teams": [
     { "id": "coding-team", "enabled": true, "priority": 0 },
-    { "path": "@tmp/oh-my-opencode", "enabled": true, "priority": 1 }
+    { "path": "@teams/research-team", "enabled": true, "priority": 1 }
   ]
 }
 ```
