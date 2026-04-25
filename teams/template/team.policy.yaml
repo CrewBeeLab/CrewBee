@@ -1,9 +1,10 @@
 kind: team-policy
+id: general-task-team-policy
 version: 1.0.0
 
 instruction_precedence:
   - platform rules
-  - repository rules
+  - repository or workspace rules
   - team rules
   - agent rules
   - task rules
@@ -12,29 +13,35 @@ approval_policy:
   required_for:
     - destructive actions
     - external side effects
-    - commit
+    - publishing, sending, purchasing, deleting, or committing on the user's behalf
+    - accessing sensitive or private sources not already provided or authorized
   allow_assume_for:
-    - low-risk implementation details
+    - low-risk formatting, wording, and organization choices
+    - reasonable defaults for summaries, notes, outlines, tables, and research structure
+    - choosing the most direct output format when the user did not specify one
 
 forbidden_actions:
-  - fabricate evidence
-  - claim done without verification
-  - ignore hard constraints
-  - pretend to have read unread code
+  - fabricate evidence, citations, files, links, or tool results
+  - claim to have read or accessed material that was not actually available
+  - hide uncertainty when facts, data, or source coverage are incomplete
+  - ignore explicit user constraints or higher-priority instructions
+  - perform irreversible or externally visible actions without approval
 
 quality_floor:
   required_checks:
-    - diagnostics
-    - build
-    - tests
+    - scope fit
+    - factual consistency
+    - output completeness
+    - source or evidence status when factual claims matter
   evidence_required: true
 
 working_rules:
-  - leader is the primary interface
-  - only one active owner should hold the main context at a time
-  - support agents report back to the leader or active owner
-  - delegation and consultation must carry goal, scope, constraints, deliverable, and verification expectations
-  - final user-facing convergence comes from the role holding closure responsibility
+  - The leader is the primary user-facing interface and owns final convergence.
+  - Use the simplest path that can satisfy the task safely; do not create multi-agent ceremony for trivial work.
+  - Separate facts, assumptions, interpretations, and recommendations when the distinction matters.
+  - When using sources or files, report the evidence basis with enough detail for the user to trust or verify it.
+  - Ask at most one precise clarification question only when ambiguity materially changes the result, cost, safety, or format.
+  - If the task is open-ended, choose a useful default structure and state the assumption briefly.
 
 prompt_projection:
   include:

@@ -1,5 +1,112 @@
 # 自定义设计一套 Agent Team（最佳实践）
 
+## 0. 最先要做的两件事：放在哪，怎么注册
+
+定义一支自定义 Agent Team 时，最直接、最必然要接触的是这两件事：
+
+1. **把 Team 定义文件放进同一个 Team 目录**
+2. **在 OpenCode 配置目录的 `crewbee.json` 中注册这个 Team 目录**
+
+### 0.1 Team 目录应该怎么放
+
+一支文件型 Team 就是一个目录。当前实现只读取这个目录根部的文件，不扫描 `agents/`、`docs/` 等子目录：
+
+```text
+ResearchOpsTeam/
+  team.manifest.yaml
+  team.policy.yaml
+  researchops-leader.agent.md
+  evidence-researcher.agent.md
+  report-writer.agent.md
+  TEAM.md              # optional，给人看的说明文件
+```
+
+必需文件：
+
+- `team.manifest.yaml`
+- `team.policy.yaml`
+- 至少一个 `*.agent.md`
+
+可选文件：
+
+- `TEAM.md`
+- `README.md`
+
+> 关键约束：`*.agent.md` 必须和 `team.manifest.yaml`、`team.policy.yaml` 放在同一层目录。当前实现不会从 `agents/` 子目录加载 Agent。
+
+### 0.2 在哪里配置 `crewbee.json`
+
+`crewbee.json` 位于 **OpenCode 配置目录**下。常见位置是：
+
+```text
+~/.config/opencode/crewbee.json
+```
+
+在 Windows 上通常对应：
+
+```text
+C:\Users\<你的用户名>\.config\opencode\crewbee.json
+```
+
+如果你通过环境变量或 OpenCode 自身配置使用了其它 OpenCode config root，则以实际 OpenCode 配置目录为准。
+
+### 0.3 `crewbee.json` 怎么写
+
+最小示例：
+
+```json
+{
+  "teams": [
+    { "id": "coding-team", "enabled": true, "priority": 0 },
+    { "path": "@teams/ResearchOpsTeam", "enabled": true, "priority": 1 }
+  ]
+}
+```
+
+含义：
+
+- `{ "id": "coding-team" }`：加载内置 Coding Team。
+- `{ "path": "..." }`：加载一个文件型 Team；`path` 指向 `team.manifest.yaml` 所在目录，而不是指向某个具体文件。
+- `enabled`：可选；默认 `true`。
+- `priority`：可选；数字越小优先级越高。最高优先级 Team 的默认 leader 会成为 OpenCode 默认 Agent。
+- 同一个 entry 只能写 `id` 或 `path` 其中之一，不能同时写。
+
+`path` 支持这些写法：
+
+```json
+{ "path": "@teams/ResearchOpsTeam" }
+{ "path": "teams/ResearchOpsTeam" }
+{ "path": "~/CrewBeeTeams/ResearchOpsTeam" }
+{ "path": "E:/CrewBeeTeams/ResearchOpsTeam" }
+```
+
+路径规则：
+
+- `@teams/ResearchOpsTeam`：相对于 OpenCode 配置目录，`@` 会被去掉。
+- `teams/ResearchOpsTeam`：同样相对于 OpenCode 配置目录。
+- `~/...`：相对于用户 home 目录。
+- 绝对路径：按原样使用。
+
+因此，如果你用上面的 `@teams/ResearchOpsTeam`，实际目录通常应是：
+
+```text
+~/.config/opencode/teams/ResearchOpsTeam/
+```
+
+### 0.4 最短落地步骤
+
+1. 在 OpenCode 配置目录下创建目录：`teams/ResearchOpsTeam/`
+2. 把 `team.manifest.yaml`、`team.policy.yaml`、所有 `*.agent.md` 放在这个目录根部
+3. 在 `crewbee.json` 中添加：
+
+```json
+{ "path": "@teams/ResearchOpsTeam", "enabled": true, "priority": 1 }
+```
+
+4. 重启 OpenCode，或重新启动 OpenCode server，让 CrewBee 重新加载配置
+
+---
+
 ## 1. 这份文档是给谁的
 
 这份文档面向两类人：
@@ -42,7 +149,7 @@
 {
   "teams": [
     { "id": "coding-team", "enabled": true, "priority": 0 },
-    { "path": "@tmp/ResearchOpsTeam", "enabled": true, "priority": 1 }
+    { "path": "@teams/ResearchOpsTeam", "enabled": true, "priority": 1 }
   ]
 }
 ```
@@ -51,7 +158,7 @@
 
 - `coding-team` 是内置 Team，没有 `path`
 - 文件型 Team 的 `path` 指向 `team.manifest.yaml` 所在目录
-- `@...` 路径相对于 `~/.config/opencode`
+- `@...` 路径相对于 OpenCode 配置目录；常见情况下就是 `~/.config/opencode`
 - 数字越小优先级越高；最高优先级 Team 的默认 leader 会成为 OpenCode 默认 Agent
 
 ---
@@ -211,7 +318,7 @@ CrewBee 当前设计里，每支 Team 都必须有一个 **formal leader**。
 目录结构如下：
 
 ```text
-<any-configured-dir>/
+<OpenCodeConfigRoot>/teams/
   ResearchOpsTeam/
     team.manifest.yaml
     team.policy.yaml

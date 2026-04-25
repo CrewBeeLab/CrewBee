@@ -54,3 +54,23 @@ test("runDoctor accepts the OpenCode package cache layout", async () => {
   assert.equal(result.hasPluginFile, true);
   assert.equal(result.installedPackageRoot.replace(/\\/g, "/").endsWith("/packages/crewbee@latest/node_modules/crewbee"), true);
 });
+
+test("runDoctor accepts OpenCode-managed Bun npm plugin installs", async () => {
+  const installRoot = mkdtempSync(path.join(os.tmpdir(), "crewbee-doctor-bun-install-"));
+  const configPath = path.join(mkdtempSync(path.join(os.tmpdir(), "crewbee-doctor-bun-config-")), "opencode.json");
+
+  mkdirSync(installRoot, { recursive: true });
+  writeFileSync(path.join(installRoot, "package.json"), '{"private":true}\n', "utf8");
+  writeFileSync(path.join(installRoot, "bun.lock"), '{"packages":{"crewbee":["crewbee@0.1.7",""]}}\n', "utf8");
+  writeFileSync(configPath, JSON.stringify({ plugin: ["crewbee@latest"] }, null, 2) + "\n", "utf8");
+
+  const result = await runDoctor({
+    configPath,
+    installRoot,
+  });
+
+  assert.equal(result.healthy, true);
+  assert.equal(result.configMatchesCanonical, true);
+  assert.equal(result.hasInstalledPackage, true);
+  assert.equal(result.hasPluginFile, true);
+});
