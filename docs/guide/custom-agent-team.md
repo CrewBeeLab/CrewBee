@@ -1,11 +1,13 @@
 # 自定义设计一套 Agent Team（最佳实践）
 
+语言：中文 | [English](./custom-agent-team.en.md)
+
 ## 0. 最先要做的两件事：放在哪，怎么注册
 
 定义一支自定义 Agent Team 时，最直接、最必然要接触的是这两件事：
 
 1. **把 Team 定义文件放进同一个 Team 目录**
-2. **在 OpenCode 配置目录的 `crewbee.json` 中注册这个 Team 目录**
+2. **在全局或项目级 `crewbee.json` 中注册这个 Team 目录**
 
 ### 0.1 Team 目录应该怎么放
 
@@ -36,7 +38,14 @@ ResearchOpsTeam/
 
 ### 0.2 在哪里配置 `crewbee.json`
 
-`crewbee.json` 位于 **OpenCode 配置目录**下。常见位置是：
+CrewBee 现在支持两类同构配置来源：
+
+| 作用域 | 配置文件 | 适用场景 |
+| --- | --- | --- |
+| global | OpenCode 配置目录下的 `crewbee.json` | 所有项目默认可用的 Team |
+| project | 当前项目下的 `.crewbee/crewbee.json` | 只对当前 worktree 生效的项目 Team |
+
+全局配置常见位置是：
 
 ```text
 ~/.config/opencode/crewbee.json
@@ -49,6 +58,14 @@ C:\Users\<你的用户名>\.config\opencode\crewbee.json
 ```
 
 如果你通过环境变量或 OpenCode 自身配置使用了其它 OpenCode config root，则以实际 OpenCode 配置目录为准。
+
+项目级配置位于当前 OpenCode 工作项目中：
+
+```text
+<project-worktree>/.crewbee/crewbee.json
+```
+
+项目级配置和全局配置使用相同 schema、相同 Team 目录结构、相同 loader / validator / projection / OpenCode config patch。差异只在于配置文件位置、路径解析基准、`project` scope 语义和更高 source precedence。
 
 ### 0.3 `crewbee.json` 怎么写
 
@@ -68,7 +85,7 @@ C:\Users\<你的用户名>\.config\opencode\crewbee.json
 - `{ "id": "coding-team" }`：加载内置 Coding Team。
 - `{ "path": "..." }`：加载一个文件型 Team；`path` 指向 `team.manifest.yaml` 所在目录，而不是指向某个具体文件。
 - `enabled`：可选；默认 `true`。
-- `priority`：可选；数字越小优先级越高。最高优先级 Team 的默认 leader 会成为 OpenCode 默认 Agent。
+- `priority`：可选；数字越小优先级越高。同一 source 内按 priority 排序；跨 source 时 project source 先于 global source。最高优先级可用 Team 的默认 leader 会成为 OpenCode 默认 Agent。
 - 同一个 entry 只能写 `id` 或 `path` 其中之一，不能同时写。
 
 `path` 支持这些写法：
@@ -82,28 +99,35 @@ C:\Users\<你的用户名>\.config\opencode\crewbee.json
 
 路径规则：
 
-- `@teams/ResearchOpsTeam`：相对于 OpenCode 配置目录，`@` 会被去掉。
-- `teams/ResearchOpsTeam`：同样相对于 OpenCode 配置目录。
+- `@teams/ResearchOpsTeam`：相对于当前 `crewbee.json` 所在目录，`@` 会被去掉。
+- `teams/ResearchOpsTeam`：同样相对于当前 `crewbee.json` 所在目录。
 - `~/...`：相对于用户 home 目录。
 - 绝对路径：按原样使用。
 
-因此，如果你用上面的 `@teams/ResearchOpsTeam`，实际目录通常应是：
+因此，如果你在全局配置中使用 `@teams/ResearchOpsTeam`，实际目录通常应是：
 
 ```text
 ~/.config/opencode/teams/ResearchOpsTeam/
 ```
 
+如果你在项目配置 `<project-worktree>/.crewbee/crewbee.json` 中使用同样写法，实际目录是：
+
+```text
+<project-worktree>/.crewbee/teams/ResearchOpsTeam/
+```
+
 ### 0.4 最短落地步骤
 
-1. 在 OpenCode 配置目录下创建目录：`teams/ResearchOpsTeam/`
-2. 把 `team.manifest.yaml`、`team.policy.yaml`、所有 `*.agent.md` 放在这个目录根部
-3. 在 `crewbee.json` 中添加：
+1. 选择 Team 生效范围：全局 Team 放到 OpenCode 配置目录；项目 Team 放到当前项目 `.crewbee` 目录
+2. 创建 Team 目录：全局为 `<OpenCodeConfigRoot>/teams/ResearchOpsTeam/`，项目为 `<project-worktree>/.crewbee/teams/ResearchOpsTeam/`
+3. 把 `team.manifest.yaml`、`team.policy.yaml`、所有 `*.agent.md` 放在这个目录根部
+4. 在对应的 `crewbee.json` 中添加：
 
 ```json
 { "path": "@teams/ResearchOpsTeam", "enabled": true, "priority": 1 }
 ```
 
-4. 重启 OpenCode，或重新启动 OpenCode server，让 CrewBee 重新加载配置
+5. 重启 OpenCode，或重新启动 OpenCode server，让 CrewBee 重新加载配置
 
 ---
 
@@ -143,7 +167,7 @@ C:\Users\<你的用户名>\.config\opencode\crewbee.json
 
 > 当前实现里，`*.agent.md` 必须和 `team.manifest.yaml`、`team.policy.yaml` 放在同一目录；`TEAM.md` 也是同目录下的可选说明文件。当前不使用 `agents/` 或 `docs/` 子目录，也不会扫描这些子目录中的 Agent 文件。
 
-要让 CrewBee 加载这支 Team，还需要在 OpenCode 配置目录中的 `crewbee.json` 里注册它：
+要让 CrewBee 加载这支 Team，还需要在某个 `crewbee.json` 里注册它。全局 Team 写入 OpenCode 配置目录下的 `crewbee.json`；项目 Team 写入当前工作项目的 `.crewbee/crewbee.json`：
 
 ```json
 {
@@ -158,8 +182,9 @@ C:\Users\<你的用户名>\.config\opencode\crewbee.json
 
 - `coding-team` 是内置 Team，没有 `path`
 - 文件型 Team 的 `path` 指向 `team.manifest.yaml` 所在目录
-- `@...` 路径相对于 OpenCode 配置目录；常见情况下就是 `~/.config/opencode`
-- 数字越小优先级越高；最高优先级 Team 的默认 leader 会成为 OpenCode 默认 Agent
+- `@...` 路径相对于当前 `crewbee.json` 所在目录；全局配置通常是 `~/.config/opencode`，项目配置通常是 `<project-worktree>/.crewbee`
+- 数字越小优先级越高；跨 source 时项目 Team 优先于全局 Team；最高优先级可用 Team 的默认 leader 会成为 OpenCode 默认 Agent
+- 当项目 Team 与全局 Team 的 manifest id 相同，项目 Team 会 shadow 全局 Team
 
 ---
 
@@ -315,10 +340,23 @@ CrewBee 当前设计里，每支 Team 都必须有一个 **formal leader**。
 
 假设你要创建一支新 Team：`ResearchOpsTeam`
 
-目录结构如下：
+如果它是全局 Team，目录结构如下：
 
 ```text
 <OpenCodeConfigRoot>/teams/
+  ResearchOpsTeam/
+    team.manifest.yaml
+    team.policy.yaml
+    researchops-leader.agent.md
+    evidence-researcher.agent.md
+    report-writer.agent.md
+    TEAM.md
+```
+
+如果它是项目 Team，目录结构如下：
+
+```text
+<project-worktree>/.crewbee/teams/
   ResearchOpsTeam/
     team.manifest.yaml
     team.policy.yaml

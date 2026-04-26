@@ -1,5 +1,9 @@
 # CrewBee 项目级 Team 配置方案
 
+语言：中文 | [English](./project-team-config.en.md)
+
+> Status: implemented and published in `crewbee@0.1.9`. This document describes the current project/global Team configuration model and the architectural constraints that keep both sources on the same assembly path.
+
 ## 1. 设计结论
 
 P0 目标是让 CrewBee 同时支持 **全局 Team** 和 **项目 Team**，并让项目 Team 在当前项目中天然优先于全局 Team。

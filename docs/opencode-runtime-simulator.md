@@ -1,5 +1,7 @@
 # OpenCode Runtime Simulator
 
+Language: English | [中文](./opencode-runtime-simulator.zh-CN.md)
+
 ## 1. Purpose
 
 This simulator exists only for local testing and understanding.

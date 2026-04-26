@@ -1,5 +1,7 @@
 # Installation
 
+Language: English | [中文](./installation.zh-CN.md)
+
 ## Current Scope
 
 CrewBee now supports both installation paths:
@@ -167,6 +169,44 @@ After OpenCode loads the plugin:
 3. send your request normally
 
 CrewBee is no longer tied to a specific target project's `node_modules` installation.
+
+### Optional: add project-specific Teams
+
+CrewBee supports both global Teams and project Teams. Global Teams are registered from the OpenCode config root:
+
+```text
+~/.config/opencode/crewbee.json
+```
+
+Project Teams are registered from the current OpenCode worktree:
+
+```text
+<project-worktree>/.crewbee/crewbee.json
+```
+
+Both files use the same `teams` schema. A project Team is not loaded by a separate project-only pipeline; it is normalized into the same Team registration flow as global Teams, with a higher source precedence for the current worktree.
+
+Minimal project config:
+
+```json
+{
+  "teams": [
+    { "path": "@teams/project-team", "enabled": true, "priority": 0 }
+  ]
+}
+```
+
+With that config, `@teams/project-team` resolves to:
+
+```text
+<project-worktree>/.crewbee/teams/project-team
+```
+
+If the project Team has a user-selectable formal leader, that leader becomes the default Agent for this OpenCode instance, while global Teams remain available at lower source precedence. For the full design and examples, see:
+
+```text
+docs/guide/project-team-config.md
+```
 
 ## Step 6: Migrate From the Old Project-Local Mode
 

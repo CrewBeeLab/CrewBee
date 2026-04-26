@@ -1,5 +1,7 @@
 # Release Guide
 
+Language: English | [中文](./release.zh-CN.md)
+
 ## Goals
 
 CrewBee now supports two parallel flows:
@@ -119,6 +121,8 @@ node ./scripts/release-registry.mjs --publish --version 0.2.0-beta.1 --tag beta
    - `npm run doctor`
    - `npm run pack:release`
 6. Optionally publishes to npm.
+
+> Note: the local publish path requests npm provenance. Some local shells are not recognized by npm as supported provenance providers. If validation and `pack:release` have already passed but npm fails with `Automatic provenance generation not supported for provider: null`, publish the prepared package from the same checked version with `npm publish --access public --tag <tag>` and record the provenance fallback in the release notes / handoff.
 
 ### What the local script does **not** do automatically
 

@@ -1,5 +1,7 @@
 # 开发约定
 
+语言：中文 | [English](./contributing.en.md)
+
 ## 基本流程
 
 1. 先确认改动是否符合 Team-first 的总体方向。
@@ -12,5 +14,5 @@
 - Team 相关规范要尽量显式、可版本化。
 - 优先使用小而可组合的合同结构，而不是大而全的单体接口。
 - `src/core` 保持宿主无关，不提前写死 OpenCode 之外的实现细节。
-- 文件型 Team 的随包模板位于 `templates/teams/`；安装后会同步到 OpenCode 配置目录下的 `teams/`，运行时加载来源仍由 `~/.config/opencode/crewbee.json` 决定。
+- 文件型 Team 的随包模板位于 `templates/teams/`；安装后会同步到 OpenCode 配置目录下的 `teams/`，作为全局 Team 来源使用。运行时 Team 注册来源包括 OpenCode config root 下的全局 `crewbee.json` 和当前 worktree 下的项目 `.crewbee/crewbee.json`；二者必须走同一套 loader / validator / projection / OpenCode config patch，项目 source 仅通过更高 precedence 获得优先级。
 - `docs/` 下文档以中文为主，面向人类理解与项目推进。
