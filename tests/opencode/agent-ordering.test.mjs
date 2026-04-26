@@ -392,6 +392,204 @@ test("team priority controls projected agent order and bootstrap default agent",
   }
 });
 
+test("project crewbee config takes precedence over global config", () => {
+  const workspace = mkdtempSync(path.join(os.tmpdir(), "crewbee-project-team-priority-"));
+  const previousConfigDir = process.env.OPENCODE_CONFIG_DIR;
+
+  try {
+    const configRoot = path.join(workspace, ".config", "opencode");
+    const projectConfigRoot = path.join(workspace, ".crewbee");
+    const projectTeamDir = path.join(projectConfigRoot, "teams", "ProjectTeam");
+
+    process.env.OPENCODE_CONFIG_DIR = configRoot;
+
+    writeFile(
+      path.join(configRoot, "crewbee.json"),
+      createCrewBeeConfig([
+        { id: "coding-team", enabled: true, priority: 0 },
+      ]),
+    );
+    writeFile(
+      path.join(projectConfigRoot, "crewbee.json"),
+      createCrewBeeConfig([
+        { path: "@teams/ProjectTeam", enabled: true, priority: 99 },
+      ]),
+    );
+    writeFile(path.join(projectTeamDir, "team.manifest.yaml"), createTeamManifest("project-team", "ProjectTeam", "project-leader", "project-executor"));
+    writeFile(path.join(projectTeamDir, "team.policy.yaml"), createTeamPolicy());
+    writeFile(
+      path.join(projectTeamDir, "project-leader.agent.md"),
+      createAgentProfile("project-leader", "Project Leader", "user-selectable", "leader", "project-executor", "project-executor"),
+    );
+    writeFile(
+      path.join(projectTeamDir, "project-executor.agent.md"),
+      createAgentProfile("project-executor", "Project Executor", "internal-only", "executor", undefined, undefined),
+    );
+
+    const library = loadDefaultTeamLibrary(workspace);
+    const projection = createTeamLibraryProjection(library);
+    const bootstrap = createOpenCodeBootstrap({
+      teamLibrary: library,
+      defaults: { defaultMode: "single-executor" },
+    });
+
+    assert.deepEqual(
+      projection.teams.map((team) => team.team.manifest.id).slice(0, 2),
+      ["project-team", "coding-team"],
+    );
+    assert.equal(bootstrap.configPatch.defaultAgent, "project-leader");
+  } finally {
+    if (previousConfigDir === undefined) {
+      delete process.env.OPENCODE_CONFIG_DIR;
+    } else {
+      process.env.OPENCODE_CONFIG_DIR = previousConfigDir;
+    }
+
+    rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("project team shadows global team with the same manifest id", () => {
+  const workspace = mkdtempSync(path.join(os.tmpdir(), "crewbee-project-team-shadow-"));
+  const previousConfigDir = process.env.OPENCODE_CONFIG_DIR;
+
+  try {
+    const configRoot = path.join(workspace, ".config", "opencode");
+    const projectConfigRoot = path.join(workspace, ".crewbee");
+    const globalTeamDir = path.join(configRoot, "teams", "SharedTeam");
+    const projectTeamDir = path.join(projectConfigRoot, "teams", "SharedTeam");
+
+    process.env.OPENCODE_CONFIG_DIR = configRoot;
+
+    writeFile(path.join(configRoot, "crewbee.json"), createCrewBeeConfig([
+      { path: "@teams/SharedTeam", enabled: true, priority: 0 },
+      { id: "coding-team", enabled: true, priority: 99 },
+    ]));
+    writeFile(path.join(projectConfigRoot, "crewbee.json"), createCrewBeeConfig([{ path: "@teams/SharedTeam", enabled: true, priority: 10 }]));
+
+    writeFile(path.join(globalTeamDir, "team.manifest.yaml"), createTeamManifest("shared-team", "GlobalSharedTeam", "global-leader", "global-executor"));
+    writeFile(path.join(globalTeamDir, "team.policy.yaml"), createTeamPolicy());
+    writeFile(path.join(globalTeamDir, "global-leader.agent.md"), createAgentProfile("global-leader", "Global Leader", "user-selectable", "leader", "global-executor", "global-executor"));
+    writeFile(path.join(globalTeamDir, "global-executor.agent.md"), createAgentProfile("global-executor", "Global Executor", "internal-only", "executor", undefined, undefined));
+
+    writeFile(path.join(projectTeamDir, "team.manifest.yaml"), createTeamManifest("shared-team", "ProjectSharedTeam", "shared-leader", "shared-executor"));
+    writeFile(path.join(projectTeamDir, "team.policy.yaml"), createTeamPolicy());
+    writeFile(path.join(projectTeamDir, "shared-leader.agent.md"), createAgentProfile("shared-leader", "Shared Leader", "user-selectable", "leader", "shared-executor", "shared-executor"));
+    writeFile(path.join(projectTeamDir, "shared-executor.agent.md"), createAgentProfile("shared-executor", "Shared Executor", "internal-only", "executor", undefined, undefined));
+
+    const library = loadDefaultTeamLibrary(workspace);
+    const projection = createTeamLibraryProjection(library);
+    const bootstrap = createOpenCodeBootstrap({
+      teamLibrary: library,
+      defaults: { defaultMode: "single-executor" },
+    });
+
+    assert.equal(library.teams.filter((team) => team.manifest.id === "shared-team").length, 1);
+    assert.equal(projection.teams[0]?.team.manifest.name, "ProjectSharedTeam");
+    assert.equal(bootstrap.configPatch.defaultAgent, "shared-leader");
+    assert.ok(library.loadIssues?.some((issue) => issue.message.includes("shadows global Team 'shared-team'")));
+  } finally {
+    if (previousConfigDir === undefined) {
+      delete process.env.OPENCODE_CONFIG_DIR;
+    } else {
+      process.env.OPENCODE_CONFIG_DIR = previousConfigDir;
+    }
+
+    rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("invalid project crewbee config falls back to global teams", () => {
+  const workspace = mkdtempSync(path.join(os.tmpdir(), "crewbee-project-config-invalid-"));
+  const previousConfigDir = process.env.OPENCODE_CONFIG_DIR;
+
+  try {
+    const configRoot = path.join(workspace, ".config", "opencode");
+
+    process.env.OPENCODE_CONFIG_DIR = configRoot;
+
+    writeFile(path.join(configRoot, "crewbee.json"), createCrewBeeConfig([{ id: "coding-team", enabled: true, priority: 0 }]));
+    writeFile(path.join(workspace, ".crewbee", "crewbee.json"), "{broken json");
+
+    const library = loadDefaultTeamLibrary(workspace);
+    const bootstrap = createOpenCodeBootstrap({
+      teamLibrary: library,
+      defaults: { defaultMode: "single-executor" },
+    });
+
+    assert.deepEqual(library.teams.map((team) => team.manifest.id), ["coding-team"]);
+    assert.equal(bootstrap.configPatch.defaultAgent, "coding-leader");
+    assert.ok(library.loadIssues?.some((issue) => issue.message.includes("Failed to parse crewbee.json")));
+  } finally {
+    if (previousConfigDir === undefined) {
+      delete process.env.OPENCODE_CONFIG_DIR;
+    } else {
+      process.env.OPENCODE_CONFIG_DIR = previousConfigDir;
+    }
+
+    rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("invalid project team validation does not pollute global canonical agent ids", () => {
+  const workspace = mkdtempSync(path.join(os.tmpdir(), "crewbee-project-invalid-team-fallback-"));
+  const previousConfigDir = process.env.OPENCODE_CONFIG_DIR;
+
+  try {
+    const configRoot = path.join(workspace, ".config", "opencode");
+    const projectConfigRoot = path.join(workspace, ".crewbee");
+    const globalTeamDir = path.join(configRoot, "teams", "SharedTeam");
+    const projectTeamDir = path.join(projectConfigRoot, "teams", "SharedTeam");
+
+    process.env.OPENCODE_CONFIG_DIR = configRoot;
+
+    writeFile(path.join(configRoot, "crewbee.json"), createCrewBeeConfig([
+      { path: "@teams/SharedTeam", enabled: true, priority: 0 },
+      { id: "coding-team", enabled: true, priority: 99 },
+    ]));
+    writeFile(path.join(projectConfigRoot, "crewbee.json"), createCrewBeeConfig([{ path: "@teams/SharedTeam", enabled: true, priority: 0 }]));
+
+    writeFile(path.join(projectTeamDir, "team.manifest.yaml"), createTeamManifest("shared-team", "InvalidProjectSharedTeam", "missing-leader", "shared-executor"));
+    writeFile(path.join(projectTeamDir, "team.policy.yaml"), createTeamPolicy());
+    writeFile(
+      path.join(projectTeamDir, "shared-leader.agent.md"),
+      createAgentProfile("shared-leader", "Shared Leader", "user-selectable", "leader", "missing-agent", "shared-executor"),
+    );
+    writeFile(
+      path.join(projectTeamDir, "shared-executor.agent.md"),
+      createAgentProfile("shared-executor", "Shared Executor", "internal-only", "executor", undefined, undefined),
+    );
+
+    writeFile(path.join(globalTeamDir, "team.manifest.yaml"), createTeamManifest("shared-team", "GlobalSharedTeam", "shared-leader", "shared-executor"));
+    writeFile(path.join(globalTeamDir, "team.policy.yaml"), createTeamPolicy());
+    writeFile(path.join(globalTeamDir, "shared-leader.agent.md"), createAgentProfile("shared-leader", "Shared Leader", "user-selectable", "leader", "shared-executor", "shared-executor"));
+    writeFile(path.join(globalTeamDir, "shared-executor.agent.md"), createAgentProfile("shared-executor", "Shared Executor", "internal-only", "executor", undefined, undefined));
+
+    const library = loadDefaultTeamLibrary(workspace);
+    const projection = createTeamLibraryProjection(library);
+    const bootstrap = createOpenCodeBootstrap({
+      teamLibrary: library,
+      defaults: { defaultMode: "single-executor" },
+    });
+
+    assert.equal(library.teams[0].manifest.name, "GlobalSharedTeam");
+    assert.deepEqual(
+      projection.agents.filter((agent) => agent.teamId === "shared-team").map((agent) => agent.canonicalAgentId),
+      ["shared-leader", "shared-executor"],
+    );
+    assert.equal(bootstrap.configPatch.defaultAgent, "shared-leader");
+    assert.ok(library.loadIssues?.some((issue) => issue.message.includes("Leader agent 'missing-leader' is not defined in this Team.")));
+  } finally {
+    if (previousConfigDir === undefined) {
+      delete process.env.OPENCODE_CONFIG_DIR;
+    } else {
+      process.env.OPENCODE_CONFIG_DIR = previousConfigDir;
+    }
+
+    rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
 test("bootstrap falls back to the next team when the highest-priority team has no user-selectable agent", () => {
   const teamPolicy = {
     instructionPrecedence: ["test"],

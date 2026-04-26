@@ -336,6 +336,44 @@ test("bundled plugin startup creates crewbee.json from packaged template", async
   }
 });
 
+test("plugin startup uses project crewbee config as default agent source", async () => {
+  const workspace = mkdtempSync(path.join(os.tmpdir(), "crewbee-plugin-project-config-"));
+  const previousConfigDir = process.env.OPENCODE_CONFIG_DIR;
+
+  try {
+    const configRoot = path.join(workspace, ".config", "opencode");
+    const projectConfigRoot = path.join(workspace, ".crewbee");
+    const projectTeamDir = path.join(projectConfigRoot, "teams", "ProjectTeam");
+    const logs = [];
+
+    process.env.OPENCODE_CONFIG_DIR = configRoot;
+
+    writeFile(path.join(configRoot, "crewbee.json"), createCrewBeeConfig([{ id: "coding-team", enabled: true, priority: 0 }]));
+    writeFile(path.join(projectConfigRoot, "crewbee.json"), createCrewBeeConfig([{ path: "@teams/ProjectTeam", enabled: true, priority: 10 }]));
+    writeFile(path.join(projectTeamDir, "team.manifest.yaml"), createTeamManifest("project-team", "ProjectTeam", "project-leader", "project-executor"));
+    writeFile(path.join(projectTeamDir, "team.policy.yaml"), createTeamPolicy());
+    writeFile(path.join(projectTeamDir, "project-leader.agent.md"), createAgentProfile("project-leader", "Project Leader", "user-selectable", "leader", "project-executor", "project-executor"));
+    writeFile(path.join(projectTeamDir, "project-executor.agent.md"), createAgentProfile("project-executor", "Project Executor", "internal-only", "executor", undefined, undefined));
+
+    const plugin = await OpenCodeCrewBeePlugin(createPluginInput(workspace, logs));
+    const config = { agent: {} };
+
+    await plugin.config?.(config);
+
+    assert.equal(config.default_agent, "project-leader");
+    assert.ok(config.agent["project-leader"]);
+    assert.ok(config.agent["coding-leader"]);
+  } finally {
+    if (previousConfigDir === undefined) {
+      delete process.env.OPENCODE_CONFIG_DIR;
+    } else {
+      process.env.OPENCODE_CONFIG_DIR = previousConfigDir;
+    }
+
+    rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
 test("plugin startup repairs invalid crewbee.json automatically", async () => {
   const workspace = mkdtempSync(path.join(os.tmpdir(), "crewbee-plugin-config-invalid-"));
   const previousConfigDir = process.env.OPENCODE_CONFIG_DIR;

@@ -36,6 +36,9 @@ export interface ConfiguredEmbeddedTeamSource {
   enabled: boolean;
   priority: number;
   order: number;
+  sourceScope: TeamConfigSourceScope;
+  sourcePrecedence: number;
+  configPath: string;
 }
 
 export interface ConfiguredFilesystemTeamSource {
@@ -44,9 +47,23 @@ export interface ConfiguredFilesystemTeamSource {
   enabled: boolean;
   priority: number;
   order: number;
+  sourceScope: TeamConfigSourceScope;
+  sourcePrecedence: number;
+  configPath: string;
 }
 
 export type ConfiguredTeamSource = ConfiguredEmbeddedTeamSource | ConfiguredFilesystemTeamSource;
+
+export type TeamConfigSourceScope = "project" | "global";
+
+interface TeamConfigSourceDescriptor {
+  scope: TeamConfigSourceScope;
+  configRoot: string;
+  configPath: string;
+  precedence: number;
+  addDefaultCodingTeam: boolean;
+  missingIsWarning: boolean;
+}
 
 export interface CrewBeeConfigFile {
   teams: Array<Record<string, unknown>>;
@@ -85,13 +102,20 @@ function getOptionalString(value: unknown): string | undefined {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
 }
 
-function createDefaultCodingTeamSource(): ConfiguredEmbeddedTeamSource {
+function createDefaultCodingTeamSource(input: {
+  sourceScope: TeamConfigSourceScope;
+  sourcePrecedence: number;
+  configPath: string;
+}): ConfiguredEmbeddedTeamSource {
   return {
     kind: "embedded",
     teamId: BUILTIN_CODING_TEAM_ID,
     enabled: true,
     priority: DEFAULT_EMBEDDED_TEAM_PRIORITY,
     order: -1,
+    sourceScope: input.sourceScope,
+    sourcePrecedence: input.sourcePrecedence,
+    configPath: input.configPath,
   };
 }
 
@@ -327,6 +351,8 @@ function normalizeConfiguredTeamEntry(input: {
   index: number;
   configRoot: string;
   configPath: string;
+  sourceScope: TeamConfigSourceScope;
+  sourcePrecedence: number;
 }): { source?: ConfiguredTeamSource; issues: TeamValidationIssue[] } {
   if (!isRecord(input.value)) {
     return {
@@ -370,6 +396,9 @@ function normalizeConfiguredTeamEntry(input: {
         enabled: getOptionalBoolean(raw.enabled, true),
         priority: getOptionalPriority(raw.priority, DEFAULT_EMBEDDED_TEAM_PRIORITY),
         order: input.index,
+        sourceScope: input.sourceScope,
+        sourcePrecedence: input.sourcePrecedence,
+        configPath: input.configPath,
       },
       issues: [],
     };
@@ -383,6 +412,9 @@ function normalizeConfiguredTeamEntry(input: {
         enabled: getOptionalBoolean(raw.enabled, true),
         priority: getOptionalPriority(raw.priority, DEFAULT_FILE_TEAM_PRIORITY),
         order: input.index,
+        sourceScope: input.sourceScope,
+        sourcePrecedence: input.sourcePrecedence,
+        configPath: input.configPath,
       },
       issues: [],
     };
@@ -421,16 +453,56 @@ export function resolveCrewBeeConfigPath(configRoot: string = resolveOpenCodeCon
   return path.join(configRoot, CREWBEE_CONFIG_FILE);
 }
 
-export function listConfiguredTeamSources(configRoot: string = resolveOpenCodeConfigRoot()): {
+function resolveProjectCrewBeeConfigRoot(worktree: string): string {
+  return path.join(worktree, ".crewbee");
+}
+
+function createConfiguredTeamSourceDescriptors(input: {
+  globalConfigRoot: string;
+  projectWorktree?: string;
+}): TeamConfigSourceDescriptor[] {
+  const sources: TeamConfigSourceDescriptor[] = [];
+
+  if (input.projectWorktree) {
+    const projectConfigRoot = resolveProjectCrewBeeConfigRoot(input.projectWorktree);
+    sources.push({
+      scope: "project",
+      configRoot: projectConfigRoot,
+      configPath: resolveCrewBeeConfigPath(projectConfigRoot),
+      precedence: 0,
+      addDefaultCodingTeam: false,
+      missingIsWarning: false,
+    });
+  }
+
+  sources.push({
+    scope: "global",
+    configRoot: input.globalConfigRoot,
+    configPath: resolveCrewBeeConfigPath(input.globalConfigRoot),
+    precedence: 1,
+    addDefaultCodingTeam: true,
+    missingIsWarning: false,
+  });
+
+  return sources;
+}
+
+function listConfiguredTeamSourcesFromDescriptor(descriptor: TeamConfigSourceDescriptor): {
   sources: ConfiguredTeamSource[];
   issues: TeamValidationIssue[];
 } {
-  const configPath = resolveCrewBeeConfigPath(configRoot);
+  const configPath = descriptor.configPath;
 
   if (!existsSync(configPath)) {
     return {
-      sources: [createDefaultCodingTeamSource()],
-      issues: [],
+      sources: descriptor.addDefaultCodingTeam
+        ? [createDefaultCodingTeamSource({
+            sourceScope: descriptor.scope,
+            sourcePrecedence: descriptor.precedence,
+            configPath,
+          })]
+        : [],
+      issues: descriptor.missingIsWarning ? [createConfigIssue(configPath, `crewbee.json source '${descriptor.scope}' does not exist.`)] : [],
     };
   }
 
@@ -442,7 +514,13 @@ export function listConfiguredTeamSources(configRoot: string = resolveOpenCodeCo
 
     if (!isRecord(value)) {
       return {
-        sources: [createDefaultCodingTeamSource()],
+        sources: descriptor.addDefaultCodingTeam
+          ? [createDefaultCodingTeamSource({
+              sourceScope: descriptor.scope,
+              sourcePrecedence: descriptor.precedence,
+              configPath,
+            })]
+          : [],
         issues: [createConfigIssue(configPath, "crewbee.json must contain a top-level object.")],
       };
     }
@@ -451,14 +529,26 @@ export function listConfiguredTeamSources(configRoot: string = resolveOpenCodeCo
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return {
-      sources: [createDefaultCodingTeamSource()],
+      sources: descriptor.addDefaultCodingTeam
+        ? [createDefaultCodingTeamSource({
+            sourceScope: descriptor.scope,
+            sourcePrecedence: descriptor.precedence,
+            configPath,
+          })]
+        : [],
       issues: [createConfigIssue(configPath, `Failed to parse crewbee.json: ${message}`)],
     };
   }
 
   if (parsed.teams !== undefined && !Array.isArray(parsed.teams)) {
     return {
-      sources: [createDefaultCodingTeamSource()],
+      sources: descriptor.addDefaultCodingTeam
+        ? [createDefaultCodingTeamSource({
+            sourceScope: descriptor.scope,
+            sourcePrecedence: descriptor.precedence,
+            configPath,
+          })]
+        : [],
       issues: [createConfigIssue(configPath, "crewbee.json teams must be an array when provided.")],
     };
   }
@@ -466,16 +556,23 @@ export function listConfiguredTeamSources(configRoot: string = resolveOpenCodeCo
   const resolved = (parsed.teams ?? []).map((value, index) => normalizeConfiguredTeamEntry({
     value,
     index,
-    configRoot,
+    configRoot: descriptor.configRoot,
     configPath,
+    sourceScope: descriptor.scope,
+    sourcePrecedence: descriptor.precedence,
   }));
   const configuredSources = resolved.flatMap((entry) => (entry.source ? [entry.source] : []));
   const issues = resolved.flatMap((entry) => entry.issues);
   const withDefaultCodingTeam = configuredSources.some(
     (source) => source.kind === "embedded" && source.teamId === BUILTIN_CODING_TEAM_ID,
   )
-    ? configuredSources
-    : [createDefaultCodingTeamSource(), ...configuredSources];
+    || !descriptor.addDefaultCodingTeam
+      ? configuredSources
+      : [createDefaultCodingTeamSource({
+          sourceScope: descriptor.scope,
+          sourcePrecedence: descriptor.precedence,
+          configPath,
+        }), ...configuredSources];
   const deduped = dedupeConfiguredTeamSources({
     sources: withDefaultCodingTeam,
     configPath,
@@ -484,6 +581,26 @@ export function listConfiguredTeamSources(configRoot: string = resolveOpenCodeCo
   return {
     sources: deduped.sources,
     issues: [...issues, ...deduped.issues],
+  };
+}
+
+export function listConfiguredTeamSources(input?: string | {
+  globalConfigRoot?: string;
+  projectWorktree?: string;
+}): {
+  sources: ConfiguredTeamSource[];
+  issues: TeamValidationIssue[];
+} {
+  const globalConfigRoot = typeof input === "string"
+    ? input
+    : (input?.globalConfigRoot ?? resolveOpenCodeConfigRoot());
+  const projectWorktree = typeof input === "string" ? undefined : input?.projectWorktree;
+  const descriptors = createConfiguredTeamSourceDescriptors({ globalConfigRoot, projectWorktree });
+  const resolved = descriptors.map((descriptor) => listConfiguredTeamSourcesFromDescriptor(descriptor));
+
+  return {
+    sources: resolved.flatMap((entry) => entry.sources),
+    issues: resolved.flatMap((entry) => entry.issues),
   };
 }
 

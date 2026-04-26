@@ -77,11 +77,14 @@ export function loadTeamLibraryFromDirectory(
 }
 
 export function loadDefaultTeamLibrary(baseDir: string = process.cwd()): TeamLibrary {
-  const configured = listConfiguredTeamSources();
+  const configured = listConfiguredTeamSources({ projectWorktree: baseDir });
   const pendingTeams: Array<{
     loader: () => { team?: AgentTeamDefinition; issues: TeamValidationIssue[] };
     priority: number;
     order: number;
+    sourcePrecedence: number;
+    sourceScope: string;
+    configPath: string;
   }> = [];
 
   for (const source of configured.sources) {
@@ -101,6 +104,9 @@ export function loadDefaultTeamLibrary(baseDir: string = process.cwd()): TeamLib
         loader: () => ({ team: embeddedTeam.team, issues: [] }),
         priority: source.priority,
         order: source.order,
+        sourcePrecedence: source.sourcePrecedence,
+        sourceScope: source.sourceScope,
+        configPath: source.configPath,
       });
       continue;
     }
@@ -121,10 +127,18 @@ export function loadDefaultTeamLibrary(baseDir: string = process.cwd()): TeamLib
       },
       priority: source.priority,
       order: source.order,
+      sourcePrecedence: source.sourcePrecedence,
+      sourceScope: source.sourceScope,
+      configPath: source.configPath,
     });
   }
 
   pendingTeams.sort((left, right) => {
+    const sourceOrder = left.sourcePrecedence - right.sourcePrecedence;
+    if (sourceOrder !== 0) {
+      return sourceOrder;
+    }
+
     const priorityOrder = left.priority - right.priority;
     if (priorityOrder !== 0) {
       return priorityOrder;
@@ -134,12 +148,26 @@ export function loadDefaultTeamLibrary(baseDir: string = process.cwd()): TeamLib
   });
 
   const usedCanonicalIds = new Set<string>();
+  const usedTeamIds = new Map<string, { sourceScope: string; configPath: string }>();
   const orderedTeams: AgentTeamDefinition[] = [];
 
   for (const entry of pendingTeams) {
     const loaded = entry.loader();
     configured.issues.push(...loaded.issues);
     if (loaded.team) {
+      const existing = usedTeamIds.get(loaded.team.manifest.id);
+      if (existing) {
+        configured.issues.push({
+          level: "warning",
+          filePath: entry.configPath,
+          message: entry.sourceScope === "global" && existing.sourceScope === "project"
+            ? `Project Team '${loaded.team.manifest.id}' shadows global Team '${loaded.team.manifest.id}'.`
+            : `Skipped Team '${loaded.team.manifest.id}': duplicate Team id already loaded from ${existing.sourceScope} source.`,
+        });
+        continue;
+      }
+
+      const usedCanonicalIdsBeforeNormalize = new Set(usedCanonicalIds);
       const normalized = normalizeTeamAgentIds({
         team: loaded.team,
         usedCanonicalIds,
@@ -149,6 +177,10 @@ export function loadDefaultTeamLibrary(baseDir: string = process.cwd()): TeamLib
         const validationIssues = validateTeamDefinition(normalized.team);
         const errors = validationIssues.filter((issue) => issue.level === "error");
         if (errors.length > 0) {
+          usedCanonicalIds.clear();
+          for (const usedId of usedCanonicalIdsBeforeNormalize) {
+            usedCanonicalIds.add(usedId);
+          }
           configured.issues.push(...errors.map((issue) => ({
             level: "warning" as const,
             filePath: issue.filePath,
@@ -158,6 +190,10 @@ export function loadDefaultTeamLibrary(baseDir: string = process.cwd()): TeamLib
         }
         configured.issues.push(...validationIssues.filter((issue) => issue.level === "warning"));
         orderedTeams.push(normalized.team);
+        usedTeamIds.set(normalized.team.manifest.id, {
+          sourceScope: entry.sourceScope,
+          configPath: entry.configPath,
+        });
       }
     }
   }
