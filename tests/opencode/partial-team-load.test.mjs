@@ -7,6 +7,7 @@ import path from "node:path";
 import { loadDefaultTeamLibrary } from "../../dist/src/agent-teams/library.js";
 import { validateTeamLibrary } from "../../dist/src/agent-teams/validation.js";
 import { OpenCodeCrewBeePlugin } from "../../dist/src/adapters/opencode/plugin.js";
+import BundledOpenCodeCrewBeePlugin from "../../dist/opencode-plugin.mjs";
 
 function createPluginInput(worktree, logs) {
   return {
@@ -282,18 +283,48 @@ test("plugin startup auto-creates default crewbee.json when missing", async () =
     const configPath = path.join(configRoot, "crewbee.json");
 
     assert.equal(existsSync(configPath), true);
-    assert.deepEqual(JSON.parse(readFileSync(configPath, "utf8")), {
-      teams: [
-        {
-          id: "coding-team",
-          enabled: true,
-          priority: 0,
-        },
-      ],
-    });
+    assert.equal(existsSync(path.join(configRoot, "teams", "general-team", "team.manifest.yaml")), true);
+    assert.deepEqual(
+      JSON.parse(readFileSync(configPath, "utf8")),
+      JSON.parse(readFileSync(path.join(process.cwd(), "templates", "crewbee.json"), "utf8")),
+    );
     assert.ok(config.agent["coding-leader"]);
     assert.ok(logs.some((entry) => entry.message.includes("CrewBee auto-repaired Team config")));
     assert.ok(logs.some((entry) => entry.extra?.reason === "created-default"));
+  } finally {
+    if (previousConfigDir === undefined) {
+      delete process.env.OPENCODE_CONFIG_DIR;
+    } else {
+      process.env.OPENCODE_CONFIG_DIR = previousConfigDir;
+    }
+
+    rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("bundled plugin startup creates crewbee.json from packaged template", async () => {
+  const workspace = mkdtempSync(path.join(os.tmpdir(), "crewbee-bundled-plugin-config-missing-"));
+  const previousConfigDir = process.env.OPENCODE_CONFIG_DIR;
+
+  try {
+    const configRoot = path.join(workspace, ".config", "opencode");
+    const logs = [];
+
+    process.env.OPENCODE_CONFIG_DIR = configRoot;
+
+    const plugin = await BundledOpenCodeCrewBeePlugin(createPluginInput(workspace, logs));
+    const config = { agent: {} };
+
+    await plugin.config?.(config);
+
+    const configPath = path.join(configRoot, "crewbee.json");
+
+    assert.deepEqual(
+      JSON.parse(readFileSync(configPath, "utf8")),
+      JSON.parse(readFileSync(path.join(process.cwd(), "templates", "crewbee.json"), "utf8")),
+    );
+    assert.equal(existsSync(path.join(configRoot, "teams", "general-team", "team.manifest.yaml")), true);
+    assert.ok(config.agent["coding-leader"]);
   } finally {
     if (previousConfigDir === undefined) {
       delete process.env.OPENCODE_CONFIG_DIR;
@@ -325,15 +356,11 @@ test("plugin startup repairs invalid crewbee.json automatically", async () => {
     const configPath = path.join(configRoot, "crewbee.json");
     const backupPath = `${configPath}.bak`;
 
-    assert.deepEqual(JSON.parse(readFileSync(configPath, "utf8")), {
-      teams: [
-        {
-          id: "coding-team",
-          enabled: true,
-          priority: 0,
-        },
-      ],
-    });
+    assert.deepEqual(
+      JSON.parse(readFileSync(configPath, "utf8")),
+      JSON.parse(readFileSync(path.join(process.cwd(), "templates", "crewbee.json"), "utf8")),
+    );
+    assert.equal(existsSync(path.join(configRoot, "teams", "general-team", "team.manifest.yaml")), true);
     assert.equal(readFileSync(backupPath, "utf8"), invalidContent);
     assert.ok(config.agent["coding-leader"]);
     assert.ok(logs.some((entry) => entry.message.includes("CrewBee auto-repaired Team config")));

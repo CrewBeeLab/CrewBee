@@ -1,0 +1,24 @@
+{
+  "teams": [
+    {
+      "id": "coding-team",
+      "enabled": true,
+      "priority": 0
+    },
+    {
+      "path": "@teams/general-team",
+      "enabled": false,
+      "priority": 1
+    },
+    {
+      "path": "@teams/template-team",
+      "enabled": false,
+      "priority": 2
+    },
+    {
+      "path": "@teams/wukong-team",
+      "enabled": false,
+      "priority": 3
+    }
+  ]
+}

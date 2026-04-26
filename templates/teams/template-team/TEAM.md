@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`teams/template` is a ready-to-use general-purpose CrewBee Team. It is not only a skeleton for authors: a user can select this Team without modifying any files and use it for real work such as assistance, summarization, note organization, question research, information retrieval, comparison, drafting, lightweight data analysis, and structured extraction.
+`templates/teams/template-team` is a ready-to-use general-purpose CrewBee Team template. It is not only a skeleton for authors: once installed into the OpenCode config root as `teams/template-team`, a user can select this Team without modifying any files and use it for real work such as assistance, summarization, note organization, question research, information retrieval, comparison, drafting, lightweight data analysis, and structured extraction.
 
 The Team is intentionally broad but not careless: it defaults to useful direct answers for simple tasks, uses research when evidence matters, uses production support when an artifact must be organized or transformed, and reports assumptions or source limits when they affect trust.
 
@@ -47,7 +47,7 @@ The Team is intentionally broad but not careless: it defaults to useful direct a
 ## File Layout
 
 ```text
-teams/template/
+templates/teams/template-team/
   team.manifest.yaml
   team.policy.yaml
   leader.agent.md

@@ -23,6 +23,7 @@
   "files": [
     "dist",
     "bin",
+    "templates",
     "opencode-plugin.mjs"
   ],
   "scripts": {

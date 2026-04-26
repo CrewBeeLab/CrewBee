@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
@@ -103,7 +103,60 @@ function createDefaultCodingTeamConfigEntry(): Record<string, unknown> {
   };
 }
 
+function getPackagedTemplateRootPath(): string | undefined {
+  const candidates = [
+    // Runtime bundle: dist/opencode-plugin.mjs, with __dirname pointing at dist.
+    path.resolve(__dirname, "..", "templates"),
+    // Compiled module tests / direct imports: dist/src/agent-teams/filesystem.js.
+    path.resolve(__dirname, "../../..", "templates"),
+  ];
+
+  return candidates.find((candidate) => existsSync(candidate));
+}
+
+function getPackagedCrewBeeConfigTemplatePath(): string | undefined {
+  const templateRoot = getPackagedTemplateRootPath();
+  return templateRoot ? path.join(templateRoot, CREWBEE_CONFIG_FILE) : undefined;
+}
+
+function ensurePackagedTeamTemplates(configRoot: string, dryRun?: boolean): void {
+  const templateRoot = getPackagedTemplateRootPath();
+  if (!templateRoot) {
+    return;
+  }
+
+  const packagedTeamsRoot = path.join(templateRoot, TEAM_CONFIG_ROOT);
+  if (!existsSync(packagedTeamsRoot) || dryRun) {
+    return;
+  }
+
+  cpSync(packagedTeamsRoot, path.join(configRoot, TEAM_CONFIG_ROOT), {
+    errorOnExist: false,
+    force: false,
+    recursive: true,
+  });
+}
+
+function isCrewBeeConfigFile(value: unknown): value is CrewBeeConfigFile {
+  return isRecord(value) && Array.isArray(value.teams);
+}
+
 export function createDefaultCrewBeeConfig(): CrewBeeConfigFile {
+  const templatePath = getPackagedCrewBeeConfigTemplatePath();
+
+  if (templatePath) {
+    try {
+      const parsed = JSON.parse(readFileSync(templatePath, "utf8"));
+      if (isCrewBeeConfigFile(parsed)) {
+        return parsed;
+      }
+    } catch (error) {
+      // Fall back to the built-in minimal config below. Invalid package templates
+      // should not block installation or startup self-repair.
+      void error;
+    }
+  }
+
   return {
     teams: [createDefaultCodingTeamConfigEntry()],
   };
@@ -193,6 +246,7 @@ export function ensureCrewBeeConfigFile(input: {
 
   if (!existsSync(configPath)) {
     if (!input.dryRun) {
+      ensurePackagedTeamTemplates(configRoot);
       writeCrewBeeConfig(configPath, createDefaultCrewBeeConfig());
     }
 
@@ -210,6 +264,7 @@ export function ensureCrewBeeConfigFile(input: {
       : undefined;
 
     if (!input.dryRun) {
+      ensurePackagedTeamTemplates(configRoot);
       writeCrewBeeConfig(configPath, createDefaultCrewBeeConfig());
     }
 
