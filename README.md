@@ -38,8 +38,11 @@ The current version already delivers a complete **CrewBee → OpenCode** MVP pat
 
 - [CrewBeeLab Website](https://crewbeelab.github.io)
 - [Installation Guide](docs/guide/installation.md)
-- [Custom Agent Team Guide](docs/guide/custom-agent-team.md)
+- [Custom Agent Team Guide](docs/guide/custom-agent-team.en.md)
+- [Project-Level Team Configuration Guide](docs/guide/project-team-config.en.md)
 - [Release Guide](docs/guide/release.md)
+
+For Chinese documentation, use [README.zh-CN.md](README.zh-CN.md) and the `*.zh-CN.md` / default Chinese guide files under `docs/guide`.
 
 ## Agent IDs in OpenCode
 
@@ -219,7 +222,7 @@ Or read the guide yourself:
 
 ### Shortest path for LLM Agents
 
-Read and follow:
+Read and follow the English guides:
 
 ```text
 docs/guide/installation.md
@@ -303,7 +306,9 @@ After installation:
 
 ## How Agent Teams and Agent Profiles Are Defined
 
-To design and register your own file-based Team, start with the [Custom Agent Team Guide](docs/guide/custom-agent-team.md). It walks through the real runnable directory layout, `crewbee.json` registration, Team policy design, agent role boundaries, and validation checklist.
+To design and register your own file-based Team, start with the [Custom Agent Team Guide](docs/guide/custom-agent-team.en.md). It walks through the real runnable directory layout, `crewbee.json` registration, Team policy design, agent role boundaries, and validation checklist.
+
+If you need project-local Teams that override or complement global Teams, read the [Project-Level Team Configuration Guide](docs/guide/project-team-config.en.md).
 
 ### Actual file-based Team structure
 
