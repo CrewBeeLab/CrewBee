@@ -1,3 +1,5 @@
+import type { TeamValidationIssue } from "../agent-teams/types";
+
 export type InstallSource = "local" | "registry";
 
 export interface InstallCommandOptions {
@@ -47,6 +49,7 @@ export interface UninstallResult {
 export interface DoctorOptions {
   configPath?: string;
   installRoot?: string;
+  projectWorktree?: string;
 }
 
 export interface DoctorResult {
@@ -60,4 +63,9 @@ export interface DoctorResult {
   healthy: boolean;
   installedPackageRoot: string;
   installRoot: string;
+  projectWorktree: string;
+  blockingTeamIssueCount: number;
+  teamCount: number;
+  teamHealthy: boolean;
+  teamIssues: TeamValidationIssue[];
 }

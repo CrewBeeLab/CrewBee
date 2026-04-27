@@ -20,8 +20,15 @@ function createSkippedTeamIssue(teamDir: string, message: string): TeamValidatio
   return {
     level: "warning",
     filePath: teamDir,
+    code: "team_load_failed",
     message: `Skipped Team '${path.basename(teamDir)}': ${message}`,
+    suggestion: "Fix this Team directory; CrewBee will continue loading other valid Teams.",
   };
+}
+
+export interface LoadDefaultTeamLibraryOptions {
+  globalConfigRoot?: string;
+  projectWorktree?: string;
 }
 
 function loadValidatedTeamDefinition(input: {
@@ -84,8 +91,15 @@ export function loadTeamLibraryFromDirectory(
   };
 }
 
-export function loadDefaultTeamLibrary(baseDir: string = process.cwd()): TeamLibrary {
-  const configured = listConfiguredTeamSources({ projectWorktree: baseDir });
+export function loadDefaultTeamLibrary(input: string | LoadDefaultTeamLibraryOptions = process.cwd()): TeamLibrary {
+  const baseDir = typeof input === "string"
+    ? input
+    : (input.projectWorktree ?? process.cwd());
+  const configured = listConfiguredTeamSources(
+    typeof input === "string"
+      ? { projectWorktree: input }
+      : { globalConfigRoot: input.globalConfigRoot, projectWorktree: input.projectWorktree },
+  );
   const pendingTeams: Array<{
     loader: () => { team?: AgentTeamDefinition; issues: TeamValidationIssue[] };
     priority: number;
@@ -169,9 +183,14 @@ export function loadDefaultTeamLibrary(baseDir: string = process.cwd()): TeamLib
         configured.issues.push({
           level: "warning",
           filePath: entry.configPath,
+          code: "team_id_shadowed_or_duplicate",
+          sourceScope: entry.sourceScope === "project" || entry.sourceScope === "global" ? entry.sourceScope : undefined,
           message: entry.sourceScope === "global" && existing.sourceScope === "project"
             ? `Project Team '${loaded.team.manifest.id}' shadows global Team '${loaded.team.manifest.id}'.`
             : `Skipped Team '${loaded.team.manifest.id}': duplicate Team id already loaded from ${existing.sourceScope} source.`,
+          suggestion: entry.sourceScope === "global" && existing.sourceScope === "project"
+            ? "This is expected when a project intentionally overrides a global Team id."
+            : "Rename one Team id or disable one Team entry.",
         });
         continue;
       }
@@ -193,6 +212,9 @@ export function loadDefaultTeamLibrary(baseDir: string = process.cwd()): TeamLib
           configured.issues.push(...errors.map((issue) => ({
             level: "warning" as const,
             filePath: issue.filePath,
+            code: issue.code ?? "team_validation_failed",
+            path: issue.path,
+            suggestion: issue.suggestion,
             message: `Skipped Team '${normalized.team?.manifest.id ?? "unknown"}': ${issue.message}`,
           })));
           continue;

@@ -378,6 +378,7 @@ test("invalid non-leader agents are skipped without invalidating the containing 
     assert.ok(issues.some((issue) => issue.level === "error" && issue.blocking === false && issue.message.includes("Skipped Agent 'broken-extra.agent.md'")));
     assert.ok(!issues.some((issue) => issue.level === "error" && issue.blocking !== false));
     assert.ok(logs.some((entry) => entry.level === "error" && entry.message.includes("Skipped Agent 'broken-extra.agent.md'")));
+    assert.ok(logs.some((entry) => entry.extra?.code === "agent_profile_load_failed"));
   } finally {
     if (previousConfigDir === undefined) {
       delete process.env.OPENCODE_CONFIG_DIR;

@@ -27,7 +27,16 @@ export function createSystemTransformHook(
     if (loadIssues.length > 0) {
       lines.push(
         "- Team Load Warnings:",
-        ...loadIssues.map((issue) => `  - ${issue.message}${issue.filePath ? ` (${issue.filePath})` : ""}`),
+        ...loadIssues.map((issue) => {
+          const details = [
+            issue.code,
+            issue.sourceScope ? `scope=${issue.sourceScope}` : undefined,
+            issue.filePath,
+            issue.path ? `path=${issue.path}` : undefined,
+            issue.suggestion ? `suggestion=${issue.suggestion}` : undefined,
+          ].filter(Boolean).join("; ");
+          return `  - ${issue.message}${details ? ` (${details})` : ""}`;
+        }),
       );
     }
 

@@ -4,6 +4,7 @@ import { runDoctorCommand } from "./doctor";
 import { runInstallCommand } from "./install";
 import { renderCliHelp } from "./render-help";
 import { runUninstallUserCommand } from "./uninstall-user";
+import { runValidateCommand } from "./validate";
 import { runVersionCommand } from "./version";
 
 export interface RunCliContext {
@@ -45,6 +46,13 @@ export async function runCli(argv: string[], context: RunCliContext): Promise<nu
 
   if (command === "doctor") {
     return runDoctorCommand(rest, {
+      stderr: context.stderr,
+      stdout: context.stdout,
+    });
+  }
+
+  if (command === "validate") {
+    return runValidateCommand(rest, {
       stderr: context.stderr,
       stdout: context.stdout,
     });

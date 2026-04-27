@@ -60,7 +60,134 @@ test("runCli help output includes user-level commands", async () => {
   assert.match(stdout.getOutput(), /install:registry:user/);
   assert.match(stdout.getOutput(), /uninstall:user/);
   assert.match(stdout.getOutput(), /doctor/);
+  assert.match(stdout.getOutput(), /validate/);
   assert.match(stdout.getOutput(), /version/);
+  assert.equal(stderr.getOutput(), "");
+});
+
+test("runCli validate reports project Team config diagnostics", async () => {
+  const stdout = createCaptureStream();
+  const stderr = createCaptureStream();
+  const configRoot = mkdtempSync(path.join(os.tmpdir(), "crewbee-cli-validate-config-"));
+  const projectWorktree = mkdtempSync(path.join(os.tmpdir(), "crewbee-cli-validate-project-"));
+
+  mkdirSync(path.join(projectWorktree, ".crewbee"), { recursive: true });
+  writeFileSync(path.join(projectWorktree, ".crewbee", "crewbee.json"), "{broken json", "utf8");
+
+  const exitCode = await runCli([
+    "validate",
+    "--config-path",
+    path.join(configRoot, "opencode.json"),
+    "--project-worktree",
+    projectWorktree,
+  ], {
+    packageRoot: process.cwd(),
+    stderr,
+    stdout,
+  });
+
+  assert.equal(exitCode, 1);
+  assert.match(stdout.getOutput(), /CrewBee Team validation: issues found/);
+  assert.match(stdout.getOutput(), /crewbee_config_parse_failed/);
+  assert.match(stdout.getOutput(), /scope=project/);
+  assert.match(stdout.getOutput(), /Blocking Team issues: 0/);
+  assert.equal(stderr.getOutput(), "");
+});
+
+test("runCli validate supports machine-readable JSON diagnostics", async () => {
+  const stdout = createCaptureStream();
+  const stderr = createCaptureStream();
+  const configRoot = mkdtempSync(path.join(os.tmpdir(), "crewbee-cli-validate-json-config-"));
+  const projectWorktree = mkdtempSync(path.join(os.tmpdir(), "crewbee-cli-validate-json-project-"));
+
+  mkdirSync(path.join(projectWorktree, ".crewbee"), { recursive: true });
+  writeFileSync(path.join(projectWorktree, ".crewbee", "crewbee.json"), "{broken json", "utf8");
+
+  const exitCode = await runCli([
+    "validate",
+    "--json",
+    "--config-path",
+    path.join(configRoot, "opencode.json"),
+    "--project-worktree",
+    projectWorktree,
+  ], {
+    packageRoot: process.cwd(),
+    stderr,
+    stdout,
+  });
+  const parsed = JSON.parse(stdout.getOutput());
+
+  assert.equal(exitCode, 1);
+  assert.equal(parsed.healthy, false);
+  assert.equal(parsed.blockingIssueCount, 0);
+  assert.equal(parsed.issues.some((issue) => issue.code === "crewbee_config_parse_failed" && issue.sourceScope === "project"), true);
+  assert.equal(stderr.getOutput(), "");
+});
+
+test("runCli validate succeeds for default embedded Team diagnostics", async () => {
+  const stdout = createCaptureStream();
+  const stderr = createCaptureStream();
+  const configRoot = mkdtempSync(path.join(os.tmpdir(), "crewbee-cli-validate-healthy-config-"));
+  const projectWorktree = mkdtempSync(path.join(os.tmpdir(), "crewbee-cli-validate-healthy-project-"));
+
+  const exitCode = await runCli([
+    "validate",
+    "--json",
+    "--config-path",
+    path.join(configRoot, "opencode.json"),
+    "--project-worktree",
+    projectWorktree,
+  ], {
+    packageRoot: process.cwd(),
+    stderr,
+    stdout,
+  });
+  const parsed = JSON.parse(stdout.getOutput());
+
+  assert.equal(exitCode, 0);
+  assert.equal(parsed.healthy, true);
+  assert.equal(parsed.issueCount, 0);
+  assert.equal(parsed.teamCount >= 1, true);
+  assert.equal(stderr.getOutput(), "");
+});
+
+test("runCli doctor reports Team diagnostics for the selected project worktree", async () => {
+  const stdout = createCaptureStream();
+  const stderr = createCaptureStream();
+  const installRoot = mkdtempSync(path.join(os.tmpdir(), "crewbee-cli-doctor-install-"));
+  const configRoot = mkdtempSync(path.join(os.tmpdir(), "crewbee-cli-doctor-config-"));
+  const projectWorktree = mkdtempSync(path.join(os.tmpdir(), "crewbee-cli-doctor-project-"));
+  const installedRoot = path.join(installRoot, "node_modules", "crewbee");
+  const configPath = path.join(configRoot, "opencode.json");
+
+  mkdirSync(installedRoot, { recursive: true });
+  mkdirSync(path.join(projectWorktree, ".crewbee"), { recursive: true });
+  writeFileSync(path.join(installRoot, "package.json"), JSON.stringify({ private: true }, null, 2), "utf8");
+  writeFileSync(path.join(installedRoot, "package.json"), JSON.stringify({ name: "crewbee", version: "9.9.9" }, null, 2), "utf8");
+  writeFileSync(path.join(installedRoot, "opencode-plugin.mjs"), "export default {};\n", "utf8");
+  writeFileSync(configPath, JSON.stringify({ plugin: ["crewbee"] }, null, 2), "utf8");
+  writeFileSync(path.join(projectWorktree, ".crewbee", "crewbee.json"), "{broken json", "utf8");
+
+  const exitCode = await runCli([
+    "doctor",
+    "--install-root",
+    installRoot,
+    "--config-path",
+    configPath,
+    "--project-worktree",
+    projectWorktree,
+  ], {
+    packageRoot: process.cwd(),
+    stderr,
+    stdout,
+  });
+
+  assert.equal(exitCode, 1);
+  assert.match(stdout.getOutput(), /CrewBee doctor: issues found/);
+  assert.match(stdout.getOutput(), /Installed version: 9\.9\.9/);
+  assert.match(stdout.getOutput(), /Team definitions: issues found/);
+  assert.match(stdout.getOutput(), /crewbee_config_parse_failed/);
+  assert.match(stdout.getOutput(), /Blocking Team issues: 0/);
   assert.equal(stderr.getOutput(), "");
 });
 

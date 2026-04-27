@@ -78,11 +78,24 @@ export interface CrewBeeConfigEnsureResult {
   reason: CrewBeeConfigEnsureReason;
 }
 
-function createConfigIssue(configPath: string, message: string): TeamValidationIssue {
+function createConfigIssue(input: {
+  configPath: string;
+  message: string;
+  code?: string;
+  path?: string;
+  suggestion?: string;
+  sourceScope?: TeamConfigSourceScope;
+  fixable?: boolean;
+}): TeamValidationIssue {
   return {
     level: "warning",
-    filePath: configPath,
-    message,
+    filePath: input.configPath,
+    message: input.message,
+    code: input.code,
+    path: input.path,
+    suggestion: input.suggestion,
+    sourceScope: input.sourceScope,
+    fixable: input.fixable,
   };
 }
 
@@ -356,7 +369,14 @@ function normalizeConfiguredTeamEntry(input: {
 }): { source?: ConfiguredTeamSource; issues: TeamValidationIssue[] } {
   if (!isRecord(input.value)) {
     return {
-      issues: [createConfigIssue(input.configPath, `crewbee.json teams[${input.index}] must be an object.`)],
+      issues: [createConfigIssue({
+        configPath: input.configPath,
+        message: `crewbee.json teams[${input.index}] must be an object.`,
+        code: "crewbee_config_team_entry_invalid",
+        path: `teams[${input.index}]`,
+        sourceScope: input.sourceScope,
+        suggestion: "Replace this entry with an object containing either id or path.",
+      })],
     };
   }
 
@@ -366,25 +386,53 @@ function normalizeConfiguredTeamEntry(input: {
 
   if (teamId && teamPath) {
     return {
-      issues: [createConfigIssue(input.configPath, `crewbee.json teams[${input.index}] cannot declare both id and path.`)],
+      issues: [createConfigIssue({
+        configPath: input.configPath,
+        message: `crewbee.json teams[${input.index}] cannot declare both id and path.`,
+        code: "crewbee_config_team_entry_conflict",
+        path: `teams[${input.index}]`,
+        sourceScope: input.sourceScope,
+        suggestion: "Keep id for embedded Teams or path for filesystem Teams, not both.",
+      })],
     };
   }
 
   if (!teamId && !teamPath) {
     return {
-      issues: [createConfigIssue(input.configPath, `crewbee.json teams[${input.index}] must declare either id or path.`)],
+      issues: [createConfigIssue({
+        configPath: input.configPath,
+        message: `crewbee.json teams[${input.index}] must declare either id or path.`,
+        code: "crewbee_config_team_entry_missing_source",
+        path: `teams[${input.index}]`,
+        sourceScope: input.sourceScope,
+        suggestion: "Add an embedded Team id or a filesystem Team path.",
+      })],
     };
   }
 
   if (raw.enabled !== undefined && typeof raw.enabled !== "boolean") {
     return {
-      issues: [createConfigIssue(input.configPath, `crewbee.json teams[${input.index}].enabled must be a boolean when provided.`)],
+      issues: [createConfigIssue({
+        configPath: input.configPath,
+        message: `crewbee.json teams[${input.index}].enabled must be a boolean when provided.`,
+        code: "crewbee_config_team_entry_enabled_invalid",
+        path: `teams[${input.index}].enabled`,
+        sourceScope: input.sourceScope,
+        suggestion: "Use true or false for enabled.",
+      })],
     };
   }
 
   if (raw.priority !== undefined && (typeof raw.priority !== "number" || !Number.isFinite(raw.priority))) {
     return {
-      issues: [createConfigIssue(input.configPath, `crewbee.json teams[${input.index}].priority must be a finite number when provided.`)],
+      issues: [createConfigIssue({
+        configPath: input.configPath,
+        message: `crewbee.json teams[${input.index}].priority must be a finite number when provided.`,
+        code: "crewbee_config_team_entry_priority_invalid",
+        path: `teams[${input.index}].priority`,
+        sourceScope: input.sourceScope,
+        suggestion: "Use a finite numeric priority; lower values load first.",
+      })],
     };
   }
 
@@ -421,7 +469,14 @@ function normalizeConfiguredTeamEntry(input: {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return {
-      issues: [createConfigIssue(input.configPath, `crewbee.json teams[${input.index}].path is invalid: ${message}`)],
+      issues: [createConfigIssue({
+        configPath: input.configPath,
+        message: `crewbee.json teams[${input.index}].path is invalid: ${message}`,
+        code: "crewbee_config_team_entry_path_invalid",
+        path: `teams[${input.index}].path`,
+        sourceScope: input.sourceScope,
+        suggestion: "Use an absolute path, ~/path, or @path relative to the crewbee.json directory.",
+      })],
     };
   }
 }
@@ -438,7 +493,12 @@ function dedupeConfiguredTeamSources(input: {
       : `filesystem:${source.teamDir.toLowerCase()}`;
 
     if (seen.has(key)) {
-      issues.push(createConfigIssue(input.configPath, `crewbee.json contains a duplicate Team entry for '${key}'.`));
+      issues.push(createConfigIssue({
+        configPath: input.configPath,
+        message: `crewbee.json contains a duplicate Team entry for '${key}'.`,
+        code: "crewbee_config_duplicate_team_entry",
+        suggestion: "Remove the duplicate Team entry; the first matching entry is used.",
+      }));
       return false;
     }
 
@@ -502,7 +562,12 @@ function listConfiguredTeamSourcesFromDescriptor(descriptor: TeamConfigSourceDes
             configPath,
           })]
         : [],
-      issues: descriptor.missingIsWarning ? [createConfigIssue(configPath, `crewbee.json source '${descriptor.scope}' does not exist.`)] : [],
+      issues: descriptor.missingIsWarning ? [createConfigIssue({
+        configPath,
+        message: `crewbee.json source '${descriptor.scope}' does not exist.`,
+        code: "crewbee_config_missing",
+        sourceScope: descriptor.scope,
+      })] : [],
     };
   }
 
@@ -521,7 +586,16 @@ function listConfiguredTeamSourcesFromDescriptor(descriptor: TeamConfigSourceDes
               configPath,
             })]
           : [],
-        issues: [createConfigIssue(configPath, "crewbee.json must contain a top-level object.")],
+        issues: [createConfigIssue({
+          configPath,
+          message: "crewbee.json must contain a top-level object.",
+          code: "crewbee_config_root_invalid",
+          sourceScope: descriptor.scope,
+          fixable: descriptor.addDefaultCodingTeam,
+          suggestion: descriptor.addDefaultCodingTeam
+            ? "Run crewbee install to rewrite the global crewbee.json from the packaged template."
+            : "Replace project crewbee.json with an object containing a teams array.",
+        })],
       };
     }
 
@@ -536,7 +610,16 @@ function listConfiguredTeamSourcesFromDescriptor(descriptor: TeamConfigSourceDes
             configPath,
           })]
         : [],
-      issues: [createConfigIssue(configPath, `Failed to parse crewbee.json: ${message}`)],
+      issues: [createConfigIssue({
+        configPath,
+        message: `Failed to parse crewbee.json: ${message}`,
+        code: "crewbee_config_parse_failed",
+        sourceScope: descriptor.scope,
+        fixable: descriptor.addDefaultCodingTeam,
+        suggestion: descriptor.addDefaultCodingTeam
+          ? "The global config can be safely repaired from the packaged template on install or plugin startup."
+          : "Fix the JSON syntax; project configs are reported but not auto-rewritten.",
+      })],
     };
   }
 
@@ -549,7 +632,17 @@ function listConfiguredTeamSourcesFromDescriptor(descriptor: TeamConfigSourceDes
             configPath,
           })]
         : [],
-      issues: [createConfigIssue(configPath, "crewbee.json teams must be an array when provided.")],
+      issues: [createConfigIssue({
+        configPath,
+        message: "crewbee.json teams must be an array when provided.",
+        code: "crewbee_config_teams_invalid",
+        path: "teams",
+        sourceScope: descriptor.scope,
+        fixable: descriptor.addDefaultCodingTeam,
+        suggestion: descriptor.addDefaultCodingTeam
+          ? "The global config can be safely repaired from the packaged template on install or plugin startup."
+          : "Use teams: [] or a list of Team entries in project crewbee.json.",
+      })],
     };
   }
 
@@ -632,7 +725,9 @@ function createSkippedAgentIssue(filePath: string, message: string): TeamValidat
     level: "error",
     blocking: false,
     filePath,
+    code: "agent_profile_load_failed",
     message: `Skipped Agent '${path.basename(filePath)}': ${message}`,
+    suggestion: "Fix this Agent profile file; other valid Agents in the same Team remain loadable when possible.",
   };
 }
 

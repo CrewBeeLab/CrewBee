@@ -1,6 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
+import { loadDefaultTeamLibrary, summarizeTeamDiagnostics, validateTeamLibrary } from "../agent-teams";
+
 import { findCrewBeePluginEntries, readOpenCodeConfig } from "./config-writer";
 import { resolveOpenCodeConfigPath, resolveInstallRoot } from "./install-root";
 import { createCanonicalPluginEntry, detectInstalledPackageRoot, detectInstalledPluginPath } from "./plugin-entry";
@@ -27,16 +29,24 @@ function isValidCrewBeeConfigEntry(entry: string, expectedPluginEntry: string): 
 export async function runDoctor(options: DoctorOptions): Promise<DoctorResult> {
   const configPath = resolveOpenCodeConfigPath(options.configPath);
   const installRoot = resolveInstallRoot(options.installRoot);
+  const projectWorktree = path.resolve(options.projectWorktree ?? process.cwd());
   const expectedPluginEntry = createCanonicalPluginEntry(installRoot);
   const installedPackageRoot = detectInstalledPackageRoot(installRoot);
   const currentPluginEntries = findCrewBeePluginEntries(readOpenCodeConfig(configPath).config);
+  const teamLibrary = loadDefaultTeamLibrary({
+    globalConfigRoot: path.dirname(configPath),
+    projectWorktree,
+  });
+  const teamIssues = validateTeamLibrary(teamLibrary);
+  const teamDiagnostics = summarizeTeamDiagnostics(teamIssues);
   const hasWorkspaceManifest = existsSync(path.join(installRoot, "package.json"));
   const hasPackageCacheRoot = existsSync(path.join(installRoot, "packages"));
   const hasOpenCodeManagedPackage = hasOpenCodeManagedCrewBeePackage(installRoot);
   const configMatchesCanonical = currentPluginEntries.length === 1 && isValidCrewBeeConfigEntry(currentPluginEntries[0] ?? "", expectedPluginEntry);
   const hasInstalledPackage = existsSync(path.join(installedPackageRoot, "package.json")) || hasOpenCodeManagedPackage;
   const hasPluginFile = existsSync(detectInstalledPluginPath(installRoot)) || (hasOpenCodeManagedPackage && configMatchesCanonical);
-  const healthy = (hasWorkspaceManifest || hasPackageCacheRoot) && hasInstalledPackage && hasPluginFile && configMatchesCanonical;
+  const teamHealthy = teamDiagnostics.healthy;
+  const healthy = (hasWorkspaceManifest || hasPackageCacheRoot) && hasInstalledPackage && hasPluginFile && configMatchesCanonical && teamHealthy;
 
   return {
     configMatchesCanonical,
@@ -49,5 +59,10 @@ export async function runDoctor(options: DoctorOptions): Promise<DoctorResult> {
     healthy,
     installedPackageRoot,
     installRoot,
+    projectWorktree,
+    blockingTeamIssueCount: teamDiagnostics.blockingIssueCount,
+    teamCount: teamLibrary.teams.length,
+    teamHealthy,
+    teamIssues,
   };
 }

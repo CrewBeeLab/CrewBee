@@ -39,7 +39,14 @@ export async function validateAndLogTeamLibrary(ctx: PluginInput, teamLibrary: T
         service: "crewbee",
         level: issue.level === "warning" ? "warn" : "error",
         message: issue.message,
-        extra: issue.filePath ? { filePath: issue.filePath } : undefined,
+        extra: {
+          ...(issue.filePath ? { filePath: issue.filePath } : {}),
+          ...(issue.code ? { code: issue.code } : {}),
+          ...(issue.path ? { path: issue.path } : {}),
+          ...(issue.sourceScope ? { sourceScope: issue.sourceScope } : {}),
+          ...(issue.fixable !== undefined ? { fixable: issue.fixable } : {}),
+          ...(issue.suggestion ? { suggestion: issue.suggestion } : {}),
+        },
       },
     })),
   );
