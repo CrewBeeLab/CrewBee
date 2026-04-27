@@ -70,6 +70,7 @@ The same id is used for OpenCode `default_agent`, session-level selection, deleg
 * [Built-in Coding Team Design](#built-in-coding-team-design)
 * [Configuration, Install, and Operations Scripts](#configuration-install-and-operations-scripts)
 * [Uninstall](#uninstall)
+* [Acknowledgements](#acknowledgements)
 
 ---
 
@@ -647,3 +648,13 @@ If you want to verify the uninstall state afterward, run:
 ```bash
 npm run doctor
 ```
+
+---
+
+## Acknowledgements
+
+CrewBee is inspired by OpenCode and by community projects such as Oh My OpenAgent, which have explored how agent-team workflows can improve real development environments.
+
+Thanks to the builders and maintainers who made these ideas visible and practical.
+
+CrewBee continues this direction by treating Agent Teams as manageable engineering assets: defined once, projected into host runtimes, configured for different task modes, and evolved as reusable team packages.
