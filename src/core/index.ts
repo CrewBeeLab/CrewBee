@@ -310,6 +310,7 @@ export interface TeamLibrary {
     level: "error" | "warning";
     message: string;
     filePath?: string;
+    blocking?: boolean;
   }[];
 }
 

@@ -28,7 +28,7 @@ export function validateTeamDefinition(team: AgentTeamDefinition): TeamValidatio
   for (const agentRef of Object.keys(manifest.members)) {
     if (!agentIds.has(agentRef)) {
       issues.push({
-        level: "error",
+        level: "warning",
         message: `Member agent '${agentRef}' is not defined in this Team.`,
       });
     }
@@ -45,7 +45,7 @@ export function validateTeamDefinition(team: AgentTeamDefinition): TeamValidatio
   for (const [agentId] of Object.entries(manifest.agentRuntime ?? {})) {
     if (!agentIds.has(agentId)) {
       issues.push({
-        level: "error",
+        level: "warning",
         message: `Agent runtime override '${agentId}' is not defined in this Team.`,
       });
     }
@@ -75,7 +75,7 @@ export function validateTeamDefinition(team: AgentTeamDefinition): TeamValidatio
     for (const targetAgentRef of collaborationTargets) {
       if (!agentIds.has(targetAgentRef)) {
         issues.push({
-          level: "error",
+          level: "warning",
           message: `Agent '${agent.metadata.id}' references unknown collaboration target '${targetAgentRef}'.`,
         });
         continue;

@@ -624,6 +624,22 @@ export function loadTeamDefinitionFromDirectory(
   teamDir: string,
   workspaceRoot: string = process.cwd(),
 ): AgentTeamDefinition {
+  return loadTeamDefinitionFromDirectoryWithIssues(teamDir, workspaceRoot).team;
+}
+
+function createSkippedAgentIssue(filePath: string, message: string): TeamValidationIssue {
+  return {
+    level: "error",
+    blocking: false,
+    filePath,
+    message: `Skipped Agent '${path.basename(filePath)}': ${message}`,
+  };
+}
+
+export function loadTeamDefinitionFromDirectoryWithIssues(
+  teamDir: string,
+  workspaceRoot: string = process.cwd(),
+): { team: AgentTeamDefinition; issues: TeamValidationIssue[] } {
   const manifest = mapTeamManifest(path.join(teamDir, TEAM_MANIFEST_FILE));
   const policyPath = path.join(teamDir, TEAM_POLICY_FILE);
 
@@ -631,19 +647,34 @@ export function loadTeamDefinitionFromDirectory(
     throw new Error(`${teamDir} is missing ${TEAM_POLICY_FILE}.`);
   }
 
-  const agents = readdirSync(teamDir)
+  const agentFiles = readdirSync(teamDir)
     .filter((entry) => entry.endsWith(".agent.md"))
-    .sort()
-    .map((entry) => mapAgentProfile(path.join(teamDir, entry)));
+    .sort();
+
+  const issues: TeamValidationIssue[] = [];
+  const agents = agentFiles.flatMap((entry) => {
+    const agentPath = path.join(teamDir, entry);
+
+    try {
+      return [mapAgentProfile(agentPath)];
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      issues.push(createSkippedAgentIssue(agentPath, message));
+      return [];
+    }
+  });
 
   if (agents.length === 0) {
     throw new Error(`${teamDir} must contain at least one *.agent.md file at the team root.`);
   }
 
   return {
-    manifest,
-    policy: mapTeamPolicy(policyPath),
-    agents,
-    documentation: resolveTeamDocumentation(teamDir, workspaceRoot),
+    team: {
+      manifest,
+      policy: mapTeamPolicy(policyPath),
+      agents,
+      documentation: resolveTeamDocumentation(teamDir, workspaceRoot),
+    },
+    issues,
   };
 }

@@ -542,7 +542,7 @@ function mapCollaborationBinding(entry: unknown): CollaborationBindingInput {
   };
 }
 
-function mapCollaboration(raw: UnknownRecord): AgentProfileSpec["collaboration"] {
+function mapCollaboration(raw: UnknownRecord | undefined): AgentProfileSpec["collaboration"] {
   const mapList = (value: unknown, label: string): CollaborationBindingInput[] => {
     if (!Array.isArray(value)) {
       throw new Error(`${label} must be an array.`);
@@ -552,8 +552,8 @@ function mapCollaboration(raw: UnknownRecord): AgentProfileSpec["collaboration"]
   };
 
   return {
-    defaultConsults: mapList(raw.default_consults ?? raw.defaultConsults ?? [], "default_consults"),
-    defaultHandoffs: mapList(raw.default_handoffs ?? raw.defaultHandoffs ?? [], "default_handoffs"),
+    defaultConsults: mapList(raw?.default_consults ?? raw?.defaultConsults ?? [], "default_consults"),
+    defaultHandoffs: mapList(raw?.default_handoffs ?? raw?.defaultHandoffs ?? [], "default_handoffs"),
   };
 }
 
@@ -784,7 +784,7 @@ export function mapAgentProfile(filePath: string): AgentProfileSpec {
   rejectRemovedAgentProfileFields(data, filePath);
   const personaCore = asRecord(data.persona_core, "persona_core");
   const responsibilityCore = asRecord(data.responsibility_core, "responsibility_core");
-  const collaboration = asRecord(data.collaboration, "collaboration");
+  const collaboration = asOptionalRecord(data.collaboration);
   const runtimeConfig = asRecord(data.runtime_config, "runtime_config");
 
   const extraContent = omitKeys(data, KNOWN_AGENT_TOP_LEVEL_KEYS);

@@ -10,6 +10,7 @@ import {
   listConfiguredTeamSources,
   listTeamDirectories,
   loadTeamDefinitionFromDirectory,
+  loadTeamDefinitionFromDirectoryWithIssues,
   resolveTeamConfigRoot,
   type ConfiguredTeamSource,
 } from "./filesystem";
@@ -29,11 +30,15 @@ function loadValidatedTeamDefinition(input: {
   usedCanonicalIds: Set<string>;
 }): { team?: AgentTeamDefinition; issues: TeamValidationIssue[] } {
   try {
-    const loadedTeam = loadTeamDefinitionFromDirectory(input.teamDir, input.workspaceRoot);
+    const loaded = loadTeamDefinitionFromDirectoryWithIssues(input.teamDir, input.workspaceRoot);
+    const loadedTeam = loaded.team;
     const normalized = normalizeTeamAgentIds({ team: loadedTeam, usedCanonicalIds: input.usedCanonicalIds });
     if (!normalized.team) {
       return {
-        issues: normalized.issues.map((issue) => createSkippedTeamIssue(input.teamDir, issue.message)),
+        issues: [
+          ...loaded.issues,
+          ...normalized.issues.map((issue) => createSkippedTeamIssue(input.teamDir, issue.message)),
+        ],
       };
     }
 
@@ -42,13 +47,16 @@ function loadValidatedTeamDefinition(input: {
 
     if (errors.length > 0) {
       return {
-        issues: errors.map((issue) => createSkippedTeamIssue(input.teamDir, issue.message)),
+        issues: [
+          ...loaded.issues,
+          ...errors.map((issue) => createSkippedTeamIssue(input.teamDir, issue.message)),
+        ],
       };
     }
 
     return {
       team: normalized.team,
-      issues: issues.filter((issue) => issue.level === "warning"),
+      issues: [...loaded.issues, ...issues.filter((issue) => issue.level === "warning")],
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -114,9 +122,10 @@ export function loadDefaultTeamLibrary(baseDir: string = process.cwd()): TeamLib
     pendingTeams.push({
       loader: () => {
         try {
+          const loaded = loadTeamDefinitionFromDirectoryWithIssues(source.teamDir, baseDir);
           return {
-            team: loadTeamDefinitionFromDirectory(source.teamDir, baseDir),
-            issues: [],
+            team: loaded.team,
+            issues: loaded.issues,
           };
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);

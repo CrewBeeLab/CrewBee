@@ -76,7 +76,10 @@ export const OpenCodeCrewBeePlugin: Plugin = async (ctx) => {
       getAliasIndex: () => aliasIndex,
     }),
     "tool.execute.after": createToolExecuteAfterHook(),
-    "experimental.chat.system.transform": createSystemTransformHook(bindings),
+    "experimental.chat.system.transform": createSystemTransformHook(
+      bindings,
+      () => teamLibrary.loadIssues ?? [],
+    ),
     "experimental.session.compacting": createCompactionHook(ctx, store),
   };
 };

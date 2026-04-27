@@ -28,7 +28,7 @@ function getConfig(cfg: { agent?: Record<string, unknown> }): OpenCodeConfigLike
 
 export async function validateAndLogTeamLibrary(ctx: PluginInput, teamLibrary: TeamLibrary): Promise<void> {
   const issues = validateTeamLibrary(teamLibrary);
-  const errors = issues.filter((issue: TeamValidationIssue) => issue.level === "error");
+  const errors = issues.filter((issue: TeamValidationIssue) => issue.level === "error" && issue.blocking !== false);
   if (errors.length > 0) {
     throw new Error(errors.map((issue: TeamValidationIssue) => issue.message).join("\n"));
   }

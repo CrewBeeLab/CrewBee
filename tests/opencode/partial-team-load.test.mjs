@@ -170,6 +170,66 @@ entry_point:
 `;
 }
 
+function createAgentProfileWithoutCollaboration(agentId, agentName, exposure, selectionLabel) {
+  return `---
+id: ${agentId}
+name: ${agentName}
+archetype: executor
+persona_core:
+  temperament: calm
+  cognitive_style: direct
+  risk_posture: balanced
+  communication_style: concise
+  persistence_style: high
+  decision_priorities:
+    - correctness
+responsibility_core:
+  description: ${agentName} description.
+  use_when:
+    - Test coverage needs this agent.
+  avoid_when:
+    - Never
+  objective: ${agentName} objective.
+  success_definition:
+    - Return a useful result.
+  non_goals:
+    - none
+  in_scope:
+    - tests
+  out_of_scope:
+    - none
+runtime_config:
+  requested_tools:
+    - read
+  permission:
+    - permission: read
+      pattern: "*"
+      action: allow
+output_contract:
+  tone: concise
+  default_format: text
+  update_policy: final-only
+entry_point:
+  exposure: ${exposure}
+  selection_label: ${selectionLabel}
+  selection_description: ${agentName} selection.
+---
+`;
+}
+
+function createBrokenAgentProfile(agentId, agentName) {
+  return `---
+id: ${agentId}
+name: ${agentName}
+archetype: executor
+persona_core:
+  temperament: calm
+responsibility_core:
+  description: Broken agent missing required profile fields.
+---
+`;
+}
+
 test("invalid configured file-based teams are skipped without blocking valid teams or plugin startup", async () => {
   const workspace = mkdtempSync(path.join(os.tmpdir(), "crewbee-partial-load-"));
   const previousConfigDir = process.env.OPENCODE_CONFIG_DIR;
@@ -254,6 +314,70 @@ test("invalid configured file-based teams are skipped without blocking valid tea
     assert.ok(!config.agent["legacy-leader"]);
     assert.ok(logs.some((entry) => entry.message.includes("Skipped Team 'BrokenTeam'")));
     assert.ok(logs.some((entry) => entry.message.includes("Leader agent 'hidden-leader' must be user-selectable.")));
+  } finally {
+    if (previousConfigDir === undefined) {
+      delete process.env.OPENCODE_CONFIG_DIR;
+    } else {
+      process.env.OPENCODE_CONFIG_DIR = previousConfigDir;
+    }
+
+    rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("invalid non-leader agents are skipped without invalidating the containing team", async () => {
+  const workspace = mkdtempSync(path.join(os.tmpdir(), "crewbee-agent-partial-load-"));
+  const previousConfigDir = process.env.OPENCODE_CONFIG_DIR;
+
+  try {
+    const configRoot = path.join(workspace, ".config", "opencode");
+    const teamDir = path.join(configRoot, "tmp", "PartiallyBrokenTeam");
+    const logs = [];
+
+    process.env.OPENCODE_CONFIG_DIR = configRoot;
+
+    writeFile(
+      path.join(configRoot, "crewbee.json"),
+      createCrewBeeConfig([{ path: "@tmp/PartiallyBrokenTeam", enabled: true, priority: 0 }]),
+    );
+    writeFile(path.join(teamDir, "team.manifest.yaml"), createTeamManifest("partially-broken-team", "PartiallyBrokenTeam", "partial-leader", "partial-executor"));
+    writeFile(path.join(teamDir, "team.policy.yaml"), createTeamPolicy());
+    writeFile(path.join(teamDir, "TEAM.md"), "# PartiallyBrokenTeam\n");
+    writeFile(
+      path.join(teamDir, "partial-leader.agent.md"),
+      createAgentProfile("partial-leader", "Partial Leader", "user-selectable", "leader", "partial-executor", "partial-executor"),
+    );
+    writeFile(
+      path.join(teamDir, "partial-executor.agent.md"),
+      createAgentProfileWithoutCollaboration("partial-executor", "Partial Executor", "internal-only", "executor"),
+    );
+    writeFile(
+      path.join(teamDir, "broken-extra.agent.md"),
+      createBrokenAgentProfile("broken-extra", "Broken Extra"),
+    );
+
+    const library = loadDefaultTeamLibrary(workspace);
+    const issues = validateTeamLibrary(library);
+    const team = library.teams.find((entry) => entry.manifest.id === "partially-broken-team");
+    const plugin = await OpenCodeCrewBeePlugin(createPluginInput(workspace, logs));
+    const config = { agent: {} };
+
+    await plugin.config?.(config);
+
+    assert.ok(team);
+    assert.deepEqual(
+      team.agents.map((agent) => agent.metadata.id).sort(),
+      ["partially-broken-partial-executor", "partially-broken-partial-leader"],
+    );
+    assert.deepEqual(team.agents.find((agent) => agent.metadata.id === "partially-broken-partial-executor").collaboration, {
+      defaultConsults: [],
+      defaultHandoffs: [],
+    });
+    assert.ok(config.agent["partially-broken-partial-leader"]);
+    assert.ok(!config.agent["broken-extra"]);
+    assert.ok(issues.some((issue) => issue.level === "error" && issue.blocking === false && issue.message.includes("Skipped Agent 'broken-extra.agent.md'")));
+    assert.ok(!issues.some((issue) => issue.level === "error" && issue.blocking !== false));
+    assert.ok(logs.some((entry) => entry.level === "error" && entry.message.includes("Skipped Agent 'broken-extra.agent.md'")));
   } finally {
     if (previousConfigDir === undefined) {
       delete process.env.OPENCODE_CONFIG_DIR;
