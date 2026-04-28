@@ -4,13 +4,9 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import {
-  assertInstalledPluginExists,
-  createCanonicalPluginEntry,
-  resolveInstalledPluginPath,
-} from "../../dist/src/install/index.js";
+import { assertInstalledPluginExists, createCanonicalPluginEntry, resolveInstalledPluginPath } from "../../dist/src/install/index.js";
 
-test("createCanonicalPluginEntry points at the package-local OpenCode entry", () => {
+test("createCanonicalPluginEntry uses package-name config and package workspace path", () => {
   const installRoot = mkdtempSync(path.join(os.tmpdir(), "crewbee-plugin-entry-"));
   const pluginPath = resolveInstalledPluginPath(installRoot);
 
@@ -21,7 +17,7 @@ test("createCanonicalPluginEntry points at the package-local OpenCode entry", ()
   assert.equal(createCanonicalPluginEntry(installRoot), "crewbee");
   assert.match(content, /await import/);
   assert.match(content, /\.\/dist\/opencode-plugin\.mjs/);
-  assert.equal(resolveInstalledPluginPath(installRoot).replace(/\\/g, "/").endsWith("/node_modules/crewbee/opencode-plugin.mjs"), true);
+  assert.equal(resolveInstalledPluginPath(installRoot).replace(/\\/g, "/").endsWith("/packages/crewbee@latest/node_modules/crewbee/opencode-plugin.mjs"), true);
 });
 
 test("assertInstalledPluginExists accepts the OpenCode package cache layout", () => {

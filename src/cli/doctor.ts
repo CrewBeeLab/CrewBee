@@ -66,6 +66,7 @@ export async function runDoctorCommand(argv: string[], io: {
       `Workspace manifest: ${result.hasWorkspaceManifest ? "yes" : "no"}`,
       `Installed package: ${result.hasInstalledPackage ? "yes" : "no"}`,
       `Plugin file: ${result.hasPluginFile ? "yes" : "no"}`,
+      `Legacy top-level package: ${result.hasLegacyInstalledPackage ? "yes" : "no"}`,
       `Canonical config entry: ${result.configMatchesCanonical ? "yes" : "no"}`,
       result.currentPluginEntries.length > 0
         ? `Current CrewBee entries: ${result.currentPluginEntries.join(", ")}`

@@ -6,8 +6,8 @@ import { readPackageVersion } from "../version/package-version";
 import { readOpenCodeConfig, upsertCrewBeePluginEntry, writeOpenCodeConfig } from "./config-writer";
 import { resolveOpenCodeConfigPath, resolveInstallRoot } from "./install-root";
 import { resolveLocalTarballPath } from "./local-tarball";
-import { installLocalTarball, installRegistryPackage } from "./package-manager";
-import { assertInstalledPluginExists, createCanonicalPluginEntry } from "./plugin-entry";
+import { cleanupLegacyCrewBeePackage, installLocalTarball, installRegistryPackage } from "./package-manager";
+import { assertInstalledPluginExists, createCanonicalPluginEntry, resolvePackageWorkspaceRoot } from "./plugin-entry";
 import type { InstallCommandContext, InstallCommandOptions, InstallResult } from "./types";
 import { ensureInstallWorkspace } from "./workspace";
 
@@ -17,6 +17,7 @@ export async function installCrewBee(input: {
 }): Promise<InstallResult> {
   const configPath = resolveOpenCodeConfigPath(input.options.configPath);
   const installRoot = resolveInstallRoot(input.options.installRoot);
+  const packageWorkspaceRoot = resolvePackageWorkspaceRoot(installRoot);
   const workspace = ensureInstallWorkspace(installRoot, input.options.dryRun);
   const currentVersion = readPackageVersion(input.context.packageRoot);
   let tarballPath: string | undefined;
@@ -30,17 +31,22 @@ export async function installCrewBee(input: {
 
     installLocalTarball({
       dryRun: input.options.dryRun,
-      installRoot,
+      installRoot: packageWorkspaceRoot,
       tarballPath,
     });
   } else {
     packageSpec = `crewbee@${currentVersion}`;
     installRegistryPackage({
       dryRun: input.options.dryRun,
-      installRoot,
+      installRoot: packageWorkspaceRoot,
       packageSpec,
     });
   }
+
+  const legacyPackageRemoved = cleanupLegacyCrewBeePackage({
+    dryRun: input.options.dryRun,
+    installRoot,
+  });
 
   if (!input.options.dryRun) {
     assertInstalledPluginExists(installRoot);
@@ -68,6 +74,8 @@ export async function installCrewBee(input: {
     crewbeeConfigReason: crewbeeConfigUpdate.reason,
     dryRun: input.options.dryRun,
     installRoot,
+    packageWorkspaceRoot,
+    legacyPackageRemoved,
     migratedEntries: pluginUpdate.migratedEntries,
     pluginEntry,
     packageSpec,

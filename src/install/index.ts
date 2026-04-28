@@ -3,15 +3,16 @@ export { runDoctor } from "./doctor";
 export { installCrewBee } from "./install";
 export { resolveOpenCodeConfigPath, resolveOpenCodeConfigRoot, resolveInstallRoot } from "./install-root";
 export { resolveLocalTarballPath } from "./local-tarball";
-export { installLocalTarball, installRegistryPackage, uninstallCrewBeePackage } from "./package-manager";
+export { cleanupLegacyCrewBeePackage, installLocalTarball, installRegistryPackage, uninstallCrewBeePackage } from "./package-manager";
 export {
   assertInstalledPluginExists,
   createCanonicalPluginEntry,
   detectInstalledPackageRoot,
   detectInstalledPluginPath,
+  resolveLegacyInstalledPackageRoot,
   resolveInstalledPackageRoot,
-  resolveInstalledPackageRootCandidates,
   resolveInstalledPluginPath,
+  resolvePackageWorkspaceRoot,
 } from "./plugin-entry";
 export type { DoctorOptions, DoctorResult, InstallCommandContext, InstallCommandOptions, InstallResult, InstallSource, UninstallOptions, UninstallResult } from "./types";
 export { uninstallCrewBee } from "./uninstall";

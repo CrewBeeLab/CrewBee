@@ -23,6 +23,8 @@ export interface InstallResult {
   crewbeeConfigReason: "created-default" | "repaired-invalid" | "added-default-coding-team" | "unchanged";
   dryRun: boolean;
   installRoot: string;
+  packageWorkspaceRoot: string;
+  legacyPackageRemoved: boolean;
   migratedEntries: string[];
   pluginEntry: string;
   packageSpec?: string;
@@ -59,6 +61,7 @@ export interface DoctorResult {
   expectedPluginEntry: string;
   hasInstalledPackage: boolean;
   hasPluginFile: boolean;
+  hasLegacyInstalledPackage: boolean;
   hasWorkspaceManifest: boolean;
   healthy: boolean;
   installedPackageRoot: string;

@@ -9,12 +9,12 @@ import { createCanonicalPluginEntry, runDoctor } from "../../dist/src/install/in
 test("runDoctor reports a healthy user-level install when config and files are canonical", async () => {
   const installRoot = mkdtempSync(path.join(os.tmpdir(), "crewbee-doctor-install-"));
   const configPath = path.join(mkdtempSync(path.join(os.tmpdir(), "crewbee-doctor-config-")), "opencode.json");
-  const installedPackageRoot = path.join(installRoot, "node_modules", "crewbee");
+  const installedPackageRoot = path.join(installRoot, "packages", "crewbee@latest", "node_modules", "crewbee");
   const pluginPath = path.join(installedPackageRoot, "opencode-plugin.mjs");
   const expectedEntry = createCanonicalPluginEntry(installRoot);
 
   mkdirSync(installedPackageRoot, { recursive: true });
-  writeFileSync(path.join(installRoot, "package.json"), '{"private":true}\n', "utf8");
+  writeFileSync(path.join(installRoot, "packages", "crewbee@latest", "package.json"), '{"private":true}\n', "utf8");
   writeFileSync(path.join(installedPackageRoot, "package.json"), '{"name":"crewbee"}\n', "utf8");
   writeFileSync(pluginPath, 'const mod = await import("./dist/opencode-plugin.mjs");\n\nconst plugin = mod.default ?? mod;\n\nexport default plugin;\nexport const id = plugin.id;\nexport const server = plugin.server;\n', "utf8");
   writeFileSync(configPath, JSON.stringify({ plugin: [expectedEntry] }, null, 2) + "\n", "utf8");
@@ -39,6 +39,7 @@ test("runDoctor accepts the OpenCode package cache layout", async () => {
   const pluginPath = path.join(installedPackageRoot, "opencode-plugin.mjs");
 
   mkdirSync(installedPackageRoot, { recursive: true });
+  writeFileSync(path.join(installRoot, "packages", "crewbee@latest", "package.json"), '{"private":true}\n', "utf8");
   writeFileSync(path.join(installedPackageRoot, "package.json"), '{"name":"crewbee","version":"0.1.3"}\n', "utf8");
   writeFileSync(pluginPath, 'export default {};\n', "utf8");
   writeFileSync(configPath, JSON.stringify({ plugin: ["crewbee"] }, null, 2) + "\n", "utf8");
@@ -49,19 +50,22 @@ test("runDoctor accepts the OpenCode package cache layout", async () => {
   });
 
   assert.equal(result.healthy, true);
-  assert.equal(result.hasWorkspaceManifest, false);
+  assert.equal(result.hasWorkspaceManifest, true);
   assert.equal(result.hasInstalledPackage, true);
   assert.equal(result.hasPluginFile, true);
   assert.equal(result.installedPackageRoot.replace(/\\/g, "/").endsWith("/packages/crewbee@latest/node_modules/crewbee"), true);
 });
 
-test("runDoctor accepts OpenCode-managed Bun npm plugin installs", async () => {
+test("runDoctor rejects legacy top-level installs as unhealthy residue", async () => {
   const installRoot = mkdtempSync(path.join(os.tmpdir(), "crewbee-doctor-bun-install-"));
   const configPath = path.join(mkdtempSync(path.join(os.tmpdir(), "crewbee-doctor-bun-config-")), "opencode.json");
+  const installedPackageRoot = path.join(installRoot, "node_modules", "crewbee");
+  const pluginPath = path.join(installedPackageRoot, "opencode-plugin.mjs");
 
-  mkdirSync(installRoot, { recursive: true });
+  mkdirSync(installedPackageRoot, { recursive: true });
   writeFileSync(path.join(installRoot, "package.json"), '{"private":true}\n', "utf8");
-  writeFileSync(path.join(installRoot, "bun.lock"), '{"packages":{"crewbee":["crewbee@0.1.7",""]}}\n', "utf8");
+  writeFileSync(path.join(installedPackageRoot, "package.json"), '{"name":"crewbee"}\n', "utf8");
+  writeFileSync(pluginPath, "export default {};\n", "utf8");
   writeFileSync(configPath, JSON.stringify({ plugin: ["crewbee@latest"] }, null, 2) + "\n", "utf8");
 
   const result = await runDoctor({
@@ -69,10 +73,11 @@ test("runDoctor accepts OpenCode-managed Bun npm plugin installs", async () => {
     installRoot,
   });
 
-  assert.equal(result.healthy, true);
+  assert.equal(result.healthy, false);
   assert.equal(result.configMatchesCanonical, true);
-  assert.equal(result.hasInstalledPackage, true);
-  assert.equal(result.hasPluginFile, true);
+  assert.equal(result.hasInstalledPackage, false);
+  assert.equal(result.hasPluginFile, false);
+  assert.equal(result.hasLegacyInstalledPackage, true);
 });
 
 test("runDoctor reports Team definition diagnostics", async () => {
@@ -80,13 +85,13 @@ test("runDoctor reports Team definition diagnostics", async () => {
   const configRoot = mkdtempSync(path.join(os.tmpdir(), "crewbee-doctor-team-config-"));
   const projectWorktree = mkdtempSync(path.join(os.tmpdir(), "crewbee-doctor-team-project-"));
   const configPath = path.join(configRoot, "opencode.json");
-  const installedPackageRoot = path.join(installRoot, "node_modules", "crewbee");
+  const installedPackageRoot = path.join(installRoot, "packages", "crewbee@latest", "node_modules", "crewbee");
   const pluginPath = path.join(installedPackageRoot, "opencode-plugin.mjs");
   const expectedEntry = createCanonicalPluginEntry(installRoot);
 
   mkdirSync(installedPackageRoot, { recursive: true });
   mkdirSync(path.join(projectWorktree, ".crewbee"), { recursive: true });
-  writeFileSync(path.join(installRoot, "package.json"), '{"private":true}\n', "utf8");
+  writeFileSync(path.join(installRoot, "packages", "crewbee@latest", "package.json"), '{"private":true}\n', "utf8");
   writeFileSync(path.join(installedPackageRoot, "package.json"), '{"name":"crewbee"}\n', "utf8");
   writeFileSync(pluginPath, "export default {};\n", "utf8");
   writeFileSync(configPath, JSON.stringify({ plugin: [expectedEntry] }, null, 2) + "\n", "utf8");

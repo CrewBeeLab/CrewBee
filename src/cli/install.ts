@@ -29,6 +29,7 @@ export async function runInstallCommand(argv: string[], io: {
       `Config: ${result.configPath}`,
       `CrewBee Team config: ${result.crewbeeConfigPath}`,
       `Install root: ${result.installRoot}`,
+      `Package workspace: ${result.packageWorkspaceRoot}`,
       result.tarballPath ? `Local tarball: ${result.tarballPath}` : undefined,
       result.packageSpec ? `Registry package: ${result.packageSpec}` : undefined,
       `Plugin entry: ${result.pluginEntry}`,
@@ -44,6 +45,7 @@ export async function runInstallCommand(argv: string[], io: {
       result.migratedEntries.length > 0
         ? `Migrated old entries: ${result.migratedEntries.join(", ")}`
         : undefined,
+      result.legacyPackageRemoved ? "Removed legacy top-level package: yes" : undefined,
       "",
       "Next:",
       "1. Start OpenCode in the project where you want CrewBee to run.",

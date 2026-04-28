@@ -157,12 +157,12 @@ test("runCli doctor reports Team diagnostics for the selected project worktree",
   const installRoot = mkdtempSync(path.join(os.tmpdir(), "crewbee-cli-doctor-install-"));
   const configRoot = mkdtempSync(path.join(os.tmpdir(), "crewbee-cli-doctor-config-"));
   const projectWorktree = mkdtempSync(path.join(os.tmpdir(), "crewbee-cli-doctor-project-"));
-  const installedRoot = path.join(installRoot, "node_modules", "crewbee");
+  const installedRoot = path.join(installRoot, "packages", "crewbee@latest", "node_modules", "crewbee");
   const configPath = path.join(configRoot, "opencode.json");
 
   mkdirSync(installedRoot, { recursive: true });
   mkdirSync(path.join(projectWorktree, ".crewbee"), { recursive: true });
-  writeFileSync(path.join(installRoot, "package.json"), JSON.stringify({ private: true }, null, 2), "utf8");
+  writeFileSync(path.join(installRoot, "packages", "crewbee@latest", "package.json"), JSON.stringify({ private: true }, null, 2), "utf8");
   writeFileSync(path.join(installedRoot, "package.json"), JSON.stringify({ name: "crewbee", version: "9.9.9" }, null, 2), "utf8");
   writeFileSync(path.join(installedRoot, "opencode-plugin.mjs"), "export default {};\n", "utf8");
   writeFileSync(configPath, JSON.stringify({ plugin: ["crewbee"] }, null, 2), "utf8");
@@ -191,12 +191,46 @@ test("runCli doctor reports Team diagnostics for the selected project worktree",
   assert.equal(stderr.getOutput(), "");
 });
 
+test("runCli doctor reports legacy top-level package residue as unhealthy", async () => {
+  const stdout = createCaptureStream();
+  const stderr = createCaptureStream();
+  const installRoot = mkdtempSync(path.join(os.tmpdir(), "crewbee-cli-doctor-legacy-install-"));
+  const configRoot = mkdtempSync(path.join(os.tmpdir(), "crewbee-cli-doctor-legacy-config-"));
+  const installedRoot = path.join(installRoot, "node_modules", "crewbee");
+  const configPath = path.join(configRoot, "opencode.json");
+
+  mkdirSync(installedRoot, { recursive: true });
+  writeFileSync(path.join(installRoot, "package.json"), JSON.stringify({ private: true }, null, 2), "utf8");
+  writeFileSync(path.join(installedRoot, "package.json"), JSON.stringify({ name: "crewbee", version: "8.8.8" }, null, 2), "utf8");
+  writeFileSync(path.join(installedRoot, "opencode-plugin.mjs"), "export default {};\n", "utf8");
+  writeFileSync(configPath, JSON.stringify({ plugin: ["crewbee"] }, null, 2), "utf8");
+
+  const exitCode = await runCli([
+    "doctor",
+    "--install-root",
+    installRoot,
+    "--config-path",
+    configPath,
+  ], {
+    packageRoot: process.cwd(),
+    stderr,
+    stdout,
+  });
+
+  assert.equal(exitCode, 1);
+  assert.match(stdout.getOutput(), /CrewBee doctor: issues found/);
+  assert.match(stdout.getOutput(), /Installed package: no/);
+  assert.match(stdout.getOutput(), /Plugin file: no/);
+  assert.match(stdout.getOutput(), /Legacy top-level package: yes/);
+  assert.equal(stderr.getOutput(), "");
+});
+
 test("runCli version reports current and installed package versions", async () => {
   const stdout = createCaptureStream();
   const stderr = createCaptureStream();
   const currentRoot = mkdtempSync(path.join(os.tmpdir(), "crewbee-cli-current-"));
   const installRoot = mkdtempSync(path.join(os.tmpdir(), "crewbee-cli-install-"));
-  const installedRoot = path.join(installRoot, "node_modules", "crewbee");
+  const installedRoot = path.join(installRoot, "packages", "crewbee@latest", "node_modules", "crewbee");
 
   writeFileSync(path.join(currentRoot, "package.json"), JSON.stringify({ name: "crewbee", version: "1.2.3" }, null, 2), "utf8");
   mkdirSync(installedRoot, { recursive: true });
