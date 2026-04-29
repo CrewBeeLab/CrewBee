@@ -1,6 +1,6 @@
 import type { AgentProfileSpec } from "../../../../core";
 
-import { binding, createAgent } from "../agent-helpers";
+import { createAgentProfile as createAgent, createCollaborationBinding as binding } from "../agent-profile-builder";
 
 export function createCodingExecutorAgent(): AgentProfileSpec {
   return createAgent(

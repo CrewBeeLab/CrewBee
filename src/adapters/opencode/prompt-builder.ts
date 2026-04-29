@@ -1,13 +1,10 @@
 import type { LoadedProfileDocument } from "../../core";
-import { buildPromptCatalog } from "../../catalog/build-prompt-catalog";
 import { attachMarkdownBodySections } from "../../loader/markdown-body-loader";
 import { loadAgentProfile, loadTeamManifest, loadTeamPolicy } from "../../loader/profile-loader";
-import { buildAgentPromptSource, buildAgentPromptSourceWithOverrides } from "../../normalize/build-agent-prompt-source";
+import { buildAgentPromptSourceWithOverrides } from "../../normalize/build-agent-prompt-source";
 import { buildTeamPromptSource } from "../../normalize/build-team-prompt-source";
 import { normalizeProfileDocument } from "../../normalize/normalize-document";
-import { buildPromptPlan } from "../../plan/build-prompt-plan";
-import { applyPromptProjection } from "../../projection/apply-prompt-projection";
-import { defaultRenderContext, renderPromptPlan } from "../../render/structural-renderer";
+import { renderLoadedPromptDocument, renderNormalizedPromptDocument } from "../../render/prompt-document-renderer";
 import type { ProjectedAgent } from "../../runtime";
 
 type UnknownRecord = Record<string, unknown>;
@@ -40,14 +37,6 @@ function createCollaborationPromptValue(agent: ProjectedAgent): unknown {
   };
 }
 
-function renderPromptDocument(document: LoadedProfileDocument): string {
-  const normalized = normalizeProfileDocument(document);
-  const catalog = buildPromptCatalog(normalized);
-  const projectedCatalog = applyPromptProjection(catalog, normalized.promptProjection);
-  const plan = buildPromptPlan(projectedCatalog);
-  return renderPromptPlan(plan, defaultRenderContext);
-}
-
 function renderPart(title: string, body: string): string | undefined {
   return body.trim().length > 0 ? `## ${title}\n\n${body}` : undefined;
 }
@@ -56,8 +45,8 @@ export function createOpenCodePromptFromDocuments(input: {
   team: LoadedProfileDocument;
   agent: LoadedProfileDocument;
 }): string {
-  const teamPart = renderPromptDocument(input.team);
-  const agentPart = renderPromptDocument(input.agent);
+  const teamPart = renderLoadedPromptDocument(input.team);
+  const agentPart = renderLoadedPromptDocument(input.agent);
 
   return [renderPart("Team Contract", teamPart), renderPart("Agent Contract", agentPart)]
     .filter((block): block is string => Boolean(block))
@@ -78,10 +67,7 @@ export function createOpenCodePromptFromRawDocuments(input: {
     ? attachMarkdownBodySections(loadAgentProfile(input.agentRaw), input.agentBody)
     : loadAgentProfile(input.agentRaw);
   const normalizedAgent = normalizeProfileDocument(loadedAgent);
-  const agentPart = renderPromptPlan(
-    buildPromptPlan(applyPromptProjection(buildPromptCatalog(normalizedAgent), normalizedAgent.promptProjection)),
-    defaultRenderContext,
-  );
+  const agentPart = renderNormalizedPromptDocument(normalizedAgent);
 
   const loadedPolicy = loadTeamPolicy(input.teamPolicyRaw);
   const teamSource = buildTeamPromptSource(
@@ -93,10 +79,7 @@ export function createOpenCodePromptFromRawDocuments(input: {
     loadedPolicy,
     loadedTeamManifest.bodySections,
   );
-  const teamPart = renderPromptPlan(
-    buildPromptPlan(applyPromptProjection(buildPromptCatalog(teamSource), teamSource.promptProjection)),
-    defaultRenderContext,
-  );
+  const teamPart = renderNormalizedPromptDocument(teamSource);
 
   return [renderPart("Team Contract", teamPart), renderPart("Agent Contract", agentPart)]
     .filter((block): block is string => Boolean(block))
@@ -112,17 +95,11 @@ export function createOpenCodeAgentPrompt(agent: ProjectedAgent, _requestedTools
     },
     agent.sourceTeam.policy,
   );
-  const teamPart = renderPromptPlan(
-    buildPromptPlan(applyPromptProjection(buildPromptCatalog(teamSource), teamSource.promptProjection)),
-    defaultRenderContext,
-  );
+  const teamPart = renderNormalizedPromptDocument(teamSource);
   const normalizedAgent = buildAgentPromptSourceWithOverrides(agent.sourceAgent, {
     collaborationValue: createCollaborationPromptValue(agent),
   });
-  const agentPart = renderPromptPlan(
-    buildPromptPlan(applyPromptProjection(buildPromptCatalog(normalizedAgent), normalizedAgent.promptProjection)),
-    defaultRenderContext,
-  );
+  const agentPart = renderNormalizedPromptDocument(normalizedAgent);
 
   return [renderPart("Team Contract", teamPart), renderPart("Agent Contract", agentPart)]
     .filter((block): block is string => Boolean(block))

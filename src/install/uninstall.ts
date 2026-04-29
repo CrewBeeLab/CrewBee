@@ -1,6 +1,6 @@
 import { readOpenCodeConfig, removeCrewBeePluginEntries, writeOpenCodeConfig } from "./config-writer";
 import { resolveOpenCodeConfigPath, resolveInstallRoot } from "./install-root";
-import { uninstallCrewBeePackage } from "./package-manager";
+import { uninstallCrewBeePackage } from "./package-installation";
 import type { UninstallOptions, UninstallResult } from "./types";
 
 export async function uninstallCrewBee(options: UninstallOptions): Promise<UninstallResult> {

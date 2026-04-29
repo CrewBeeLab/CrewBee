@@ -6,7 +6,7 @@ import { readPackageVersion } from "../version/package-version";
 import { readOpenCodeConfig, upsertCrewBeePluginEntry, writeOpenCodeConfig } from "./config-writer";
 import { resolveOpenCodeConfigPath, resolveInstallRoot } from "./install-root";
 import { resolveLocalTarballPath } from "./local-tarball";
-import { cleanupLegacyCrewBeePackage, installLocalTarball, installRegistryPackage } from "./package-manager";
+import { cleanupLegacyCrewBeePackage, installLocalTarball, installRegistryPackage } from "./package-installation";
 import { assertInstalledPluginExists, createCanonicalPluginEntry, resolvePackageWorkspaceRoot } from "./plugin-entry";
 import type { InstallCommandContext, InstallCommandOptions, InstallResult } from "./types";
 import { ensureInstallWorkspace } from "./workspace";

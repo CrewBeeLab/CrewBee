@@ -3,7 +3,7 @@ export { runDoctor } from "./doctor";
 export { installCrewBee } from "./install";
 export { resolveOpenCodeConfigPath, resolveOpenCodeConfigRoot, resolveInstallRoot } from "./install-root";
 export { resolveLocalTarballPath } from "./local-tarball";
-export { cleanupLegacyCrewBeePackage, installLocalTarball, installRegistryPackage, uninstallCrewBeePackage } from "./package-manager";
+export { cleanupLegacyCrewBeePackage, installLocalTarball, installRegistryPackage, uninstallCrewBeePackage } from "./package-installation";
 export {
   assertInstalledPluginExists,
   createCanonicalPluginEntry,
