@@ -1,4 +1,4 @@
-import { readOpenCodeConfig, removeCrewBeePluginEntries, writeOpenCodeConfig } from "./config-writer";
+import { readOpenCodeConfig, removeCrewBeePluginEntries, writeOpenCodeConfig } from "./opencode-config-file";
 import { resolveOpenCodeConfigPath, resolveInstallRoot } from "./install-root";
 import { uninstallCrewBeePackage } from "./package-installation";
 import type { UninstallOptions, UninstallResult } from "./types";

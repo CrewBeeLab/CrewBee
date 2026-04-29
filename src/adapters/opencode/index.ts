@@ -1,5 +1,6 @@
 export { createOpenCodeCapabilityContract } from "./capabilities";
 export { applyOpenCodeAgentConfigPatch, type OpenCodeConfigLike, type OpenCodeConfigMergeResult } from "./config-merge";
+export { DEFAULT_OPENCODE_EXECUTION_MODE } from "./defaults";
 export {
   createOpenCodeCoexistencePolicy,
   detectOpenCodeProjectionCollisions,

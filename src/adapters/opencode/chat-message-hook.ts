@@ -3,6 +3,7 @@ import { createSessionRuntimeBinding, type SessionRuntimeBinding } from "../../r
 import { createCheckpoint } from "./delegation/prompt";
 import type { DelegateStateStore } from "./delegation/store";
 import type { OpenCodeBootstrapOutput } from "./bootstrap";
+import { DEFAULT_OPENCODE_EXECUTION_MODE } from "./defaults";
 import { resolveProjectedAgentSelection } from "./projection";
 
 function getDefaultAgent(boot: OpenCodeBootstrapOutput): string | undefined {
@@ -51,7 +52,7 @@ export function createChatMessageHook(input: {
       sessionID: message.sessionID,
       teamId: agent.teamId,
       canonicalAgentId: agent.canonicalAgentId,
-      mode: "single-executor",
+      mode: DEFAULT_OPENCODE_EXECUTION_MODE,
       source: message.agent ? "host-agent-selection" : "plugin-default",
     });
     input.bindings.set(message.sessionID, binding);

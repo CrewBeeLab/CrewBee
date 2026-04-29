@@ -96,20 +96,20 @@ function resolveBindingAgent(input: {
     });
 
     if (hostSelection) {
-        return {
-          teamId: hostSelection.teamId,
-          sourceAgentId: hostSelection.canonicalAgentId,
-        };
+      return {
+        teamId: hostSelection.teamId,
+        sourceAgentId: hostSelection.canonicalAgentId,
+      };
     }
   }
 
   if (input.selectedTeamId && input.selectedSourceAgentId) {
     const explicit = findProjectedAgent(input.projection, input.selectedTeamId, input.selectedSourceAgentId);
     if (explicit) {
-        return {
-          teamId: explicit.teamId,
-          sourceAgentId: explicit.canonicalAgentId,
-        };
+      return {
+        teamId: explicit.teamId,
+        sourceAgentId: explicit.canonicalAgentId,
+      };
     }
   }
 
@@ -127,10 +127,10 @@ function resolveBindingAgent(input: {
       continue;
     }
 
-        return {
-          teamId: fallbackTeam.team.manifest.id,
-          sourceAgentId: fallbackAgent.canonicalAgentId ?? fallbackAgent.metadata.id,
-        };
+    return {
+      teamId: fallbackTeam.team.manifest.id,
+      sourceAgentId: fallbackAgent.canonicalAgentId ?? fallbackAgent.metadata.id,
+    };
   }
 
   return undefined;
@@ -213,12 +213,12 @@ export function createOpenCodeBootstrap(input: OpenCodeBootstrapInput): OpenCode
   const sessionBinding = input.sessionID && bindingAgent
     ? createSessionRuntimeBinding({
         projection,
-      sessionID: input.sessionID,
-      teamId: bindingAgent.teamId,
-      canonicalAgentId: bindingAgent.sourceAgentId,
-      mode: input.selectedMode ?? input.defaults.defaultMode,
-      source: input.selectedHostAgent || input.selectedSourceAgentId ? "host-agent-selection" : "plugin-default",
-    })
+        sessionID: input.sessionID,
+        teamId: bindingAgent.teamId,
+        canonicalAgentId: bindingAgent.sourceAgentId,
+        mode: input.selectedMode ?? input.defaults.defaultMode,
+        source: input.selectedHostAgent || input.selectedSourceAgentId ? "host-agent-selection" : "plugin-default",
+      })
     : undefined;
 
   const defaultProjectedAgent = bindingAgent

@@ -5,10 +5,9 @@ import type { TeamLibrary } from "../../core";
 
 import { createOpenCodeBootstrap, type OpenCodeBootstrapOutput } from "./bootstrap";
 import type { OpenCodeConfigLike } from "./config-merge";
+import { DEFAULT_OPENCODE_EXECUTION_MODE } from "./defaults";
 import { logCrewBee } from "./logging";
 import { createProjectedAgentAliasIndex, type OpenCodeAgentAliasEntry } from "./projection";
-
-const DEFAULT_MODE = "single-executor" as const;
 
 function summarizeProjectedAgents(boot: OpenCodeBootstrapOutput): Array<{
   configKey: string;
@@ -58,7 +57,7 @@ export function createInitialBootstrap(teamLibrary: TeamLibrary): {
 } {
   const boot = createOpenCodeBootstrap({
     teamLibrary,
-    defaults: { defaultMode: DEFAULT_MODE },
+    defaults: { defaultMode: DEFAULT_OPENCODE_EXECUTION_MODE },
   });
   return {
     boot,
@@ -77,7 +76,7 @@ export function createConfigHook(input: {
     const current = getConfig(cfg);
     const next = createOpenCodeBootstrap({
       teamLibrary: input.teamLibrary,
-      defaults: { defaultMode: DEFAULT_MODE },
+      defaults: { defaultMode: DEFAULT_OPENCODE_EXECUTION_MODE },
       existingConfig: current,
       existingDefaultAgent: typeof current.default_agent === "string" ? current.default_agent : undefined,
     });

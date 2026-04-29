@@ -3,7 +3,7 @@ import path from "node:path";
 import { ensureCrewBeeConfigFile } from "../agent-teams";
 import { readPackageVersion } from "../version/package-version";
 
-import { readOpenCodeConfig, upsertCrewBeePluginEntry, writeOpenCodeConfig } from "./config-writer";
+import { readOpenCodeConfig, upsertCrewBeePluginEntry, writeOpenCodeConfig } from "./opencode-config-file";
 import { resolveOpenCodeConfigPath, resolveInstallRoot } from "./install-root";
 import { resolveLocalTarballPath } from "./local-tarball";
 import { cleanupLegacyCrewBeePackage, installLocalTarball, installRegistryPackage } from "./package-installation";

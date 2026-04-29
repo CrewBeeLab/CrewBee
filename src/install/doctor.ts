@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { loadDefaultTeamLibrary, summarizeTeamDiagnostics, validateTeamLibrary } from "../agent-teams";
 
-import { findCrewBeePluginEntries, readOpenCodeConfig } from "./config-writer";
+import { findCrewBeePluginEntries, readOpenCodeConfig } from "./opencode-config-file";
 import { resolveOpenCodeConfigPath, resolveInstallRoot } from "./install-root";
 import {
   createCanonicalPluginEntry,

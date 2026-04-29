@@ -1,4 +1,4 @@
-export { readOpenCodeConfig, removeCrewBeePluginEntries, upsertCrewBeePluginEntry, writeOpenCodeConfig } from "./config-writer";
+export { readOpenCodeConfig, removeCrewBeePluginEntries, upsertCrewBeePluginEntry, writeOpenCodeConfig } from "./opencode-config-file";
 export { runDoctor } from "./doctor";
 export { installCrewBee } from "./install";
 export { resolveOpenCodeConfigPath, resolveOpenCodeConfigRoot, resolveInstallRoot } from "./install-root";
