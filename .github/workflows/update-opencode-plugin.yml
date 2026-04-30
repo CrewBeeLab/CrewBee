@@ -1,0 +1,69 @@
+name: update-opencode-plugin
+
+on:
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    if: github.repository == 'CrewBeeLab/CrewBee'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install current dependencies
+        run: npm ci
+
+      - name: Update OpenCode plugin dependency to latest
+        run: npm install @opencode-ai/plugin@latest --save-exact
+
+      - name: Detect dependency changes
+        id: diff
+        run: |
+          if git diff --quiet -- package.json package-lock.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Type check
+        if: steps.diff.outputs.changed == 'true'
+        run: npm run typecheck
+
+      - name: Build package
+        if: steps.diff.outputs.changed == 'true'
+        run: npm run build
+
+      - name: Run tests
+        if: steps.diff.outputs.changed == 'true'
+        run: npm test
+
+      - name: Create pull request
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: chore/update-opencode-plugin
+          delete-branch: true
+          title: "Update @opencode-ai/plugin to latest"
+          commit-message: "Update @opencode-ai/plugin dependency"
+          body: |
+            ## Summary
+            - Updates `@opencode-ai/plugin` to the latest npm release.
+            - Refreshes `package-lock.json`, including the transitive `@opencode-ai/sdk` version.
+
+            ## Verification
+            - `npm run typecheck`
+            - `npm run build`
+            - `npm test`
