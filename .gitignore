@@ -12,6 +12,7 @@ tmp/
 NUL
 .artifacts/
 .sisyphus/
+.local/
 %TEMP%/
 DOCUMENTATION_INDEX.md
 INVESTIGATION_SUMMARY.md
