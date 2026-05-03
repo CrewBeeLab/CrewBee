@@ -123,7 +123,12 @@ export function loadDefaultTeamLibrary(input: string | LoadDefaultTeamLibraryOpt
       }
 
       pendingTeams.push({
-        loader: () => ({ team: embeddedTeam.team, issues: [] }),
+        loader: () => ({
+          team: embeddedTeam.team
+            ? { ...embeddedTeam.team, modelConfigOverride: source.modelConfigOverride }
+            : undefined,
+          issues: [],
+        }),
         priority: source.priority,
         order: source.order,
         sourcePrecedence: source.sourcePrecedence,
@@ -138,7 +143,7 @@ export function loadDefaultTeamLibrary(input: string | LoadDefaultTeamLibraryOpt
         try {
           const loaded = loadTeamDefinitionFromDirectoryWithIssues(source.teamDir, baseDir);
           return {
-            team: loaded.team,
+            team: { ...loaded.team, modelConfigOverride: source.modelConfigOverride },
             issues: loaded.issues,
           };
         } catch (error) {

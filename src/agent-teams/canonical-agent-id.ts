@@ -104,6 +104,19 @@ export function normalizeTeamAgentIds(input: {
           )
         : undefined,
     },
+    modelConfigOverride: input.team.modelConfigOverride
+      ? {
+          ...input.team.modelConfigOverride,
+          agents: input.team.modelConfigOverride.agents
+            ? Object.fromEntries(
+                Object.entries(input.team.modelConfigOverride.agents).map(([agentId, override]) => [
+                  agentIdMap.get(agentId) ?? agentId,
+                  override,
+                ]),
+              )
+            : undefined,
+        }
+      : undefined,
     agents: input.team.agents.map((agent) => {
       const canonicalAgentId = agentIdMap.get(agent.metadata.id) ?? agent.metadata.id;
       return {

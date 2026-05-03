@@ -3,10 +3,35 @@ import type {
   TeamManifest,
   TeamPolicySpec,
 } from "../../core";
+import {
+  BUILTIN_CODING_TEAM_AGENT_MODELS,
+  BUILTIN_CODING_TEAM_FALLBACK_TO_HOST_DEFAULT,
+} from "../constants";
 
 import { createCodingTeamAgents } from "./coding-team/agents";
 
+const CODING_TEAM_RUNTIME_PROFILES: Record<string, { temperature: number; topP: number; variant?: string }> = {
+  "coding-leader": { temperature: 0.2, topP: 0.85, variant: "long-context" },
+  "coordination-leader": { temperature: 0.15, topP: 0.75 },
+  "coding-executor": { temperature: 0.25, topP: 0.9 },
+  "codebase-explorer": { temperature: 0.1, topP: 0.8 },
+  "web-researcher": { temperature: 0.2, topP: 0.85 },
+  reviewer: { temperature: 0.15, topP: 0.75 },
+  "principal-advisor": { temperature: 0.15, topP: 0.75 },
+  "multimodal-looker": { temperature: 0.2, topP: 0.85 },
+};
+
 export function createEmbeddedCodingTeam(): AgentTeamDefinition {
+  const runtime = Object.fromEntries(
+    Object.entries(BUILTIN_CODING_TEAM_AGENT_MODELS).map(([agentId, model]) => [
+      agentId,
+      {
+        model,
+        ...CODING_TEAM_RUNTIME_PROFILES[agentId],
+        fallbackToHostDefault: BUILTIN_CODING_TEAM_FALLBACK_TO_HOST_DEFAULT,
+      },
+    ]),
+  );
   const manifest: TeamManifest = {
     id: "coding-team",
     version: "1.0.0",
@@ -115,16 +140,7 @@ export function createEmbeddedCodingTeam(): AgentTeamDefinition {
         "仓库内研究与外部研究必须分离",
       ],
     },
-    agentRuntime: {
-      "coding-leader": { provider: "openai", model: "gpt-5.5", temperature: 0.2, topP: 0.85, variant: "long-context" },
-      "coordination-leader": { provider: "openai", model: "gpt-5.5", temperature: 0.15, topP: 0.75 },
-      "coding-executor": { provider: "openai", model: "gpt-5.5", temperature: 0.25, topP: 0.9 },
-      "codebase-explorer": { provider: "openai", model: "gpt-5.5", temperature: 0.1, topP: 0.8 },
-      "web-researcher": { provider: "openai", model: "gpt-5.5", temperature: 0.2, topP: 0.85 },
-      reviewer: { provider: "openai", model: "gpt-5.5", temperature: 0.15, topP: 0.75 },
-      "principal-advisor": { provider: "openai", model: "gpt-5.5", temperature: 0.15, topP: 0.75 },
-      "multimodal-looker": { provider: "openai", model: "gpt-5.5", temperature: 0.2, topP: 0.85 },
-    },
+    agentRuntime: runtime,
     tags: ["代码", "leader驱动", "上下文连续性", "主执行者中心", "评审中心", "证据驱动"],
   };
 

@@ -710,12 +710,18 @@ function mapAgentRuntime(raw: UnknownRecord | undefined): TeamAgentRuntimeMap | 
       const options = asOptionalRecord(record.options);
 
       const runtime: AgentRuntimeModelConfig = {
-        provider: asString(record.provider, `agent_runtime.${agentId}.provider`),
+        provider: record.provider !== undefined ? asString(record.provider, `agent_runtime.${agentId}.provider`) : undefined,
         model: asString(record.model, `agent_runtime.${agentId}.model`),
         temperature: record.temperature !== undefined ? Number(record.temperature) : undefined,
         topP: record.top_p !== undefined || record.topP !== undefined ? Number(record.top_p ?? record.topP) : undefined,
         variant: asOptionalString(record.variant),
         options: options ? { ...options } : undefined,
+        fallbackModels: record.fallback_models || record.fallbackModels
+          ? asStringArray(record.fallback_models ?? record.fallbackModels, `agent_runtime.${agentId}.fallback_models`)
+          : undefined,
+        fallbackToHostDefault: record.fallback_to_host_default !== undefined || record.fallbackToHostDefault !== undefined
+          ? asBoolean(record.fallback_to_host_default ?? record.fallbackToHostDefault, `agent_runtime.${agentId}.fallback_to_host_default`)
+          : undefined,
       };
 
       return [agentId, runtime];

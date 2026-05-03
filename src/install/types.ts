@@ -1,4 +1,5 @@
 import type { TeamValidationIssue } from "../agent-teams/types";
+import type { ModelResolutionTrace } from "../adapters/opencode/model-resolution";
 
 export type InstallSource = "local" | "registry";
 
@@ -104,4 +105,5 @@ export interface DoctorResult {
   teamCount: number;
   teamHealthy: boolean;
   teamIssues: TeamValidationIssue[];
+  modelResolution: ModelResolutionTrace[];
 }

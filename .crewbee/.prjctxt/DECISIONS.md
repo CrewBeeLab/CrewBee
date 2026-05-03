@@ -34,3 +34,17 @@
 - Context: Installing CrewBee is not actionable if OpenCode is missing or an attempted OpenCode install does not leave `opencode` on PATH.
 - Decision: Detect OpenCode during setup/doctor, require OpenCode availability for doctor health, and fail setup after an attempted OpenCode install if `opencode` still cannot be detected.
 - Consequence: Some environments may need a new terminal or manual OpenCode install before setup can complete successfully.
+
+## 2026-05-03: Resolve Agent Team models during OpenCode projection
+
+- State: accepted
+- Context: Built-in Coding Team model defaults needed user-configurable overrides, deterministic fallback, and visibility in diagnostics without taking over OpenCode's runtime LLM execution.
+- Decision: Add a projection-time model resolver in the OpenCode adapter. Keep model configuration flowing through Team registration/library data, allow `crewbee.json` per-agent overrides including `host-default`, support manifest `$default` and `fallback_models` for file teams, and expose resolution traces through doctor.
+- Consequence: CrewBee can deterministically write or omit OpenCode agent model fields based on configured/fallback choices, but runtime provider API-error retry remains outside current scope.
+
+## 2026-05-03: Keep model/runtime cleanup behavior-equivalent
+
+- State: accepted
+- Context: The model-resolution path and built-in Coding Team runtime defaults needed readability cleanup after provider/model fallback support landed.
+- Decision: Extract model-resolution candidate/trace steps into named helpers and represent built-in Coding Team runtime parameters with an explicit per-agent profile map, without changing config schemas, fallback ordering, or projection semantics.
+- Consequence: Future model/provider changes should extend the helper boundaries and runtime profile map instead of reintroducing inline branching in projection/default construction.

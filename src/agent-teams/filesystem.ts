@@ -7,7 +7,11 @@ import { resolveOpenCodeConfigRoot } from "../install/install-root";
 
 import type { TeamValidationIssue } from "./types";
 import {
+  BUILTIN_CODING_TEAM_AGENT_MODELS,
+  BUILTIN_CODING_TEAM_FALLBACK_TO_HOST_DEFAULT,
   BUILTIN_CODING_TEAM_ID,
+  BUILTIN_CODING_TEAM_MODEL_FALLBACK,
+  BUILTIN_CODING_TEAM_MODEL_PRESET,
   CREWBEE_CONFIG_FILE,
   DEFAULT_EMBEDDED_TEAM_PRIORITY,
   DEFAULT_FILE_TEAM_PRIORITY,
@@ -28,6 +32,19 @@ interface RawConfiguredTeamEntry {
   path?: unknown;
   enabled?: unknown;
   priority?: unknown;
+  model_preset?: unknown;
+  modelPreset?: unknown;
+  fallback?: unknown;
+  fallback_to_host_default?: unknown;
+  fallbackToHostDefault?: unknown;
+  agents?: unknown;
+}
+
+export interface ConfiguredTeamModelOverride {
+  modelPreset?: string;
+  fallback?: string;
+  fallbackToHostDefault?: boolean;
+  agents?: Record<string, { model?: string }>;
 }
 
 export interface ConfiguredEmbeddedTeamSource {
@@ -39,6 +56,7 @@ export interface ConfiguredEmbeddedTeamSource {
   sourceScope: TeamConfigSourceScope;
   sourcePrecedence: number;
   configPath: string;
+  modelConfigOverride?: ConfiguredTeamModelOverride;
 }
 
 export interface ConfiguredFilesystemTeamSource {
@@ -50,6 +68,7 @@ export interface ConfiguredFilesystemTeamSource {
   sourceScope: TeamConfigSourceScope;
   sourcePrecedence: number;
   configPath: string;
+  modelConfigOverride?: ConfiguredTeamModelOverride;
 }
 
 export type ConfiguredTeamSource = ConfiguredEmbeddedTeamSource | ConfiguredFilesystemTeamSource;
@@ -115,6 +134,37 @@ function getOptionalString(value: unknown): string | undefined {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
 }
 
+function normalizeConfiguredTeamModelOverride(raw: RawConfiguredTeamEntry): ConfiguredTeamModelOverride | undefined {
+  const modelPreset = getOptionalString(raw.model_preset ?? raw.modelPreset);
+  const fallback = getOptionalString(raw.fallback);
+  const fallbackToHostDefaultValue = raw.fallback_to_host_default ?? raw.fallbackToHostDefault;
+  const fallbackToHostDefault = typeof fallbackToHostDefaultValue === "boolean" ? fallbackToHostDefaultValue : undefined;
+  const agents = isRecord(raw.agents)
+    ? Object.fromEntries(
+        Object.entries(raw.agents).flatMap(([agentId, value]) => {
+          if (!isRecord(value)) {
+            return [];
+          }
+
+          const model = getOptionalString(value.model);
+          return [[agentId, { ...(model ? { model } : {}) }]];
+        }),
+      )
+    : undefined;
+  const normalizedAgents = agents && Object.keys(agents).length > 0 ? agents : undefined;
+
+  if (!modelPreset && !fallback && fallbackToHostDefault === undefined && !normalizedAgents) {
+    return undefined;
+  }
+
+  return {
+    modelPreset,
+    fallback,
+    fallbackToHostDefault,
+    agents: normalizedAgents,
+  };
+}
+
 function createDefaultCodingTeamSource(input: {
   sourceScope: TeamConfigSourceScope;
   sourcePrecedence: number;
@@ -129,6 +179,7 @@ function createDefaultCodingTeamSource(input: {
     sourceScope: input.sourceScope,
     sourcePrecedence: input.sourcePrecedence,
     configPath: input.configPath,
+    modelConfigOverride: normalizeConfiguredTeamModelOverride(createDefaultCodingTeamConfigEntry()),
   };
 }
 
@@ -137,6 +188,12 @@ function createDefaultCodingTeamConfigEntry(): Record<string, unknown> {
     id: BUILTIN_CODING_TEAM_ID,
     enabled: true,
     priority: DEFAULT_EMBEDDED_TEAM_PRIORITY,
+    model_preset: BUILTIN_CODING_TEAM_MODEL_PRESET,
+    fallback: BUILTIN_CODING_TEAM_MODEL_FALLBACK,
+    fallback_to_host_default: BUILTIN_CODING_TEAM_FALLBACK_TO_HOST_DEFAULT,
+    agents: Object.fromEntries(
+      Object.entries(BUILTIN_CODING_TEAM_AGENT_MODELS).map(([agentId, model]) => [agentId, { model }]),
+    ),
   };
 }
 
@@ -447,6 +504,7 @@ function normalizeConfiguredTeamEntry(input: {
         sourceScope: input.sourceScope,
         sourcePrecedence: input.sourcePrecedence,
         configPath: input.configPath,
+        modelConfigOverride: normalizeConfiguredTeamModelOverride(raw),
       },
       issues: [],
     };
@@ -463,6 +521,7 @@ function normalizeConfiguredTeamEntry(input: {
         sourceScope: input.sourceScope,
         sourcePrecedence: input.sourcePrecedence,
         configPath: input.configPath,
+        modelConfigOverride: normalizeConfiguredTeamModelOverride(raw),
       },
       issues: [],
     };

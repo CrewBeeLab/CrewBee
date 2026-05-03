@@ -6,7 +6,9 @@ coverage/
 *.tmp
 simulators/runs/
 
-docs/internal
+docs/internal/*
+!docs/internal/
+!docs/internal/agent-team-model-provider-current-state.md
 AgentTeams/internal
 tmp/
 NUL

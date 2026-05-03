@@ -35,15 +35,28 @@ export interface TeamMemberGuidance {
 export type TeamMemberMap = Record<string, TeamMemberGuidance>;
 
 export interface AgentRuntimeModelConfig {
-  provider: string;
+  provider?: string;
   model: string;
   temperature?: number;
   topP?: number;
   variant?: string;
   options?: Record<string, unknown>;
+  fallbackModels?: string[];
+  fallbackToHostDefault?: boolean;
 }
 
 export type TeamAgentRuntimeMap = Record<string, AgentRuntimeModelConfig>;
+
+export interface TeamAgentModelOverride {
+  model?: string;
+}
+
+export interface TeamModelConfigOverride {
+  modelPreset?: string;
+  fallback?: string;
+  fallbackToHostDefault?: boolean;
+  agents?: Record<string, TeamAgentModelOverride>;
+}
 
 export interface TeamGovernanceSpec {
   instructionPrecedence: string[];
@@ -301,6 +314,7 @@ export interface AgentTeamDefinition {
   policy: TeamPolicySpec;
   agents: AgentProfileSpec[];
   documentation?: TeamDocumentationRefs;
+  modelConfigOverride?: TeamModelConfigOverride;
 }
 
 export interface TeamLibrary {

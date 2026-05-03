@@ -2,6 +2,8 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 
 import { loadDefaultTeamLibrary, summarizeTeamDiagnostics, validateTeamLibrary } from "../agent-teams";
+import { createOpenCodeBootstrap } from "../adapters/opencode/bootstrap";
+import { DEFAULT_OPENCODE_EXECUTION_MODE } from "../adapters/opencode/defaults";
 
 import { findCrewBeePluginEntries, readOpenCodeConfig } from "./opencode-config-file";
 import { resolveOpenCodeConfigPath, resolveInstallRoot } from "./install-root";
@@ -35,6 +37,10 @@ export async function runDoctor(options: DoctorOptions): Promise<DoctorResult> {
   });
   const teamIssues = validateTeamLibrary(teamLibrary);
   const teamDiagnostics = summarizeTeamDiagnostics(teamIssues);
+  const boot = createOpenCodeBootstrap({
+    teamLibrary,
+    defaults: { defaultMode: DEFAULT_OPENCODE_EXECUTION_MODE },
+  });
   const hasWorkspaceManifest = existsSync(path.join(packageWorkspaceRoot, "package.json"));
   const configMatchesCanonical = currentPluginEntries.length === 1 && isValidCrewBeeConfigEntry(currentPluginEntries[0] ?? "", expectedPluginEntry);
   const hasInstalledPackage = existsSync(path.join(installedPackageRoot, "package.json"));
@@ -62,5 +68,6 @@ export async function runDoctor(options: DoctorOptions): Promise<DoctorResult> {
     teamCount: teamLibrary.teams.length,
     teamHealthy,
     teamIssues,
+    modelResolution: boot.projectedAgents.map((agent) => agent.modelResolution),
   };
 }

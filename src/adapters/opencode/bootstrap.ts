@@ -37,6 +37,7 @@ export interface OpenCodeBootstrapInput {
   teamLibrary: TeamLibrary;
   defaults: OpenCodeBootstrapDefaults;
   availableTools?: readonly (string | AvailableToolDefinition)[];
+  availableModels?: readonly string[];
   existingConfig?: OpenCodeConfigLike;
   existingConfigKeys?: string[];
   existingPublicNames?: string[];
@@ -190,6 +191,7 @@ export function createOpenCodeBootstrap(input: OpenCodeBootstrapInput): OpenCode
   const toolDomainPlan = createOpenCodeToolDomainPlan();
   const projectedAgents = createOpenCodeAgentConfigs(projection, {
     availableTools: input.availableTools,
+    availableModels: input.availableModels,
   });
   const foreignCollisions = getForeignCollisionInputs({
     existingConfig: input.existingConfig,

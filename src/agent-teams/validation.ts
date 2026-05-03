@@ -55,6 +55,10 @@ export function validateTeamDefinition(team: AgentTeamDefinition): TeamValidatio
   }
 
   for (const [agentId] of Object.entries(manifest.agentRuntime ?? {})) {
+    if (agentId === "$default") {
+      continue;
+    }
+
     if (!agentIds.has(agentId)) {
       issues.push({
         level: "warning",
@@ -62,6 +66,18 @@ export function validateTeamDefinition(team: AgentTeamDefinition): TeamValidatio
         path: `agent_runtime.${agentId}`,
         message: `Agent runtime override '${agentId}' is not defined in this Team.`,
         suggestion: "Remove this runtime override or add the target Agent profile.",
+      });
+    }
+  }
+
+  for (const [agentId] of Object.entries(team.modelConfigOverride?.agents ?? {})) {
+    if (!agentIds.has(agentId)) {
+      issues.push({
+        level: "warning",
+        code: "team_agent_model_override_target_missing",
+        path: `teams.${manifest.id}.agents.${agentId}`,
+        message: `Agent model override '${agentId}' is not defined in Team '${manifest.id}'.`,
+        suggestion: "Remove this model override or add the target Agent profile.",
       });
     }
   }

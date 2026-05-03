@@ -94,11 +94,7 @@ test("ensureCrewBeeConfigFile adds default coding-team during install mode", () 
 
   assert.equal(result.changed, true);
   assert.equal(result.reason, "added-default-coding-team");
-  assert.deepEqual(written.teams[0], {
-    id: "coding-team",
-    enabled: true,
-    priority: 0,
-  });
+  assert.deepEqual(written.teams[0], readExpectedCrewBeeConfigTemplate().teams[0]);
   assert.deepEqual(written.teams[1], {
     path: "@tmp/custom-team",
     enabled: true,
@@ -175,11 +171,7 @@ test("ensureCrewBeeConfigFile preserves existing non-object team entries while a
   assert.equal(result.changed, true);
   assert.equal(result.reason, "added-default-coding-team");
   assert.deepEqual(written.teams, [
-    {
-      id: "coding-team",
-      enabled: true,
-      priority: 0,
-    },
+    readExpectedCrewBeeConfigTemplate().teams[0],
     "legacy-entry",
     {
       path: "@tmp/custom-team",

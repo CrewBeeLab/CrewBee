@@ -293,6 +293,181 @@ test("OpenCode bootstrap force-overwrites a foreign default agent", () => {
   assert.equal(bootstrap.mergedConfig?.default_agent, "coding-leader");
 });
 
+test("coding-team crewbee.json agents model override supports host-default", () => {
+  const workspace = mkdtempSync(path.join(os.tmpdir(), "crewbee-coding-model-host-default-"));
+  const previousConfigDir = process.env.OPENCODE_CONFIG_DIR;
+
+  try {
+    const configRoot = path.join(workspace, ".config", "opencode");
+    process.env.OPENCODE_CONFIG_DIR = configRoot;
+
+    writeFile(path.join(configRoot, "crewbee.json"), createCrewBeeConfig([
+      {
+        id: "coding-team",
+        enabled: true,
+        priority: 0,
+        fallback: "builtin-role-chain",
+        fallback_to_host_default: true,
+        agents: {
+          reviewer: { model: "host-default" },
+        },
+      },
+    ]));
+
+    const bootstrap = createOpenCodeBootstrap({
+      teamLibrary: loadDefaultTeamLibrary(workspace),
+      defaults: { defaultMode: "single-executor" },
+    });
+    const reviewer = bootstrap.projectedAgents.find((agent) => agent.configKey === "coding-reviewer");
+
+    assert.ok(reviewer);
+    assert.equal(reviewer.resolvedModel, undefined);
+    assert.equal(reviewer.modelResolution.resolvedModel, "host-default");
+    assert.equal(bootstrap.configPatch.agent["coding-reviewer"].model, undefined);
+  } finally {
+    if (previousConfigDir === undefined) {
+      delete process.env.OPENCODE_CONFIG_DIR;
+    } else {
+      process.env.OPENCODE_CONFIG_DIR = previousConfigDir;
+    }
+
+    rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("coding-team unavailable user model falls back through builtin role chain", () => {
+  const workspace = mkdtempSync(path.join(os.tmpdir(), "crewbee-coding-model-fallback-"));
+  const previousConfigDir = process.env.OPENCODE_CONFIG_DIR;
+
+  try {
+    const configRoot = path.join(workspace, ".config", "opencode");
+    process.env.OPENCODE_CONFIG_DIR = configRoot;
+
+    writeFile(path.join(configRoot, "crewbee.json"), createCrewBeeConfig([
+      {
+        id: "coding-team",
+        enabled: true,
+        priority: 0,
+        fallback: "builtin-role-chain",
+        fallback_to_host_default: true,
+        agents: {
+          reviewer: { model: "anthropic/claude-opus-4-7" },
+        },
+      },
+    ]));
+
+    const bootstrap = createOpenCodeBootstrap({
+      teamLibrary: loadDefaultTeamLibrary(workspace),
+      defaults: { defaultMode: "single-executor" },
+      availableModels: ["openai/gpt-5.5"],
+    });
+    const reviewer = bootstrap.projectedAgents.find((agent) => agent.configKey === "coding-reviewer");
+
+    assert.ok(reviewer);
+    assert.equal(bootstrap.configPatch.agent["coding-reviewer"].model, "openai/gpt-5.5");
+    assert.equal(reviewer.modelResolution.source, "builtin-role-chain");
+    assert.ok(reviewer.modelResolution.skipped.some((entry) => entry.model === "anthropic/claude-opus-4-7"));
+  } finally {
+    if (previousConfigDir === undefined) {
+      delete process.env.OPENCODE_CONFIG_DIR;
+    } else {
+      process.env.OPENCODE_CONFIG_DIR = previousConfigDir;
+    }
+
+    rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("file-based team agent_runtime fallback_models resolve during projection", () => {
+  const workspace = mkdtempSync(path.join(os.tmpdir(), "crewbee-custom-model-fallback-"));
+  const previousConfigDir = process.env.OPENCODE_CONFIG_DIR;
+
+  try {
+    const configRoot = path.join(workspace, ".config", "opencode");
+    const teamDir = path.join(configRoot, "teams", "CustomModelTeam");
+    process.env.OPENCODE_CONFIG_DIR = configRoot;
+
+    writeFile(path.join(configRoot, "crewbee.json"), createCrewBeeConfig([
+      { path: "@teams/CustomModelTeam", enabled: true, priority: 0 },
+    ]));
+    writeFile(path.join(teamDir, "team.manifest.yaml"), `id: custom-model-team
+version: 1.0.0
+name: CustomModelTeam
+description: Test custom model fallback.
+mission:
+  objective: Test custom model fallback.
+  success_definition:
+    - Model fallback works.
+scope:
+  in_scope:
+    - tests
+  out_of_scope:
+    - none
+leader:
+  agent_ref: custom-leader
+  responsibilities:
+    - Lead the team
+members:
+  custom-leader:
+    responsibility: Delivery
+    delegate_when: Always.
+    delegate_mode: direct execution.
+workflow:
+  stages:
+    - intake
+governance:
+  instruction_precedence:
+    - platform rules
+  approval_policy:
+    required_for:
+      - destructive actions
+    allow_assume_for:
+      - low-risk implementation details
+  forbidden_actions:
+    - fabricate evidence
+  quality_floor:
+    required_checks:
+      - diagnostics
+    evidence_required: true
+  working_rules:
+    - leader is the primary interface
+agent_runtime:
+  custom-leader:
+    model: openai/gpt-5.5
+    fallback_models:
+      - google/gemini-3.1-pro-preview
+    fallback_to_host_default: true
+tags:
+  - tests
+`);
+    writeFile(path.join(teamDir, "team.policy.yaml"), createTeamPolicy());
+    writeFile(
+      path.join(teamDir, "custom-leader.agent.md"),
+      createAgentProfile("custom-leader", "Custom Leader", "user-selectable", "leader", undefined, undefined),
+    );
+
+    const bootstrap = createOpenCodeBootstrap({
+      teamLibrary: loadDefaultTeamLibrary(workspace),
+      defaults: { defaultMode: "single-executor" },
+      availableModels: ["google/gemini-3.1-pro-preview"],
+    });
+    const leader = bootstrap.projectedAgents.find((agent) => agent.teamId === "custom-model-team");
+
+    assert.ok(leader);
+    assert.equal(leader.resolvedModel?.providerID, "google");
+    assert.equal(leader.resolvedModel?.modelID, "gemini-3.1-pro-preview");
+    assert.equal(leader.modelResolution.source, "team-manifest");
+  } finally {
+    if (previousConfigDir === undefined) {
+      delete process.env.OPENCODE_CONFIG_DIR;
+    } else {
+      process.env.OPENCODE_CONFIG_DIR = previousConfigDir;
+    }
+
+    rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
 test("OpenCode bootstrap refreshes managed canonical ids while preserving foreign agents", () => {
   const bootstrap = createOpenCodeBootstrap({
     teamLibrary: loadDefaultTeamLibrary(process.cwd()),

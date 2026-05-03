@@ -1,14 +1,20 @@
 project_id: crewbee
 run_status: running
 active_cycle: C1
-active_step_id: S3
-last_checkpoint: CP-0003
+active_step_id: S4
+last_checkpoint: CP-0006
 blockers: []
 next_actions:
-  - action: For any follow-up on the productized install flow, preserve CLI compatibility for existing install/uninstall commands and compatibility exports while keeping setup/update as the recommended user path.
+  - action: For model/provider follow-up, remember current fallback is projection-time selection only; it does not retry after real LLM runtime API failures.
     owner: active-agent
     source: latest update payload
-  - action: If verification status matters, rerun npm run typecheck, npm run build, and npm test in the current workspace before claiming pass/fail; the captured update payload listed verification commands but its result lines were unavailable to this maintainer after runtime cleanup.
+  - action: Preserve current model-resolution fallback ordering and host-default projection semantics when extending the helperized resolver.
+    owner: active-agent
+    source: latest update payload
+  - action: If catalog-aware model availability is required, wire `availableModels` from a real OpenCode or Models.dev source before claiming provider availability detection beyond injected test/catalog data.
+    owner: active-agent
+    source: latest update payload
+  - action: For any follow-up on the productized install flow, preserve CLI compatibility for existing install/uninstall commands and compatibility exports while keeping setup/update as the recommended user path.
     owner: active-agent
     source: latest update payload
   - action: Preserve compatibility re-export paths when using clearer OpenCode config-file and install/package responsibility modules.

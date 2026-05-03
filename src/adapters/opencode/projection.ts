@@ -15,6 +15,7 @@ import {
 } from "./permission-mapper";
 import { createManagedCrewBeeAgentOptions } from "./ownership";
 import { createOpenCodeAgentPrompt } from "./prompt-builder";
+import { resolveAgentModel, type ModelResolutionTrace } from "./model-resolution";
 
 export type OpenCodeAgentMode = "primary" | "subagent";
 
@@ -35,7 +36,7 @@ export interface OpenCodeResolvedModelConfig {
   topP?: number;
   variant?: string;
   options?: Record<string, unknown>;
-  source: "team-manifest";
+  source: "crewbee-json" | "team-manifest" | "team-manifest-default" | "builtin-role-chain";
 }
 
 export interface OpenCodeResolvedToolConfig {
@@ -66,6 +67,7 @@ export interface OpenCodeAgentConfig {
   permission: OpenCodePermissionRule[];
   runtimeConfig: OpenCodeAgentRuntimeConfig;
   resolvedModel?: OpenCodeResolvedModelConfig;
+  modelResolution: ModelResolutionTrace;
   resolvedTooling: OpenCodeResolvedToolConfig;
   metadata: OpenCodeAgentMetadata;
 }
@@ -95,6 +97,7 @@ export interface OpenCodeAgentSelectionInput {
 
 export interface OpenCodeProjectionOptions {
   availableTools?: readonly (string | AvailableToolDefinition)[];
+  availableModels?: readonly string[];
 }
 
 export interface OpenCodeAgentAliasEntry {
@@ -124,7 +127,10 @@ export function createOpenCodeAgentConfig(
   options: OpenCodeProjectionOptions = {},
 ): OpenCodeAgentConfig {
   const runtimeConfig = agent.sourceAgent.runtimeConfig;
-  const runtimeOverride = agent.sourceTeam.manifest.agentRuntime?.[agent.canonicalAgentId];
+  const modelResolution = resolveAgentModel({
+    agent,
+    availableModels: options.availableModels,
+  });
   const availableToolContext = createAvailableToolContext(options.availableTools);
   const requestedTools = mapOpenCodeToolNames(runtimeConfig.requestedTools);
   const availableTools = availableToolContext.hasExplicitTools
@@ -152,17 +158,8 @@ export function createOpenCodeAgentConfig(
       memory: runtimeConfig.memory,
       hooks: runtimeConfig.hooks,
     },
-    resolvedModel: runtimeOverride
-      ? {
-          providerID: runtimeOverride.provider,
-          modelID: runtimeOverride.model,
-          temperature: runtimeOverride.temperature,
-          topP: runtimeOverride.topP,
-          variant: runtimeOverride.variant,
-          options: runtimeOverride.options,
-          source: "team-manifest",
-        }
-      : undefined,
+    resolvedModel: modelResolution.model,
+    modelResolution: modelResolution.trace,
     resolvedTooling: {
       requestedTools,
       availableTools,

@@ -16,8 +16,17 @@ cycles:
           - Verify changes with typecheck, build, and tests before handoff.
       - id: S3
         title: Productize CrewBee user installation for OpenCode
-        status: active
+        status: completed
         notes:
           - Recommended install path is `npx crewbee@latest setup --with-opencode`.
           - Maintain setup/update/install/uninstall CLI compatibility and clear doctor output.
           - Config writes should remain backed up/restorable and should not modify business project files.
+      - id: S4
+        title: Design provider/model defaults and fallback for built-in Coding Team
+        status: completed
+        notes:
+          - Internal current-state documentation records the existing Team -> OpenCode provider/model chain.
+          - Built-in Coding Team now has explicit default model presets and per-agent model entries in the default `crewbee.json` template.
+          - Projection-time model resolver supports `crewbee.json` overrides, `host-default`, builtin role-chain fallback, file-team `$default`, `fallback_models`, and host-default fallback.
+          - Latest cleanup kept behavior equivalent while making model-resolution helpers and Coding Team runtime profiles explicit.
+          - Remaining limitation: fallback is projection-time/config-time only; there is no runtime API-error retry loop, and real provider availability depends on passing an available-model catalog into projection.

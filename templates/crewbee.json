@@ -3,7 +3,36 @@
     {
       "id": "coding-team",
       "enabled": true,
-      "priority": 0
+      "priority": 0,
+      "model_preset": "sota-2026-05",
+      "fallback": "builtin-role-chain",
+      "fallback_to_host_default": true,
+      "agents": {
+        "coding-leader": {
+          "model": "openai/gpt-5.5"
+        },
+        "coordination-leader": {
+          "model": "openai/gpt-5.5"
+        },
+        "coding-executor": {
+          "model": "openai/gpt-5.5"
+        },
+        "codebase-explorer": {
+          "model": "openai/gpt-5.4-mini"
+        },
+        "web-researcher": {
+          "model": "google/gemini-3.1-pro-preview"
+        },
+        "reviewer": {
+          "model": "anthropic/claude-opus-4-7"
+        },
+        "principal-advisor": {
+          "model": "anthropic/claude-opus-4-7"
+        },
+        "multimodal-looker": {
+          "model": "google/gemini-3.1-pro-preview"
+        }
+      }
     },
     {
       "path": "@teams/general-team",
