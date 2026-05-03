@@ -1,0 +1,217 @@
+{
+  "schemaVersion": 1,
+  "kind": "project_context_update",
+  "jobID": "pcu_moon3tpj_fxit0wvp",
+  "createdAt": "2026-05-02T17:53:04.039Z",
+  "trigger": {
+    "reasons": [
+      "user_requested_context_update",
+      "files_changed",
+      "plan_or_next_actions",
+      "decision"
+    ],
+    "toolEvents": [
+      {
+        "tool": "todowrite",
+        "reason": "files_changed",
+        "argsSummary": "{\n  \"todos\": [\n    {\n      \"content\": \"梳理现有 CLI、安装器、doctor 与 npm scripts 结构\",\n      \"status\": \"in_progress\",\n      \"priority\": \"high\"\n    },\n    {\n      \"content\": \"实现产品化 setup 命令与 OpenCode 检测/可选安装\",\n      \"status\": \"pending\",\n      \"priority\": \"high\"\n    },\n    {\n      \"content\": \"补齐 npm scripts 与必要测试覆盖\",\n      \"status\": \"pending\",\n      \"priority\": \"high\"\n    },\n    {\n      \"content\": \"重写 README 与中英文安装指南的 Quick Start\",\n      \"status\": \"pending\",\n      \"priority\": \"medium\"\n    },\n    {\n      \"content\": \"运行 typecheck、build、tests 验证\",\n      \"status\": \"pending\",\n      \"priority\": \"high\"\n    }\n  ]\n}",
+        "timestamp": "2026-05-02T17:47:03.620Z"
+      },
+      {
+        "tool": "todowrite",
+        "reason": "files_changed",
+        "argsSummary": "{\n  \"todos\": [\n    {\n      \"content\": \"梳理现有 CLI、安装器、doctor 与 npm scripts 结构\",\n      \"status\": \"completed\",\n      \"priority\": \"high\"\n    },\n    {\n      \"content\": \"实现产品化 setup 命令与 OpenCode 检测/可选安装\",\n      \"status\": \"in_progress\",\n      \"priority\": \"high\"\n    },\n    {\n      \"content\": \"补齐 npm scripts 与必要测试覆盖\",\n      \"status\": \"pending\",\n      \"priority\": \"high\"\n    },\n    {\n      \"content\": \"重写 README 与中英文安装指南的 Quick Start\",\n      \"status\": \"pending\",\n      \"priority\": \"medium\"\n    },\n    {\n      \"content\": \"运行 typecheck、build、tests 验证\",\n      \"status\": \"pending\",\n      \"priority\": \"high\"\n    }\n  ]\n}",
+        "timestamp": "2026-05-02T17:48:08.423Z"
+      },
+      {
+        "tool": "apply_patch",
+        "reason": "files_changed",
+        "argsSummary": "{\n  \"patchText\": \"*** Begin Patch\\n*** Update File: E:\\\\1-CrewBeeLab\\\\CrewBee\\\\src\\\\install\\\\types.ts\\n@@\\n export interface InstallResult {\\n+  configBackupPath?: string;\\n   configChanged: boolean;\\n   configPath: string;\\n@@\\n export interface UninstallResult {\\n+  configBackupPath?: string;\\n   configChanged: boolean;\\n@@\\n export interface DoctorResult {\\n@@\\n   teamIssues: TeamValidationIssue[];\\n }\\n+\\n+export interface OpenCodeCliStatus {\\n+  available: boolean;\\n+  command: string;\\n+  errorMessage?: string;\\n+  version?: string;\\n+}\\n+\\n+export interface OpenCodeInstallResult {\\n+  command: string;\\n+  dryRun: boolean;\\n+  installed: boolean;\\n+  packageSpec: string;\\n+}\\n+\\n+export interface SetupCommandOptions {\\n+  configPath?: string;\\n+  doctor: boolean;\\n+  dryRun: boolean;\\n+  installRoot?: string;\\n+  withOpenCode: boolean;\\n+  yes: boolean;\\n+}\\n+\\n+export interface SetupResult {\\n+  doctorResult?: DoctorResult;\\n+  dryRun: boolean;\\n+  installResult: InstallResult;\\n+  openCodeInstall?: OpenCodeInstallResult;\\n+  openCodeStatus: OpenCodeCliStatus;\\n+}\\n*** End Patch\"\n}",
+        "timestamp": "2026-05-02T17:49:16.234Z"
+      },
+      {
+        "tool": "apply_patch",
+        "reason": "files_changed",
+        "argsSummary": "{\n  \"patchText\": \"*** Begin Patch\\n*** Update File: E:\\\\1-CrewBeeLab\\\\CrewBee\\\\src\\\\install\\\\opencode-config-file.ts\\n@@\\n-import { existsSync, mkdirSync, readFileSync, writeFileSync } from \\\"node:fs\\\";\\n+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from \\\"node:fs\\\";\\n import path from \\\"node:path\\\";\\n@@\\n export function writeOpenCodeConfig(configPath: string, config: Record<string, unknown>): void {\\n   mkdirSync(path.dirname(configPath), { recursive: true });\\n   writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\\\\n`, \\\"utf8\\\");\\n }\\n+\\n+export function backupOpenCodeConfig(configPath: string): string | undefined {\\n+  if (!existsSync(configPath)) {\\n+    return undefined;\\n+  }\\n+\\n+  const stamp = new Date().toISOString().replace(/[-:TZ.]/g, \\\"\\\");\\n+  const backupPath = `${configPath}.backup-${stamp}`;\\n+  copyFileSync(configPath, backupPath);\\n+  return backupPath;\\n+}\\n*** End Patch\"\n}",
+        "timestamp": "2026-05-02T17:49:21.026Z"
+      },
+      {
+        "tool": "apply_patch",
+        "reason": "files_changed",
+        "argsSummary": "{\n  \"patchText\": \"*** Begin Patch\\n*** Update File: E:\\\\1-CrewBeeLab\\\\CrewBee\\\\src\\\\install\\\\install.ts\\n@@\\n-import { readOpenCodeConfig, upsertCrewBeePluginEntry, writeOpenCodeConfig } from \\\"./opencode-config-file\\\";\\n+import { backupOpenCodeConfig, readOpenCodeConfig, upsertCrewBeePluginEntry, writeOpenCodeConfig } from \\\"./opencode-config-file\\\";\\n@@\\n   const pluginEntry = createCanonicalPluginEntry(installRoot);\\n   const configDocument = readOpenCodeConfig(configPath);\\n   const pluginUpdate = upsertCrewBeePluginEntry(configDocument.config, pluginEntry);\\n+  let configBackupPath: string | undefined;\\n \\n   if (!input.options.dryRun && pluginUpdate.changed) {\\n+    configBackupPath = backupOpenCodeConfig(configPath);\\n     writeOpenCodeConfig(configPath, configDocument.config);\\n   }\\n@@\\n   return {\\n+    configBackupPath,\\n     configChanged: pluginUpdate.changed,\\n*** End Patch\"\n}",
+        "timestamp": "2026-05-02T17:49:28.380Z"
+      },
+      {
+        "tool": "apply_patch",
+        "reason": "files_changed",
+        "argsSummary": "{\n  \"patchText\": \"*** Begin Patch\\n*** Update File: E:\\\\1-CrewBeeLab\\\\CrewBee\\\\src\\\\install\\\\uninstall.ts\\n@@\\n-import { readOpenCodeConfig, removeCrewBeePluginEntries, writeOpenCodeConfig } from \\\"./opencode-config-file\\\";\\n+import { backupOpenCodeConfig, readOpenCodeConfig, removeCrewBeePluginEntries, writeOpenCodeConfig } from \\\"./opencode-config-file\\\";\\n@@\\n   const installRoot = resolveInstallRoot(options.installRoot);\\n   const configDocument = readOpenCodeConfig(configPath);\\n   const removal = removeCrewBeePluginEntries(configDocument.config);\\n+  let configBackupPath: string | undefined;\\n \\n   if (!options.dryRun && removal.changed) {\\n+    configBackupPath = backupOpenCodeConfig(configPath);\\n     writeOpenCodeConfig(configPath, configDocument.config);\\n   }\\n@@\\n   return {\\n+    configBackupPath,\\n     configChanged: removal.changed,\\n*** End Patch\"\n}",
+        "timestamp": "2026-05-02T17:49:35.680Z"
+      },
+      {
+        "tool": "apply_patch",
+        "reason": "files_changed",
+        "argsSummary": "{\n  \"patchText\": \"*** Begin Patch\\n*** Add File: E:\\\\1-CrewBeeLab\\\\CrewBee\\\\src\\\\install\\\\opencode-cli.ts\\n+import { spawnSync } from \\\"node:child_process\\\";\\n+\\n+import type { OpenCodeCliStatus, OpenCodeInstallResult } from \\\"./types\\\";\\n+\\n+const OPENCODE_COMMAND = \\\"opencode\\\";\\n+const OPENCODE_PACKAGE_SPEC = \\\"opencode-ai@latest\\\";\\n+\\n+function getCommandOutput(stdout: string | Buffer | null | undefined, stderr: string | Buffer | null | undefined): string | undefined {\\n+  const text = `${stdout ?? \\\"\\\"}${stderr ?? \\\"\\\"}`.trim();\\n+  return text.length > 0 ? text.split(/\\\\r?\\\\n/)[0] : undefined;\\n+}\\n+\\n+export function detectOpenCodeCli(): OpenCodeCliStatus {\\n+  const result = spawnSync(OPENCODE_COMMAND, [\\\"--version\\\"], {\\n+    encoding: \\\"utf8\\\",\\n+    shell: process.platform === \\\"win32\\\",\\n+  });\\n+\\n+  if (result.error) {\\n+    return {\\n+      available: false,\\n+      command: OPENCODE_COMMAND,\\n+      errorMessage: result.error.message,\\n+    };\\n+  }\\n+\\n+  if ((result.status ?? 1) !== 0) {\\n+    return {\\n+      available: false,\\n+      command: OPENCODE_COMMAND,\\n+      errorMessage: getCommandOutput(result.stdout, result.stderr) ?? `opencode --version exited wit\n[truncated]",
+        "timestamp": "2026-05-02T17:49:46.780Z"
+      },
+      {
+        "tool": "apply_patch",
+        "reason": "files_changed",
+        "argsSummary": "{\n  \"patchText\": \"*** Begin Patch\\n*** Add File: E:\\\\1-CrewBeeLab\\\\CrewBee\\\\src\\\\install\\\\setup.ts\\n+import { runDoctor } from \\\"./doctor\\\";\\n+import { installCrewBee } from \\\"./install\\\";\\n+import { createDryRunOpenCodeStatus, detectOpenCodeCli, installOpenCodeCliWithNpm } from \\\"./opencode-cli\\\";\\n+import type { InstallCommandContext, OpenCodeCliStatus, SetupCommandOptions, SetupResult } from \\\"./types\\\";\\n+\\n+function assertOpenCodeAvailable(status: OpenCodeCliStatus): void {\\n+  if (status.available) {\\n+    return;\\n+  }\\n+\\n+  throw new Error([\\n+    \\\"OpenCode was not found in PATH.\\\",\\n+    \\\"Run `crewbee setup --with-opencode` to let CrewBee install OpenCode, or install OpenCode manually and re-run `crewbee setup`.\\\",\\n+    status.errorMessage ? `OpenCode check detail: ${status.errorMessage}` : undefined,\\n+  ].filter(Boolean).join(\\\"\\\\n\\\"));\\n+}\\n+\\n+export async function setupCrewBee(input: {\\n+  context: InstallCommandContext;\\n+  options: SetupCommandOptions;\\n+}): Promise<SetupResult> {\\n+  let openCodeStatus = input.options.dryRun ? createDryRunOpenCodeStatus() : detectOpenCodeCli();\\n+  let openCodeInstall;\\n+\\n+  if (!input.options.dryRun && !openCodeStatus.availab\n[truncated]",
+        "timestamp": "2026-05-02T17:49:55.059Z"
+      },
+      {
+        "tool": "apply_patch",
+        "reason": "files_changed",
+        "argsSummary": "{\n  \"patchText\": \"*** Begin Patch\\n*** Add File: E:\\\\1-CrewBeeLab\\\\CrewBee\\\\src\\\\cli\\\\setup.ts\\n+import type { Writable } from \\\"node:stream\\\";\\n+\\n+import { setupCrewBee, type InstallCommandContext, type SetupCommandOptions } from \\\"../install\\\";\\n+\\n+function getOptionValue(argv: string[], index: number, name: string): string {\\n+  const value = argv[index + 1];\\n+\\n+  if (!value || value.startsWith(\\\"--\\\")) {\\n+    throw new Error(`Missing value for ${name}.`);\\n+  }\\n+\\n+  return value;\\n+}\\n+\\n+export function parseSetupOptions(argv: string[]): SetupCommandOptions {\\n+  let configPath: string | undefined;\\n+  let doctor = true;\\n+  let dryRun = false;\\n+  let installRoot: string | undefined;\\n+  let withOpenCode = false;\\n+  let yes = false;\\n+\\n+  for (let index = 0; index < argv.length; index += 1) {\\n+    const arg = argv[index];\\n+\\n+    if (arg === \\\"--with-opencode\\\") {\\n+      withOpenCode = true;\\n+      continue;\\n+    }\\n+\\n+    if (arg === \\\"--yes\\\" || arg === \\\"-y\\\") {\\n+      yes = true;\\n+      continue;\\n+    }\\n+\\n+    if (arg === \\\"--doctor\\\") {\\n+      doctor = true;\\n+      continue;\\n+    }\\n+\\n+    if (arg === \\\"--no-doctor\\\") {\\n+      doctor = false;\\n+ \n[truncated]",
+        "timestamp": "2026-05-02T17:50:11.374Z"
+      },
+      {
+        "tool": "apply_patch",
+        "reason": "files_changed",
+        "argsSummary": "{\n  \"patchText\": \"*** Begin Patch\\n*** Update File: E:\\\\1-CrewBeeLab\\\\CrewBee\\\\src\\\\install\\\\index.ts\\n@@\\n-export { readOpenCodeConfig, removeCrewBeePluginEntries, upsertCrewBeePluginEntry, writeOpenCodeConfig } from \\\"./opencode-config-file\\\";\\n+export { backupOpenCodeConfig, readOpenCodeConfig, removeCrewBeePluginEntries, upsertCrewBeePluginEntry, writeOpenCodeConfig } from \\\"./opencode-config-file\\\";\\n+export { createDryRunOpenCodeStatus, detectOpenCodeCli, installOpenCodeCliWithNpm } from \\\"./opencode-cli\\\";\\n export { runDoctor } from \\\"./doctor\\\";\\n export { installCrewBee } from \\\"./install\\\";\\n@@\\n-export type { DoctorOptions, DoctorResult, InstallCommandContext, InstallCommandOptions, InstallResult, InstallSource, UninstallOptions, UninstallResult } from \\\"./types\\\";\\n+export { setupCrewBee } from \\\"./setup\\\";\\n+export type { DoctorOptions, DoctorResult, InstallCommandContext, InstallCommandOptions, InstallResult, InstallSource, OpenCodeCliStatus, OpenCodeInstallResult, SetupCommandOptions, SetupResult, UninstallOptions, UninstallResult } from \\\"./types\\\";\\n export { uninstallCrewBee } from \\\"./uninstall\\\";\\n*** End Patch\"\n}",
+        "timestamp": "2026-05-02T17:50:18.628Z"
+      },
+      {
+        "tool": "apply_patch",
+        "reason": "files_changed",
+        "argsSummary": "{\n  \"patchText\": \"*** Begin Patch\\n*** Update File: E:\\\\1-CrewBeeLab\\\\CrewBee\\\\src\\\\cli\\\\run-cli.ts\\n@@\\n import { renderCliHelp } from \\\"./render-help\\\";\\n+import { runSetupCommand } from \\\"./setup\\\";\\n import { runUninstallUserCommand } from \\\"./uninstall-user\\\";\\n@@\\n   if (command === \\\"install\\\" || command === \\\"install:local:user\\\" || command === \\\"install:registry:user\\\") {\\n@@\\n   }\\n+\\n+  if (command === \\\"setup\\\") {\\n+    return runSetupCommand(rest, {\\n+      stderr: context.stderr,\\n+      stdout: context.stdout,\\n+    }, {\\n+      cwd: process.cwd(),\\n+      packageRoot: context.packageRoot,\\n+    });\\n+  }\\n \\n   if (command === \\\"uninstall:user\\\") {\\n*** End Patch\"\n}",
+        "timestamp": "2026-05-02T17:50:27.642Z"
+      },
+      {
+        "tool": "apply_patch",
+        "reason": "files_changed",
+        "argsSummary": "{\n  \"patchText\": \"*** Begin Patch\\n*** Update File: E:\\\\1-CrewBeeLab\\\\CrewBee\\\\src\\\\cli\\\\render-help.ts\\n@@\\n     \\\"\\\",\\n     \\\"Usage:\\\",\\n+    \\\"  crewbee setup [--with-opencode] [--yes] [--config-path <path>] [--install-root <path>] [--no-doctor] [--dry-run]\\\",\\n     \\\"  crewbee install [--source <local|registry>] [--local-tarball <path>] [--install-root <path>] [--config-path <path>] [--dry-run]\\\",\\n@@\\n-    \\\"Current scope:\\\",\\n+    \\\"Recommended:\\\",\\n+    \\\"  crewbee setup --with-opencode\\\",\\n+    \\\"\\\",\\n+    \\\"Current scope:\\\",\\n+    \\\"  setup      Productized install flow: check OpenCode, install CrewBee, run doctor, show next steps.\\\",\\n     \\\"  local      Install CrewBee into the OpenCode user-level workspace from a local tarball.\\\",\\n*** End Patch\"\n}",
+        "timestamp": "2026-05-02T17:50:34.486Z"
+      },
+      {
+        "tool": "apply_patch",
+        "reason": "files_changed",
+        "argsSummary": "{\n  \"patchText\": \"*** Begin Patch\\n*** Update File: E:\\\\1-CrewBeeLab\\\\CrewBee\\\\src\\\\cli\\\\install.ts\\n@@\\n       result.dryRun ? \\\"CrewBee user-level install plan generated.\\\" : \\\"CrewBee user-level install completed.\\\",\\n       `Config: ${result.configPath}`,\\n+      result.configBackupPath ? `Config backup: ${result.configBackupPath}` : undefined,\\n       `CrewBee Team config: ${result.crewbeeConfigPath}`,\\n*** End Patch\"\n}",
+        "timestamp": "2026-05-02T17:50:38.452Z"
+      },
+      {
+        "tool": "apply_patch",
+        "reason": "files_changed",
+        "argsSummary": "{\n  \"patchText\": \"*** Begin Patch\\n*** Update File: E:\\\\1-CrewBeeLab\\\\CrewBee\\\\src\\\\cli\\\\uninstall-user.ts\\n@@\\n       result.dryRun ? \\\"CrewBee uninstall plan generated.\\\" : \\\"CrewBee uninstall completed.\\\",\\n       `Config: ${result.configPath}`,\\n+      result.configBackupPath ? `Config backup: ${result.configBackupPath}` : undefined,\\n       `Install root: ${result.installRoot}`,\\n*** End Patch\"\n}",
+        "timestamp": "2026-05-02T17:50:43.538Z"
+      },
+      {
+        "tool": "apply_patch",
+        "reason": "files_changed",
+        "argsSummary": "{\n  \"patchText\": \"*** Begin Patch\\n*** Update File: E:\\\\1-CrewBeeLab\\\\CrewBee\\\\package.json\\n@@\\n     \\\"release:registry:dry-run\\\": \\\"node ./scripts/release-registry.mjs --dryRun\\\",\\n+    \\\"setup\\\": \\\"node ./bin/crewbee.js setup\\\",\\n+    \\\"setup:with-opencode\\\": \\\"node ./bin/crewbee.js setup --with-opencode\\\",\\n     \\\"install:local:user\\\": \\\"npm run pack:local && node ./bin/crewbee.js install --source local --local-tarball ./.artifacts/local/crewbee-local.tgz\\\",\\n*** End Patch\"\n}",
+        "timestamp": "2026-05-02T17:50:49.325Z"
+      },
+      {
+        "tool": "apply_patch",
+        "reason": "files_changed",
+        "argsSummary": "{\n  \"patchText\": \"*** Begin Patch\\n*** Update File: E:\\\\1-CrewBeeLab\\\\CrewBee\\\\tests\\\\cli\\\\install.test.mjs\\n@@\\n import { parseInstallOptions } from \\\"../../dist/src/cli/parse-install-options.js\\\";\\n import { runCli } from \\\"../../dist/src/cli/run-cli.js\\\";\\n+import { parseSetupOptions } from \\\"../../dist/src/cli/setup.js\\\";\\n@@\\n test(\\\"runCli help output includes user-level commands\\\", async () => {\\n@@\\n   assert.equal(exitCode, 0);\\n+  assert.match(stdout.getOutput(), /setup --with-opencode/);\\n   assert.match(stdout.getOutput(), /install:local:user/);\\n@@\\n });\\n+\\n+test(\\\"parseSetupOptions supports productized setup flags\\\", () => {\\n+  const options = parseSetupOptions([\\n+    \\\"--with-opencode\\\",\\n+    \\\"--yes\\\",\\n+    \\\"--no-doctor\\\",\\n+    \\\"--install-root\\\", \\\"./install-root\\\",\\n+    \\\"--config-path=./opencode.json\\\",\\n+    \\\"--dry-run\\\",\\n+  ]);\\n+\\n+  assert.equal(options.withOpenCode, true);\\n+  assert.equal(options.yes, true);\\n+  assert.equal(options.doctor, false);\\n+  assert.equal(options.installRoot, \\\"./install-root\\\");\\n+  assert.equal(options.configPath, \\\"./opencode.json\\\");\\n+  assert.equal(options.dryRun, true);\\n+});\\n+\\n+test(\\\"runCli setup dry-run produ\n[truncated]",
+        "timestamp": "2026-05-02T17:51:04.918Z"
+      },
+      {
+        "tool": "apply_patch",
+        "reason": "files_changed",
+        "argsSummary": "{\n  \"patchText\": \"*** Begin Patch\\n*** Update File: E:\\\\1-CrewBeeLab\\\\CrewBee\\\\tests\\\\cli\\\\install.test.mjs\\n@@\\n-import { mkdtempSync, mkdirSync, writeFileSync } from \\\"node:fs\\\";\\n+import { existsSync, mkdtempSync, mkdirSync, writeFileSync } from \\\"node:fs\\\";\\n@@\\n   assert.match(stdout.getOutput(), /Plugin entry: crewbee/);\\n   assert.match(stdout.getOutput(), /Select coding-leader/);\\n+  assert.equal(existsSync(configPath), false);\\n+  assert.equal(existsSync(installRoot), false);\\n   assert.equal(stderr.getOutput(), \\\"\\\");\\n });\\n*** End Patch\"\n}",
+        "timestamp": "2026-05-02T17:51:11.225Z"
+      },
+      {
+        "tool": "apply_patch",
+        "reason": "files_changed",
+        "argsSummary": "{\n  \"patchText\": \"*** Begin Patch\\n*** Update File: E:\\\\1-CrewBeeLab\\\\CrewBee\\\\tests\\\\install\\\\config-writer.test.mjs\\n@@\\n import test from \\\"node:test\\\";\\n import assert from \\\"node:assert/strict\\\";\\n+import { mkdtempSync, readFileSync, writeFileSync } from \\\"node:fs\\\";\\n+import os from \\\"node:os\\\";\\n+import path from \\\"node:path\\\";\\n \\n-import { removeCrewBeePluginEntries, upsertCrewBeePluginEntry } from \\\"../../dist/src/install/index.js\\\";\\n+import { backupOpenCodeConfig, removeCrewBeePluginEntries, upsertCrewBeePluginEntry } from \\\"../../dist/src/install/index.js\\\";\\n@@\\n test(\\\"upsertCrewBeePluginEntry migrates legacy standalone shim entries to the canonical package entry\\\", () => {\\n@@\\n   assert.deepEqual(config.plugin, [\\\"crewbee\\\"]);\\n });\\n+\\n+test(\\\"backupOpenCodeConfig preserves the existing OpenCode config before writes\\\", () => {\\n+  const configPath = path.join(mkdtempSync(path.join(os.tmpdir(), \\\"crewbee-config-backup-\\\")), \\\"opencode.json\\\");\\n+  const rawConfig = JSON.stringify({ plugin: [\\\"foreign-plugin\\\"] }, null, 2) + \\\"\\\\n\\\";\\n+\\n+  writeFileSync(configPath, rawConfig, \\\"utf8\\\");\\n+\\n+  const backupPath = backupOpenCodeConfig(configPath);\\n+\\n+  assert.equal\n[truncated]",
+        "timestamp": "2026-05-02T17:51:18.747Z"
+      },
+      {
+        "tool": "apply_patch",
+        "reason": "files_changed",
+        "argsSummary": "{\n  \"patchText\": \"*** Begin Patch\\n*** Update File: E:\\\\1-CrewBeeLab\\\\CrewBee\\\\src\\\\cli\\\\doctor.ts\\n@@\\n       `Blocking Team issues: ${result.blockingTeamIssueCount}`,\\n       ...result.teamIssues.map((issue) => `- ${formatTeamValidationIssue(issue)}`),\\n+      \\\"\\\",\\n+      result.healthy ? \\\"Next:\\\" : \\\"Next: fix the issues above, then re-run `crewbee doctor`.\\\",\\n+      result.healthy ? \\\"1. cd /path/to/your/project\\\" : undefined,\\n+      result.healthy ? \\\"2. opencode\\\" : undefined,\\n+      result.healthy ? \\\"3. Select coding-leader and run a real task.\\\" : undefined,\\n     ].join(\\\"\\\\n\\\") + \\\"\\\\n\\\");\\n*** End Patch\"\n}",
+        "timestamp": "2026-05-02T17:51:47.833Z"
+      },
+      {
+        "tool": "apply_patch",
+        "reason": "files_changed",
+        "argsSummary": "{\n  \"patchText\": \"*** Begin Patch\\n*** Update File: E:\\\\1-CrewBeeLab\\\\CrewBee\\\\src\\\\cli\\\\doctor.ts\\n@@\\n-    io.stdout.write([\\n+    io.stdout.write([\\n@@\\n-    ].join(\\\"\\\\n\\\") + \\\"\\\\n\\\");\\n+    ].filter((line): line is string => typeof line === \\\"string\\\").join(\\\"\\\\n\\\") + \\\"\\\\n\\\");\\n*** End Patch\"\n}",
+        "timestamp": "2026-05-02T17:51:55.978Z"
+      },
+      {
+        "tool": "apply_patch",
+        "reason": "files_changed",
+        "argsSummary": "{\n  \"patchText\": \"*** Begin Patch\\n*** Update File: E:\\\\1-CrewBeeLab\\\\CrewBee\\\\README.md\\n@@\\n ## Installation\\n \\n-### Shortest path for humans\\n+Set up CrewBee for OpenCode in one command.\\n+No project-local `node_modules`. No manual OpenCode config editing.\\n \\n-If you are using an LLM agent, send it this instruction:\\n+### Recommended\\n+\\n+Best for first-time users. This installs OpenCode if it is missing, installs CrewBee into the OpenCode user-level workspace, writes the canonical plugin entry `\\\"crewbee\\\"`, runs doctor checks, and prints next steps.\\n+\\n+```bash\\n+npx crewbee@latest setup --with-opencode\\n+```\\n+\\n+### Already Have OpenCode\\n+\\n+Use this if `opencode` is already available in your terminal.\\n+\\n+```bash\\n+npx crewbee@latest setup\\n+```\\n+\\n+### For LLM Agents\\n \\n ```text\\n-Install CrewBee by following docs/guide/installation.md in the current repository.\\n-Use only the OpenCode user-level installation flow. Do not use the old project-local installation flow.\\n+Install CrewBee for OpenCode.\\n+\\n+Run:\\n+npx crewbee@latest setup --with-opencode --yes\\n+\\n+Then verify:\\n+npx crewbee@latest doctor\\n+\\n+Important:\\n+- Do not install CrewBee into this project's nod\n[truncated]",
+        "timestamp": "2026-05-02T17:52:13.922Z"
+      },
+      {
+        "tool": "apply_patch",
+        "reason": "files_changed",
+        "argsSummary": "{\n  \"patchText\": \"*** Begin Patch\\n*** Update File: E:\\\\1-CrewBeeLab\\\\CrewBee\\\\README.zh-CN.md\\n@@\\n ## 安装\\n \\n-### 给人类的最短路径\\n+一条命令为 OpenCode 配置 CrewBee。\\n+不安装到业务项目 `node_modules`，不需要手动改 OpenCode 配置。\\n \\n-如果你在用 LLM Agent，直接把下面这段发给它：\\n+### 推荐安装\\n+\\n+适合第一次使用的用户。它会在需要时安装 OpenCode，把 CrewBee 安装到 OpenCode 用户级 workspace，写入标准插件入口 `\\\"crewbee\\\"`，运行 doctor 检查，并提示下一步。\\n+\\n+```bash\\n+npx crewbee@latest setup --with-opencode\\n+```\\n+\\n+### 已经安装 OpenCode\\n+\\n+如果终端里已经可以使用 `opencode`，执行：\\n+\\n+```bash\\n+npx crewbee@latest setup\\n+```\\n+\\n+### 给 LLM Agent\\n \\n ```text\\n-请按照当前仓库中的 docs/guide/installation.zh-CN.md 完成 CrewBee 安装。\\n-只使用 OpenCode 用户级安装流程，不要使用旧的 project-local 安装方式。\\n-```\\n+为 OpenCode 安装 CrewBee。\\n \\n-或者你自己阅读：\\n+执行：\\n+npx crewbee@latest setup --with-opencode --yes\\n \\n-* [安装指南](docs/guide/installation.zh-CN.md)\\n+然后验证：\\n+npx crewbee@latest doctor\\n \\n-### 给 LLM Agent 的最短路径\\n+注意：\\n+- 不要把 CrewBee 安装进当前业务项目的 node_modules。\\n+- 不要手动修改业务项目文件。\\n+- CrewBee 应安装到 OpenCode 用户级 workspace。\\n+- OpenCode plugin entry 应为 \\\"crewbee\\\"。\\n+- 安装完成后，告诉用户进入项目运行 `opencode` 并选择 `coding-leader`。\\n+```\\n \\n-直接读取并执行中文指南：\\n+完整说明：[安装指南](docs/guide/installation.zh-CN.md)\\n+\\n+---\\n+\\n+## 快速开始\\n+\\n+1. 安装并验证 CrewBee。\\n+\\n+\n[truncated]",
+        "timestamp": "2026-05-02T17:52:30.648Z"
+      },
+      {
+        "tool": "apply_patch",
+        "reason": "files_changed",
+        "argsSummary": "{\n  \"patchText\": \"*** Begin Patch\\n*** Delete File: E:\\\\1-CrewBeeLab\\\\CrewBee\\\\docs\\\\guide\\\\installation.md\\n*** End Patch\"\n}",
+        "timestamp": "2026-05-02T17:52:42.819Z"
+      },
+      {
+        "tool": "apply_patch",
+        "reason": "files_changed",
+        "argsSummary": "{\n  \"patchText\": \"*** Begin Patch\\n*** Add File: E:\\\\1-CrewBeeLab\\\\CrewBee\\\\docs\\\\guide\\\\installation.md\\n+# Installation\\n+\\n+Language: English | [中文](./installation.zh-CN.md)\\n+\\n+CrewBee installs as an OpenCode user-level plugin. The recommended path is one command, then start OpenCode in your project and select `coding-leader`.\\n+\\n+## Quick Start\\n+\\n+```bash\\n+npx crewbee@latest setup --with-opencode\\n+```\\n+\\n+Then open a project:\\n+\\n+```bash\\n+cd /path/to/your/project\\n+opencode\\n+```\\n+\\n+Select:\\n+\\n+```text\\n+coding-leader\\n+```\\n+\\n+Run a real task:\\n+\\n+```text\\n+Use CrewBee Coding Team to fix this issue with review-backed completion.\\n+```\\n+\\n+## Install Options\\n+\\n+### Recommended\\n+\\n+Best for first-time users. It checks OpenCode, installs OpenCode if missing, installs CrewBee, writes the canonical OpenCode plugin entry, runs doctor, and prints next steps.\\n+\\n+```bash\\n+npx crewbee@latest setup --with-opencode\\n+```\\n+\\n+### Already Have OpenCode\\n+\\n+Use this if `opencode` already works in your terminal.\\n+\\n+```bash\\n+npx crewbee@latest setup\\n+```\\n+\\n+### Non-Interactive / LLM Agents\\n+\\n+```bash\\n+npx crewbee@latest setup --with-opencode --yes\\n+```\\n+\\n+Ag\n[truncated]",
+        "timestamp": "2026-05-02T17:53:00.302Z"
+      }
+    ]
+  },
+  "parentSession": {
+    "id": "ses_22a487750ffeS0eXub904pscIc",
+    "latestUserRequest": "",
+    "assistantFinalText": "",
+    "decisionsDetected": [],
+    "nextActionsDetected": [],
+    "blockersDetected": []
+  },
+  "engineeringChanges": {
+    "changedFiles": [
+      ".agent/AGENT_QUICKSTART.md",
+      ".agent/ARCHITECTURE.md",
+      ".agent/DECISIONS.md",
+      ".agent/HANDOFF.md",
+      ".agent/MEMORY_INDEX.md",
+      ".agent/PLAN.yaml",
+      ".agent/PROJECT.md",
+      ".agent/STATE.yaml",
+      ".agent/pilotdeck-status.yaml",
+      ".agent/prompts/FRAMEWORK_PROMPT.md",
+      ".agent/prompts/PLAN_PROMPT.md",
+      "README.md",
+      "README.zh-CN.md",
+      "docs/guide/installation.md",
+      "package.json",
+      "src/cli/doctor.ts",
+      "src/cli/install.ts",
+      "src/cli/render-help.ts",
+      "src/cli/run-cli.ts",
+      "src/cli/uninstall-user.ts",
+      "src/install/index.ts",
+      "src/install/install.ts",
+      "src/install/opencode-config-file.ts",
+      "src/install/types.ts",
+      "src/install/uninstall.ts",
+      "tests/cli/install.test.mjs",
+      "tests/install/config-writer.test.mjs",
+      "(empty)",
+      "agent/AGENT_QUICKSTART.md",
+      ".crewbee/",
+      ".local/",
+      "bee.png",
+      "src/cli/setup.ts",
+      "src/install/opencode-cli.ts",
+      "src/install/setup.ts"
+    ],
+    "gitStatusSummary": "D .agent/AGENT_QUICKSTART.md\n D .agent/ARCHITECTURE.md\n D .agent/DECISIONS.md\n D .agent/HANDOFF.md\n D .agent/MEMORY_INDEX.md\n D .agent/PLAN.yaml\n D .agent/PROJECT.md\n D .agent/STATE.yaml\n D .agent/pilotdeck-status.yaml\n D .agent/prompts/FRAMEWORK_PROMPT.md\n D .agent/prompts/PLAN_PROMPT.md\n M README.md\n M README.zh-CN.md\n M docs/guide/installation.md\n M package.json\n M src/cli/doctor.ts\n M src/cli/install.ts\n M src/cli/render-help.ts\n M src/cli/run-cli.ts\n M src/cli/uninstall-user.ts\n M src/install/index.ts\n M src/install/install.ts\n M src/install/opencode-config-file.ts\n M src/install/types.ts\n M src/install/uninstall.ts\n M tests/cli/install.test.mjs\n M tests/install/config-writer.test.mjs\n?? .crewbee/\n?? .local/\n?? bee.png\n?? src/cli/setup.ts\n?? src/install/opencode-cli.ts\n?? src/install/setup.ts",
+    "gitDiffSummary": "git diff --stat:\n.agent/AGENT_QUICKSTART.md           |  43 ------\n .agent/ARCHITECTURE.md               |  72 ---------\n .agent/DECISIONS.md                  |  40 -----\n .agent/HANDOFF.md                    |  38 -----\n .agent/MEMORY_INDEX.md               |  31 ----\n .agent/PLAN.yaml                     |  48 ------\n .agent/PROJECT.md                    |  60 --------\n .agent/STATE.yaml                    |  20 ---\n .agent/pilotdeck-status.yaml         |  34 -----\n .agent/prompts/FRAMEWORK_PROMPT.md   |  40 -----\n .agent/prompts/PLAN_PROMPT.md        |  37 -----\n README.md                            |  92 +++++-------\n README.zh-CN.md                      |  92 +++++-------\n docs/guide/installation.md           | 276 ++++++++++++++---------------------\n package.json                         |   2 +\n src/cli/doctor.ts                    |   7 +-\n src/cli/install.ts                   |   1 +\n src/cli/render-help.ts               |   5 +\n src/cli/run-cli.ts                   |  11 ++\n src/cli/uninstall-user.ts            |   1 +\n src/install/index.ts                 |   6 +-\n src/install/install.ts               |   5 +-\n src/install/opencode-config-file.ts  |  13 +-\n src/install/types.ts                 |  33 +++++\n src/install/uninstall.ts             |   5 +-\n tests/cli/install.test.mjs           |  53 ++++++-\n tests/install/config-writer.test.mjs |  17 ++-\n 27 files changed, 332 insertions(+), 750 deletions(-)\n\ngit diff --cached --stat:\n(empty)\n\nIf this summary is insufficient, inspect git diff directly before updating the private scaffold.",
+    "verification": []
+  },
+  "instruction": [
+    "Inspect current repo state if needed.",
+    "Update only the private Project Context scaffold.",
+    "Record material decisions, implementation state, verification evidence, blockers, and exact next actions.",
+    "Run Project Context doctor/consistency checks when available.",
+    "Do not modify product code and do not expose private scaffold paths in user-facing output."
+  ]
+}

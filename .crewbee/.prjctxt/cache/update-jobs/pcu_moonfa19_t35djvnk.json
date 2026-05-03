@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "kind": "project_context_update",
+  "jobID": "pcu_moonfa19_t35djvnk",
+  "createdAt": "2026-05-02T18:01:58.413Z",
+  "trigger": {
+    "reasons": [
+      "verification",
+      "files_changed",
+      "decision",
+      "plan_or_next_actions"
+    ],
+    "toolEvents": [
+      {
+        "tool": "bash",
+        "reason": "verification",
+        "argsSummary": "{\n  \"command\": \"git restore -- \\\"README.md\\\" \\\"README.zh-CN.md\\\" \\\"docs/guide/installation.md\\\" \\\"package.json\\\" \\\"src/cli/doctor.ts\\\" \\\"src/cli/install.ts\\\" \\\"src/cli/render-help.ts\\\" \\\"src/cli/run-cli.ts\\\" \\\"src/cli/uninstall-user.ts\\\" \\\"src/install/index.ts\\\" \\\"src/install/install.ts\\\" \\\"src/install/opencode-config-file.ts\\\" \\\"src/install/types.ts\\\" \\\"src/install/uninstall.ts\\\" \\\"tests/cli/install.test.mjs\\\" \\\"tests/install/config-writer.test.mjs\\\"\",\n  \"timeout\": 120000,\n  \"workdir\": \"E:\\\\1-CrewBeeLab\\\\CrewBee\",\n  \"description\": \"Restores installation-related tracked files\"\n}",
+        "timestamp": "2026-05-02T18:01:28.483Z"
+      },
+      {
+        "tool": "apply_patch",
+        "reason": "files_changed",
+        "argsSummary": "{\n  \"patchText\": \"*** Begin Patch\\n*** Delete File: E:\\\\1-CrewBeeLab\\\\CrewBee\\\\src\\\\cli\\\\setup.ts\\n*** Delete File: E:\\\\1-CrewBeeLab\\\\CrewBee\\\\src\\\\install\\\\opencode-cli.ts\\n*** Delete File: E:\\\\1-CrewBeeLab\\\\CrewBee\\\\src\\\\install\\\\setup.ts\\n*** End Patch\"\n}",
+        "timestamp": "2026-05-02T18:01:33.786Z"
+      },
+      {
+        "tool": "todowrite",
+        "reason": "files_changed",
+        "argsSummary": "{\n  \"todos\": [\n    {\n      \"content\": \"梳理现有 CLI、安装器、doctor 与 npm scripts 结构\",\n      \"status\": \"completed\",\n      \"priority\": \"high\"\n    },\n    {\n      \"content\": \"实现产品化 setup 命令与 OpenCode 检测/可选安装\",\n      \"status\": \"cancelled\",\n      \"priority\": \"high\"\n    },\n    {\n      \"content\": \"补齐 npm scripts 与必要测试覆盖\",\n      \"status\": \"cancelled\",\n      \"priority\": \"high\"\n    },\n    {\n      \"content\": \"重写 README 与中英文安装指南的 Quick Start\",\n      \"status\": \"cancelled\",\n      \"priority\": \"medium\"\n    },\n    {\n      \"content\": \"运行 typecheck、build、tests 验证\",\n      \"status\": \"cancelled\",\n      \"priority\": \"high\"\n    }\n  ]\n}",
+        "timestamp": "2026-05-02T18:01:50.366Z"
+      }
+    ]
+  },
+  "parentSession": {
+    "id": "ses_22a487750ffeS0eXub904pscIc",
+    "latestUserRequest": "请检查，本次仓库没有提交的修改，是否只包含安装方式的更新，如果是的话，帮我丢弃修改。我要先解决opencode sdk 版本兼容的问题",
+    "assistantFinalText": "已检查并处理。\n\n当前未提交变更不只包含安装方式更新，还剩这些无关本地变更，我没有动：\n\n```text\n.agent/* 删除\n.crewbee/\n.local/\nbee.png\n```\n\n我已丢弃本次安装方式相关改动，包括：\n\n```text\nREADME.md\nREADME.zh-CN.md\ndocs/guide/installation.md\npackage.json\nsrc/cli/*\nsrc/install/*\ntests/*\n```\n\n以及删除了本次新增的：\n\n```text\nsrc/cli/setup.ts\nsrc/install/opencode-cli.ts\nsrc/install/setup.ts\n```\n\n当前安装方式迭代已完全回退，可以先处理 OpenCode SDK 版本兼容问题。",
+    "decisionsDetected": [],
+    "nextActionsDetected": [],
+    "blockersDetected": []
+  },
+  "engineeringChanges": {
+    "changedFiles": [
+      ".agent/AGENT_QUICKSTART.md",
+      ".agent/ARCHITECTURE.md",
+      ".agent/DECISIONS.md",
+      ".agent/HANDOFF.md",
+      ".agent/MEMORY_INDEX.md",
+      ".agent/PLAN.yaml",
+      ".agent/PROJECT.md",
+      ".agent/STATE.yaml",
+      ".agent/pilotdeck-status.yaml",
+      ".agent/prompts/FRAMEWORK_PROMPT.md",
+      ".agent/prompts/PLAN_PROMPT.md",
+      "(empty)",
+      "agent/AGENT_QUICKSTART.md",
+      ".crewbee/",
+      ".local/",
+      "bee.png"
+    ],
+    "gitStatusSummary": "D .agent/AGENT_QUICKSTART.md\n D .agent/ARCHITECTURE.md\n D .agent/DECISIONS.md\n D .agent/HANDOFF.md\n D .agent/MEMORY_INDEX.md\n D .agent/PLAN.yaml\n D .agent/PROJECT.md\n D .agent/STATE.yaml\n D .agent/pilotdeck-status.yaml\n D .agent/prompts/FRAMEWORK_PROMPT.md\n D .agent/prompts/PLAN_PROMPT.md\n?? .crewbee/\n?? .local/\n?? bee.png",
+    "gitDiffSummary": "git diff --stat:\n.agent/AGENT_QUICKSTART.md         | 43 -----------------------\n .agent/ARCHITECTURE.md             | 72 --------------------------------------\n .agent/DECISIONS.md                | 40 ---------------------\n .agent/HANDOFF.md                  | 38 --------------------\n .agent/MEMORY_INDEX.md             | 31 ----------------\n .agent/PLAN.yaml                   | 48 -------------------------\n .agent/PROJECT.md                  | 60 -------------------------------\n .agent/STATE.yaml                  | 20 -----------\n .agent/pilotdeck-status.yaml       | 34 ------------------\n .agent/prompts/FRAMEWORK_PROMPT.md | 40 ---------------------\n .agent/prompts/PLAN_PROMPT.md      | 37 --------------------\n 11 files changed, 463 deletions(-)\n\ngit diff --cached --stat:\n(empty)\n\nIf this summary is insufficient, inspect git diff directly before updating the private scaffold.",
+    "verification": [
+      {
+        "tool": "bash",
+        "reason": "verification",
+        "argsSummary": "{\n  \"command\": \"git restore -- \\\"README.md\\\" \\\"README.zh-CN.md\\\" \\\"docs/guide/installation.md\\\" \\\"package.json\\\" \\\"src/cli/doctor.ts\\\" \\\"src/cli/install.ts\\\" \\\"src/cli/render-help.ts\\\" \\\"src/cli/run-cli.ts\\\" \\\"src/cli/uninstall-user.ts\\\" \\\"src/install/index.ts\\\" \\\"src/install/install.ts\\\" \\\"src/install/opencode-config-file.ts\\\" \\\"src/install/types.ts\\\" \\\"src/install/uninstall.ts\\\" \\\"tests/cli/install.test.mjs\\\" \\\"tests/install/config-writer.test.mjs\\\"\",\n  \"timeout\": 120000,\n  \"workdir\": \"E:\\\\1-CrewBeeLab\\\\CrewBee\",\n  \"description\": \"Restores installation-related tracked files\"\n}",
+        "timestamp": "2026-05-02T18:01:28.483Z"
+      }
+    ]
+  },
+  "instruction": [
+    "Inspect current repo state if needed.",
+    "Update only the private Project Context scaffold.",
+    "Record material decisions, implementation state, verification evidence, blockers, and exact next actions.",
+    "Run Project Context doctor/consistency checks when available.",
+    "Do not modify product code and do not expose private scaffold paths in user-facing output."
+  ]
+}

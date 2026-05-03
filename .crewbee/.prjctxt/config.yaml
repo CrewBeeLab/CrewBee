@@ -1,0 +1,6 @@
+version: 1
+primer:
+  budget_tokens: 1000
+  memory_limit: 5
+write_policy:
+  mode: tool-confirmed

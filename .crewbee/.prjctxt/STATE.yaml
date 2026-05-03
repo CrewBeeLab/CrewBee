@@ -1,0 +1,19 @@
+project_id: crewbee
+run_status: running
+active_cycle: C1
+active_step_id: S2
+last_checkpoint: CP-0002
+blockers: []
+next_actions:
+  - action: For the pending CrewBee homepage copy update, confirm the correct website workspace before editing; the latest turn did not record site file changes or verification.
+    owner: active-agent
+    source: latest update payload
+  - action: Continue behavior-equivalent refactors only when backed by typecheck, build, and full tests.
+    owner: active-agent
+    source: HANDOFF.md
+  - action: Preserve compatibility re-export paths when using clearer OpenCode config-file and install/package responsibility modules.
+    owner: active-agent
+    source: DECISIONS.md
+  - action: Keep OpenCode adapter prompt assembly distinct from generic render-layer document rendering and import shared adapter defaults instead of hard-coding values.
+    owner: active-agent
+    source: DECISIONS.md

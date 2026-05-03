@@ -1,0 +1,16 @@
+project_id: crewbee
+cycles:
+  - id: C1
+    title: Project context and safe framework cleanup
+    status: active
+    steps:
+      - id: S1
+        title: Define project context
+        status: completed
+      - id: S2
+        title: Maintain behavior-equivalent architecture cleanups
+        status: active
+        notes:
+          - Keep compatibility re-exports when moving implementation responsibilities.
+          - Prefer precise responsibility modules for OpenCode config-file handling and shared adapter defaults.
+          - Verify changes with typecheck, build, and tests before handoff.
