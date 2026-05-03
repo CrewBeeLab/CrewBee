@@ -3,6 +3,7 @@ import type { Writable } from "node:stream";
 import { runDoctorCommand } from "./doctor";
 import { runInstallCommand } from "./install";
 import { renderCliHelp } from "./render-help";
+import { runSetupCommand } from "./setup";
 import { runUninstallUserCommand } from "./uninstall-user";
 import { runValidateCommand } from "./validate";
 import { runVersionCommand } from "./version";
@@ -21,6 +22,26 @@ export async function runCli(argv: string[], context: RunCliContext): Promise<nu
     return 0;
   }
 
+  if (command === "setup") {
+    return runSetupCommand(rest, {
+      stderr: context.stderr,
+      stdout: context.stdout,
+    }, {
+      cwd: process.cwd(),
+      packageRoot: context.packageRoot,
+    });
+  }
+
+  if (command === "update") {
+    return runSetupCommand(["--force", ...rest], {
+      stderr: context.stderr,
+      stdout: context.stdout,
+    }, {
+      cwd: process.cwd(),
+      packageRoot: context.packageRoot,
+    });
+  }
+
   if (command === "install" || command === "install:local:user" || command === "install:registry:user") {
     const installArgv = command === "install:local:user"
       ? ["--source", "local", ...rest]
@@ -37,7 +58,7 @@ export async function runCli(argv: string[], context: RunCliContext): Promise<nu
     });
   }
 
-  if (command === "uninstall:user") {
+  if (command === "uninstall" || command === "uninstall:user") {
     return runUninstallUserCommand(rest, {
       stderr: context.stderr,
       stdout: context.stdout,

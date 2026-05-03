@@ -11,17 +11,49 @@ function getOptionValue(argv: string[], index: number, name: string): string {
 }
 
 export function parseInstallOptions(argv: string[]): InstallCommandOptions {
+  let channel: "stable" | "next" = "stable";
   let configPath: string | undefined;
   let dryRun = false;
+  let force = false;
   let installRoot: string | undefined;
   let localTarballPath: string | undefined;
   let source: InstallSource = "local";
+  let yes = false;
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
 
     if (arg === "--dry-run") {
       dryRun = true;
+      continue;
+    }
+
+    if (arg === "--force") {
+      force = true;
+      continue;
+    }
+
+    if (arg === "--yes" || arg === "-y") {
+      yes = true;
+      continue;
+    }
+
+    if (arg === "--channel") {
+      const value = getOptionValue(argv, index, arg);
+      if (value !== "stable" && value !== "next") {
+        throw new Error(`Unsupported install channel '${value}'.`);
+      }
+      channel = value;
+      index += 1;
+      continue;
+    }
+
+    if (arg.startsWith("--channel=")) {
+      const value = arg.slice("--channel=".length);
+      if (value !== "stable" && value !== "next") {
+        throw new Error(`Unsupported install channel '${value}'.`);
+      }
+      channel = value;
       continue;
     }
 
@@ -95,10 +127,13 @@ export function parseInstallOptions(argv: string[]): InstallCommandOptions {
   }
 
   return {
+    channel,
     configPath,
     dryRun,
+    force,
     installRoot,
     localTarballPath,
     source,
+    yes,
   };
 }

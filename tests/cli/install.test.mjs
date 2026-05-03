@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { parseInstallOptions } from "../../dist/src/cli/parse-install-options.js";
+import { parseSetupOptions } from "../../dist/src/cli/parse-setup-options.js";
 import { runCli } from "../../dist/src/cli/run-cli.js";
 
 function createCaptureStream() {
@@ -45,6 +46,30 @@ test("parseInstallOptions supports canonical flags and deprecated aliases", () =
   assert.equal(legacy.configPath, "./opencode.json");
 });
 
+test("parseSetupOptions supports productized setup flags", () => {
+  const options = parseSetupOptions([
+    "--with-opencode",
+    "--yes",
+    "--channel", "next",
+    "--install-root", "./install-root",
+    "--config-path", "./opencode.json",
+    "--dry-run",
+    "--no-doctor",
+    "--force",
+    "--verbose",
+  ]);
+
+  assert.equal(options.withOpenCode, true);
+  assert.equal(options.yes, true);
+  assert.equal(options.channel, "next");
+  assert.equal(options.installRoot, "./install-root");
+  assert.equal(options.configPath, "./opencode.json");
+  assert.equal(options.dryRun, true);
+  assert.equal(options.doctor, false);
+  assert.equal(options.force, true);
+  assert.equal(options.verbose, true);
+});
+
 test("runCli help output includes user-level commands", async () => {
   const stdout = createCaptureStream();
   const stderr = createCaptureStream();
@@ -62,6 +87,34 @@ test("runCli help output includes user-level commands", async () => {
   assert.match(stdout.getOutput(), /doctor/);
   assert.match(stdout.getOutput(), /validate/);
   assert.match(stdout.getOutput(), /version/);
+  assert.equal(stderr.getOutput(), "");
+});
+
+test("runCli setup dry-run prints the productized next steps without mutating install roots", async () => {
+  const stdout = createCaptureStream();
+  const stderr = createCaptureStream();
+  const installRoot = path.join(mkdtempSync(path.join(os.tmpdir(), "crewbee-cli-setup-install-")), "workspace");
+  const configPath = path.join(mkdtempSync(path.join(os.tmpdir(), "crewbee-cli-setup-config-")), "opencode.json");
+
+  const exitCode = await runCli([
+    "setup",
+    "--with-opencode",
+    "--dry-run",
+    "--install-root",
+    installRoot,
+    "--config-path",
+    configPath,
+  ], {
+    packageRoot: process.cwd(),
+    stderr,
+    stdout,
+  });
+
+  assert.equal(exitCode, 0);
+  assert.match(stdout.getOutput(), /CrewBee setup plan generated/);
+  assert.match(stdout.getOutput(), /Registry package: crewbee@latest/);
+  assert.match(stdout.getOutput(), /No files changed/);
+  assert.match(stdout.getOutput(), /select coding-leader/);
   assert.equal(stderr.getOutput(), "");
 });
 

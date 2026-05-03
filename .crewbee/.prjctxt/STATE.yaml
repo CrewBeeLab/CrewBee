@@ -1,19 +1,19 @@
 project_id: crewbee
 run_status: running
 active_cycle: C1
-active_step_id: S2
-last_checkpoint: CP-0002
+active_step_id: S3
+last_checkpoint: CP-0003
 blockers: []
 next_actions:
-  - action: For the pending CrewBee homepage copy update, confirm the correct website workspace before editing; the latest turn did not record site file changes or verification.
+  - action: For any follow-up on the productized install flow, preserve CLI compatibility for existing install/uninstall commands and compatibility exports while keeping setup/update as the recommended user path.
     owner: active-agent
     source: latest update payload
-  - action: Continue behavior-equivalent refactors only when backed by typecheck, build, and full tests.
+  - action: If verification status matters, rerun npm run typecheck, npm run build, and npm test in the current workspace before claiming pass/fail; the captured update payload listed verification commands but its result lines were unavailable to this maintainer after runtime cleanup.
     owner: active-agent
-    source: HANDOFF.md
+    source: latest update payload
   - action: Preserve compatibility re-export paths when using clearer OpenCode config-file and install/package responsibility modules.
     owner: active-agent
     source: DECISIONS.md
-  - action: Keep OpenCode adapter prompt assembly distinct from generic render-layer document rendering and import shared adapter defaults instead of hard-coding values.
+  - action: Keep OpenCode detection part of setup/doctor health semantics; a completed OpenCode install must still leave opencode available in PATH before setup is considered successful.
     owner: active-agent
-    source: DECISIONS.md
+    source: latest update payload

@@ -57,27 +57,37 @@ export async function runDoctorCommand(argv: string[], io: {
       projectWorktree: options.projectWorktree,
     });
     const installedVersion = readPackageVersion(result.installedPackageRoot);
+    const status = result.healthy ? "healthy" : "issues found";
 
     io.stdout.write([
+      "CrewBee Doctor",
+      "",
+      `Status: ${status}`,
       result.healthy ? "CrewBee doctor: healthy." : "CrewBee doctor: issues found.",
+      `${result.opencodeFound ? "✓" : "•"} OpenCode: ${result.opencodeFound ? (result.opencodePath ?? "found") : "not found in PATH"}${result.opencodeVersion ? ` (${result.opencodeVersion})` : ""}`,
+      `✓ Config root file: ${result.configPath}`,
+      `✓ Install root: ${result.installRoot}`,
+      `${result.hasWorkspaceManifest ? "✓" : "✕"} Workspace manifest: ${result.hasWorkspaceManifest ? "yes" : "no"}`,
+      `${result.hasInstalledPackage ? "✓" : "✕"} Installed package: ${result.hasInstalledPackage ? "yes" : "no"}`,
       `Installed version: ${installedVersion}`,
-      `Config: ${result.configPath}`,
-      `Install root: ${result.installRoot}`,
-      `Workspace manifest: ${result.hasWorkspaceManifest ? "yes" : "no"}`,
-      `Installed package: ${result.hasInstalledPackage ? "yes" : "no"}`,
-      `Plugin file: ${result.hasPluginFile ? "yes" : "no"}`,
-      `Legacy top-level package: ${result.hasLegacyInstalledPackage ? "yes" : "no"}`,
-      `Canonical config entry: ${result.configMatchesCanonical ? "yes" : "no"}`,
+      `${result.hasPluginFile ? "✓" : "✕"} Plugin file: ${result.hasPluginFile ? "yes" : "no"}`,
+      `${result.hasLegacyInstalledPackage ? "✕" : "✓"} Legacy top-level package: ${result.hasLegacyInstalledPackage ? "yes" : "no"}`,
+      `${result.configMatchesCanonical ? "✓" : "✕"} Canonical config entry: ${result.configMatchesCanonical ? "yes" : "no"}`,
       result.currentPluginEntries.length > 0
         ? `Current CrewBee entries: ${result.currentPluginEntries.join(", ")}`
         : "Current CrewBee entries: none",
       `Expected entry: ${result.expectedPluginEntry}`,
       `Project worktree: ${result.projectWorktree}`,
-      `Team definitions: ${result.teamHealthy ? "healthy" : "issues found"}`,
+      `${result.teamHealthy ? "✓" : "✕"} Team definitions: ${result.teamHealthy ? "healthy" : "issues found"}`,
       `Loaded Teams: ${result.teamCount}`,
       `Team issues: ${result.teamIssues.length}`,
       `Blocking Team issues: ${result.blockingTeamIssueCount}`,
       ...result.teamIssues.map((issue) => `- ${formatTeamValidationIssue(issue)}`),
+      "",
+      "Next:",
+      "  cd /path/to/project",
+      "  opencode",
+      "  select coding-leader",
     ].join("\n") + "\n");
 
     return result.healthy ? 0 : 1;

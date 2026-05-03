@@ -30,6 +30,7 @@ export async function runInstallCommand(argv: string[], io: {
       `CrewBee Team config: ${result.crewbeeConfigPath}`,
       `Install root: ${result.installRoot}`,
       `Package workspace: ${result.packageWorkspaceRoot}`,
+      result.backupPath ? `Backup created: ${result.backupPath}` : undefined,
       result.tarballPath ? `Local tarball: ${result.tarballPath}` : undefined,
       result.packageSpec ? `Registry package: ${result.packageSpec}` : undefined,
       `Plugin entry: ${result.pluginEntry}`,
@@ -48,9 +49,11 @@ export async function runInstallCommand(argv: string[], io: {
       result.legacyPackageRemoved ? "Removed legacy top-level package: yes" : undefined,
       "",
       "Next:",
-      "1. Start OpenCode in the project where you want CrewBee to run.",
-      "2. Select a CrewBee projected agent such as coding-leader.",
-      "3. Use `crewbee doctor` if you want to verify the user-level install state.",
+      "  cd /path/to/your/project",
+      "  opencode",
+      "  select coding-leader",
+      "",
+      "CrewBee installs into the OpenCode user-level workspace and does not modify your repository files.",
     ].filter(Boolean).join("\n") + "\n");
 
     return 0;

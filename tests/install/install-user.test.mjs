@@ -71,7 +71,7 @@ test("installCrewBee supports registry source in dry-run mode", async () => {
   });
 
   assert.equal(result.pluginEntry, "crewbee");
-  assert.equal(result.packageSpec, "crewbee@0.9.1");
+  assert.equal(result.packageSpec, "crewbee@latest");
   assert.equal(result.tarballPath, undefined);
   assert.equal(existsSync(configPath), false);
 });

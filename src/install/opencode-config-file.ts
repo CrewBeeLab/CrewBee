@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 import { parseJsoncText } from "./jsonc";
@@ -7,6 +7,12 @@ export interface OpenCodeConfigDocument {
   config: Record<string, unknown>;
   existed: boolean;
   path: string;
+}
+
+export interface OpenCodeConfigBackup {
+  backupPath?: string;
+  configPath: string;
+  existed: boolean;
 }
 
 export interface PluginUpdateResult {
@@ -38,6 +44,45 @@ export function readOpenCodeConfig(configPath: string): OpenCodeConfigDocument {
 export function writeOpenCodeConfig(configPath: string, config: Record<string, unknown>): void {
   mkdirSync(path.dirname(configPath), { recursive: true });
   writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+}
+
+export function backupOpenCodeConfig(configPath: string): OpenCodeConfigBackup {
+  if (!existsSync(configPath)) {
+    return {
+      configPath,
+      existed: false,
+    };
+  }
+
+  const backupPath = resolveOpenCodeConfigBackupPath(configPath);
+  mkdirSync(path.dirname(backupPath), { recursive: true });
+  writeFileSync(backupPath, readFileSync(configPath, "utf8"), "utf8");
+
+  return {
+    backupPath,
+    configPath,
+    existed: true,
+  };
+}
+
+export function restoreOpenCodeConfigBackup(backup: OpenCodeConfigBackup): void {
+  if (!backup.existed) {
+    rmSync(backup.configPath, { force: true });
+    return;
+  }
+
+  if (!backup.backupPath || !existsSync(backup.backupPath)) {
+    throw new Error(`OpenCode config backup is missing: ${backup.backupPath ?? "none"}`);
+  }
+
+  mkdirSync(path.dirname(backup.configPath), { recursive: true });
+  writeFileSync(backup.configPath, readFileSync(backup.backupPath, "utf8"), "utf8");
+}
+
+function resolveOpenCodeConfigBackupPath(configPath: string): string {
+  const parsed = path.parse(configPath);
+  const timestamp = new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 14);
+  return path.join(parsed.dir, `${parsed.base}.backup-${timestamp}`);
 }
 
 export function upsertCrewBeePluginEntry(config: Record<string, unknown>, pluginEntry: string): PluginUpdateResult {

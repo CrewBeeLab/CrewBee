@@ -399,94 +399,44 @@ CrewBee already has a complete local build, user-level installation, doctor veri
 
 ## Installation
 
-### Shortest path for humans
+Install CrewBee for OpenCode in one command:
 
-If you are using an LLM agent, send it this instruction:
-
-```text
-Install CrewBee by following docs/guide/installation.md in the current repository.
-Use only the OpenCode user-level installation flow. Do not use the old project-local installation flow.
+```bash
+npx crewbee@latest setup --with-opencode
 ```
 
-Or read:
+If you already have OpenCode:
 
-* [Installation Guide](docs/guide/installation.md)
-
-### Shortest path for LLM agents
-
-Read and execute:
-
-```text
-docs/guide/installation.md
-docs/guide/release.md
+```bash
+npx crewbee@latest setup
 ```
 
-### Windows one-click local install script
+CrewBee installs into the OpenCode user-level workspace, writes the canonical plugin entry `"crewbee"`, runs doctor checks, and does not modify your repository files.
 
-The repository provides:
-
-```bat
-scripts\install-local-user.bat
-```
-
-It runs:
-
-1. `npm install`
-2. `npm run install:local:user`
-3. `npm run doctor`
+Full guide: [Installation Guide](docs/guide/installation.md)
 
 ---
 
 ## Quick Start
 
-### Development build
+```bash
+cd /path/to/project
+opencode
+```
+
+Select `coding-leader` and run your first real task:
+
+```text
+Use CrewBee Coding Team to fix this issue with review-backed completion.
+```
+
+Verify anytime:
 
 ```bash
-npm install
-npm run typecheck
-npm run build
+npx crewbee@latest doctor
 ```
 
-### Local user-level install
-
-Recommended from the repository root:
-
-```bash
-npm install
-npm run install:local:user
-```
-
-This does four things:
-
-1. builds CrewBee
-2. packs a stable local tarball at `.artifacts/local/crewbee-local.tgz`
-3. installs it into the OpenCode user-level package workspace (`~/.cache/opencode`)
-4. rewrites OpenCode config to the canonical plugin entry `crewbee`
-
-### Registry install after publish
-
-Once `crewbee` is published to npm, run:
-
-```bash
-npm run install:registry:user
-```
-
-OpenCode config can also use the plugin package name directly:
-
-```json
-{
-  "plugin": ["crewbee"]
-}
-```
-
-### Verify installation
-
-```bash
-npm run doctor
-npm run version
-```
-
-`npm run version` or `crewbee version` reads the current package version and installed package version directly from `package.json`.
+For local development, use `npm run install:local:user`; keep that path out of first-time user onboarding.
 
 ### Use in OpenCode
 
@@ -820,9 +770,12 @@ npm run test
 npm run pack:local
 npm run pack:release
 npm run release:registry:dry-run
+npm run setup
 npm run install:local:user
 npm run install:registry:user
+npm run update
 npm run doctor
+npm run uninstall
 npm run uninstall:user
 npm run simulate:opencode
 npm run simulate:compact
@@ -836,10 +789,13 @@ npm run simulate:compact
 * `pack:local`: packs a local tarball
 * `pack:release`: packs a versioned release tarball
 * `release:registry:dry-run`: runs local registry release checks without publishing
+* `setup`: productized setup for users; installs OpenCode when missing, installs CrewBee, writes config, and runs doctor
 * `install:local:user`: runs the complete user-level installation flow
 * `install:registry:user`: installs the published npm package into the user-level workspace
+* `update`: reinstalls CrewBee from the registry and runs doctor
 * `doctor`: verifies OpenCode config and installation state
 * `version`: shows the current package version and installed package version
+* `uninstall`: removes CrewBee from OpenCode config and user-level workspace
 * `uninstall:user`: uninstalls the user-level installation
 * `simulate:opencode`: runs the local OpenCode runtime simulator
 * `simulate:compact`: runs the compact scenario validation script

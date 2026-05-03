@@ -5,6 +5,7 @@ import { loadDefaultTeamLibrary, summarizeTeamDiagnostics, validateTeamLibrary }
 
 import { findCrewBeePluginEntries, readOpenCodeConfig } from "./opencode-config-file";
 import { resolveOpenCodeConfigPath, resolveInstallRoot } from "./install-root";
+import { detectOpenCodeCli } from "./opencode-cli";
 import {
   createCanonicalPluginEntry,
   detectInstalledPackageRoot,
@@ -24,6 +25,7 @@ export async function runDoctor(options: DoctorOptions): Promise<DoctorResult> {
   const projectWorktree = path.resolve(options.projectWorktree ?? process.cwd());
   const expectedPluginEntry = createCanonicalPluginEntry(installRoot);
   const installedPackageRoot = detectInstalledPackageRoot(installRoot);
+  const opencode = detectOpenCodeCli();
   const packageWorkspaceRoot = resolvePackageWorkspaceRoot(installRoot);
   const hasLegacyInstalledPackage = existsSync(path.join(resolveLegacyInstalledPackageRoot(installRoot), "package.json"));
   const currentPluginEntries = findCrewBeePluginEntries(readOpenCodeConfig(configPath).config);
@@ -38,7 +40,7 @@ export async function runDoctor(options: DoctorOptions): Promise<DoctorResult> {
   const hasInstalledPackage = existsSync(path.join(installedPackageRoot, "package.json"));
   const hasPluginFile = existsSync(detectInstalledPluginPath(installRoot));
   const teamHealthy = teamDiagnostics.healthy;
-  const healthy = hasWorkspaceManifest && hasInstalledPackage && hasPluginFile && configMatchesCanonical && teamHealthy;
+  const healthy = opencode.found && hasWorkspaceManifest && hasInstalledPackage && hasPluginFile && configMatchesCanonical && teamHealthy;
 
   return {
     configMatchesCanonical,
@@ -52,6 +54,9 @@ export async function runDoctor(options: DoctorOptions): Promise<DoctorResult> {
     healthy,
     installedPackageRoot,
     installRoot,
+    opencodeFound: opencode.found,
+    opencodePath: opencode.path,
+    opencodeVersion: opencode.version,
     projectWorktree,
     blockingTeamIssueCount: teamDiagnostics.blockingIssueCount,
     teamCount: teamLibrary.teams.length,

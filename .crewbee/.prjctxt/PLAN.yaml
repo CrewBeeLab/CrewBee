@@ -1,7 +1,7 @@
 project_id: crewbee
 cycles:
   - id: C1
-    title: Project context and safe framework cleanup
+    title: Project context, framework cleanup, and productized install flow
     status: active
     steps:
       - id: S1
@@ -9,8 +9,15 @@ cycles:
         status: completed
       - id: S2
         title: Maintain behavior-equivalent architecture cleanups
-        status: active
+        status: completed
         notes:
           - Keep compatibility re-exports when moving implementation responsibilities.
           - Prefer precise responsibility modules for OpenCode config-file handling and shared adapter defaults.
           - Verify changes with typecheck, build, and tests before handoff.
+      - id: S3
+        title: Productize CrewBee user installation for OpenCode
+        status: active
+        notes:
+          - Recommended install path is `npx crewbee@latest setup --with-opencode`.
+          - Maintain setup/update/install/uninstall CLI compatibility and clear doctor output.
+          - Config writes should remain backed up/restorable and should not modify business project files.

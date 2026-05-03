@@ -16,6 +16,7 @@ export async function runUninstallUserCommand(argv: string[], io: {
       result.dryRun ? "CrewBee uninstall plan generated." : "CrewBee uninstall completed.",
       `Config: ${result.configPath}`,
       `Install root: ${result.installRoot}`,
+      result.backupPath ? `Backup created: ${result.backupPath}` : undefined,
       result.dryRun
         ? `Config would be updated: ${result.configChanged ? "yes" : "no"}`
         : `Config updated: ${result.configChanged ? "yes" : "no"}`,
@@ -25,7 +26,7 @@ export async function runUninstallUserCommand(argv: string[], io: {
       result.removedEntries.length > 0
         ? `Removed entries: ${result.removedEntries.join(", ")}`
         : "Removed entries: none",
-    ].join("\n") + "\n");
+    ].filter(Boolean).join("\n") + "\n");
 
     return 0;
   } catch (error) {

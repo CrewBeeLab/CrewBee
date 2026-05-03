@@ -1,9 +1,8 @@
 import path from "node:path";
 
 import { ensureCrewBeeConfigFile } from "../agent-teams";
-import { readPackageVersion } from "../version/package-version";
 
-import { readOpenCodeConfig, upsertCrewBeePluginEntry, writeOpenCodeConfig } from "./opencode-config-file";
+import { backupOpenCodeConfig, readOpenCodeConfig, restoreOpenCodeConfigBackup, upsertCrewBeePluginEntry, writeOpenCodeConfig } from "./opencode-config-file";
 import { resolveOpenCodeConfigPath, resolveInstallRoot } from "./install-root";
 import { resolveLocalTarballPath } from "./local-tarball";
 import { cleanupLegacyCrewBeePackage, installLocalTarball, installRegistryPackage } from "./package-installation";
@@ -19,7 +18,6 @@ export async function installCrewBee(input: {
   const installRoot = resolveInstallRoot(input.options.installRoot);
   const packageWorkspaceRoot = resolvePackageWorkspaceRoot(installRoot);
   const workspace = ensureInstallWorkspace(installRoot, input.options.dryRun);
-  const currentVersion = readPackageVersion(input.context.packageRoot);
   let tarballPath: string | undefined;
   let packageSpec: string | undefined;
 
@@ -35,7 +33,7 @@ export async function installCrewBee(input: {
       tarballPath,
     });
   } else {
-    packageSpec = `crewbee@${currentVersion}`;
+    packageSpec = input.options.channel === "next" ? "crewbee@next" : "crewbee@latest";
     installRegistryPackage({
       dryRun: input.options.dryRun,
       installRoot: packageWorkspaceRoot,
@@ -55,32 +53,44 @@ export async function installCrewBee(input: {
   const pluginEntry = createCanonicalPluginEntry(installRoot);
   const configDocument = readOpenCodeConfig(configPath);
   const pluginUpdate = upsertCrewBeePluginEntry(configDocument.config, pluginEntry);
+  const configBackup = !input.options.dryRun && pluginUpdate.changed
+    ? backupOpenCodeConfig(configPath)
+    : undefined;
 
-  if (!input.options.dryRun && pluginUpdate.changed) {
-    writeOpenCodeConfig(configPath, configDocument.config);
+  try {
+    if (!input.options.dryRun && pluginUpdate.changed) {
+      writeOpenCodeConfig(configPath, configDocument.config);
+    }
+
+    const crewbeeConfigUpdate = ensureCrewBeeConfigFile({
+      configRoot: path.dirname(configPath),
+      dryRun: input.options.dryRun,
+      mode: "install",
+    });
+
+    return {
+      backupPath: configBackup?.backupPath,
+      configChanged: pluginUpdate.changed,
+      configPath,
+      crewbeeConfigChanged: crewbeeConfigUpdate.changed,
+      crewbeeConfigPath: crewbeeConfigUpdate.configPath,
+      crewbeeConfigReason: crewbeeConfigUpdate.reason,
+      dryRun: input.options.dryRun,
+      installRoot,
+      packageWorkspaceRoot,
+      legacyPackageRemoved,
+      migratedEntries: pluginUpdate.migratedEntries,
+      pluginEntry,
+      packageSpec,
+      source: input.options.source,
+      tarballPath,
+      workspaceCreated: workspace.created,
+    };
+  } catch (error) {
+    if (configBackup) {
+      restoreOpenCodeConfigBackup(configBackup);
+    }
+
+    throw error;
   }
-
-  const crewbeeConfigUpdate = ensureCrewBeeConfigFile({
-    configRoot: path.dirname(configPath),
-    dryRun: input.options.dryRun,
-    mode: "install",
-  });
-
-  return {
-    configChanged: pluginUpdate.changed,
-    configPath,
-    crewbeeConfigChanged: crewbeeConfigUpdate.changed,
-    crewbeeConfigPath: crewbeeConfigUpdate.configPath,
-    crewbeeConfigReason: crewbeeConfigUpdate.reason,
-    dryRun: input.options.dryRun,
-    installRoot,
-    packageWorkspaceRoot,
-    legacyPackageRemoved,
-    migratedEntries: pluginUpdate.migratedEntries,
-    pluginEntry,
-    packageSpec,
-    source: input.options.source,
-    tarballPath,
-    workspaceCreated: workspace.created,
-  };
 }

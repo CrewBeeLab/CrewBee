@@ -3,11 +3,14 @@ import type { TeamValidationIssue } from "../agent-teams/types";
 export type InstallSource = "local" | "registry";
 
 export interface InstallCommandOptions {
+  channel?: "stable" | "next";
   configPath?: string;
   dryRun: boolean;
+  force?: boolean;
   installRoot?: string;
   localTarballPath?: string;
   source: InstallSource;
+  yes?: boolean;
 }
 
 export interface InstallCommandContext {
@@ -16,6 +19,7 @@ export interface InstallCommandContext {
 }
 
 export interface InstallResult {
+  backupPath?: string;
   configChanged: boolean;
   configPath: string;
   crewbeeConfigChanged: boolean;
@@ -33,6 +37,31 @@ export interface InstallResult {
   workspaceCreated: boolean;
 }
 
+export interface SetupOptions {
+  channel?: "stable" | "next";
+  configPath?: string;
+  doctor: boolean;
+  dryRun: boolean;
+  force?: boolean;
+  installRoot?: string;
+  verbose?: boolean;
+  withOpenCode: boolean;
+  yes?: boolean;
+}
+
+export interface SetupResult {
+  doctorResult?: DoctorResult;
+  doctorRun: boolean;
+  dryRun: boolean;
+  installResult: InstallResult;
+  opencodeFound: boolean;
+  opencodeInstallAttempted: boolean;
+  opencodeInstallCommand?: string;
+  opencodePath?: string;
+  opencodeVersion?: string;
+  withOpenCode: boolean;
+}
+
 export interface UninstallOptions {
   configPath?: string;
   dryRun: boolean;
@@ -40,6 +69,7 @@ export interface UninstallOptions {
 }
 
 export interface UninstallResult {
+  backupPath?: string;
   configChanged: boolean;
   configPath: string;
   dryRun: boolean;
@@ -66,6 +96,9 @@ export interface DoctorResult {
   healthy: boolean;
   installedPackageRoot: string;
   installRoot: string;
+  opencodeFound: boolean;
+  opencodePath?: string;
+  opencodeVersion?: string;
   projectWorktree: string;
   blockingTeamIssueCount: number;
   teamCount: number;
