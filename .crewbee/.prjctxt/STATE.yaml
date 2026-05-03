@@ -2,9 +2,15 @@ project_id: crewbee
 run_status: running
 active_cycle: C1
 active_step_id: S4
-last_checkpoint: CP-0006
+last_checkpoint: CP-0007
 blockers: []
 next_actions:
+  - action: Before publishing 0.1.12, bump release metadata/tag from the current 0.1.11 package state and verify final release notes against the release commit.
+    owner: active-agent
+    source: latest update payload
+  - action: Use the internal 0.1.12 release-notes basis only as source material; avoid overstating runtime API-error fallback or real provider catalog auto-discovery.
+    owner: active-agent
+    source: latest update payload
   - action: For model/provider follow-up, remember current fallback is projection-time selection only; it does not retry after real LLM runtime API failures.
     owner: active-agent
     source: latest update payload

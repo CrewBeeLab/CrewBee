@@ -9,6 +9,7 @@ simulators/runs/
 docs/internal/*
 !docs/internal/
 !docs/internal/agent-team-model-provider-current-state.md
+!docs/internal/crewbee-0.1.12-release-notes-basis.md
 AgentTeams/internal
 tmp/
 NUL

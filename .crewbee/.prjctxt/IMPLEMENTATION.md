@@ -22,6 +22,7 @@
 - Doctor now includes model-resolution trace output.
 - Model resolution implementation has been responsibility-cleaned without semantic change: runtime model ID normalization, candidate construction, unique candidate appending, host-default trace creation, and candidate trace projection are split into named helpers in the OpenCode model-resolution layer.
 - Embedded Coding Team runtime parameters are now held in an explicit per-agent runtime profile map instead of nested inline conditional expressions; current values remain agent-specific and include the long-context variant for the coding leader.
+- Internal 0.1.12 release-notes source material now summarizes 0.1.10-to-current changes across setup/update install UX, OpenCode detection/config backup/rollback, user-level package workspace, Coding Team model defaults/overrides/fallback, doctor diagnostics, docs, tests, and release caveats.
 
 ## Verification Commands
 
@@ -34,6 +35,7 @@
 - 2026-05-03: Agent Team provider/model current-state documentation update reported `npm run typecheck`, `npm run build`, and `npm test` passing; `npm test` reported 87 passed, 0 failed. The parent session also reported a read-only coding-reviewer review as OKAY with no blocker.
 - 2026-05-03: Built-in Coding Team model override/fallback implementation reported `npm run typecheck` passing and `npm test` passing with 90 passed, 0 failed. Parent session also reported independent `coding-reviewer` review as OKAY with no blocker.
 - 2026-05-03: Behavior-equivalent model-resolution/runtime-profile cleanup reported `npm run typecheck` passing and `npm test` passing with 90 passed, 0 failed. Parent session also reported read-only `coding-reviewer` review as OKAY with no blocker.
+- 2026-05-03: Internal 0.1.12 release-notes basis was reviewed read-only by `coding-reviewer`; parent session reported OKAY with no blocker. No command/test verification was recorded for this documentation-only change.
 
 ## Working Tree Notes
 
@@ -45,3 +47,4 @@
 - Git warned that two existing coding-team agent files may have CRLF converted to LF on next Git touch; no functional impact was reported.
 - Latest product change implemented projection-time model override/fallback for built-in and file-based Teams, added model resolution traces to doctor output, updated the default CrewBee config template, and added model fallback tests. `.gitignore` was also touched by prior/internal-doc hygiene in this working tree.
 - Latest cleanup touched only the OpenCode model-resolution helper structure and embedded Coding Team runtime-profile expression style; it was reported as behavior-equivalent and did not change config formats, fallback strategy, or OpenCode projection semantics.
+- Latest documentation work added internal release-notes basis material for the upcoming 0.1.12 release and updated ignore rules so that internal document can be tracked; package metadata was still reported as 0.1.11 and must be bumped during release.
