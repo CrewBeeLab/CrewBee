@@ -2,42 +2,46 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-<p align="center">
-  <img src="assets/crewbee-intro.png" alt="Turn scattered agents into real teams" width="100%" />
-</p>
+> [!NOTE]
+>
+> [![CrewBee - Turn scattered agents into real teams.](./assets/web-home.png?v=2)](https://crewbeelab.github.io)
+> > **CrewBee turns prompts, agents, rules, review flows, and completion criteria into maintainable Agent Team assets. <br />Visit the website [here](https://crewbeelab.github.io).**
 
-<p align="center"><strong>An Agent Team framework for OpenCode.</strong></p>
+<p align="center"><strong>Turn scattered agents into real teams.</strong></p>
 
-CrewBee lets you design different **Agent Teams** for different tasks or projects, and switch flexibly between **single-agent execution** and **multi-agent collaboration** based on task complexity.
+CrewBee is an **Agent Team asset layer** with OpenCode as its first officially supported host.
 
-It is not a prompt pack or a forced multi-agent ritual. CrewBee turns agent roles, collaboration patterns, context management, review flow, completion criteria, and host adaptation into maintainable, runnable, and reusable Team engineering assets.
+It turns prompts, agents, rules, review flows, and completion criteria in engineering work into maintainable **Agent Team assets**.
 
-**Current focus:** make Team-level agent systems clearly definable, projectable across host runtimes, and runnable inside OpenCode.
+CrewBee helps you build reusable Agent Teams for specialized workflows: not just agents, but tools / skills strategies, workflows, rules, review flows, and completion criteria.
+
+Here, “team” does not mean enabling more agents by default. It means giving complex engineering work clear responsibilities and collaboration boundaries across requirements understanding, codebase exploration, implementation planning, implementation changes, independent review, validation, and delivery notes.
+
+Not a prompt pack.  
+Not a flat agent list.  
+Not another all-in-one multi-agent runtime.
+
+**Available for OpenCode today.** OpenCode is CrewBee’s first officially supported host; Project Context, the Team template ecosystem, and more Agent Harness adapters are next-stage directions.
 
 ---
 
 ## Why CrewBee
 
-* **Design different Agent Teams for different tasks or projects** — Different work can have different roles, rules, workflows, and completion criteria.
-* **Switch between single-agent and multi-agent collaboration based on task complexity** — Keep simple tasks fast and lightweight; use Team collaboration, support agents, review, and verification for complex tasks.
-* **Keep the main agent as the owner of the most complete context** — The main agent holds the user goal, project constraints, support findings, review feedback, and verification results, so key decisions are based on fuller evidence.
-* **Use context-isolated delegation** — Support agents work in dedicated contexts for exploration, research, and review, then return high-signal findings to the main agent. This reduces the main agent’s context and attention load.
-* **Built-in mature Coding Team** — CrewBee includes a Coding Team with clear role responsibilities, review flow, and completion criteria for development, debugging, refactoring, and verification work.
-* **Project Context direction across sessions** — Next, CrewBee will strengthen automatically maintained project context, so long-running projects can keep summaries of project positioning, framework design, history, current state, and plans across sessions.
-* **Copyable, modifiable, and contributable Team templates** — Teams are engineering assets that can be refined, versioned, and shared.
+Complex engineering tasks need a reviewable, verifiable work structure.
 
-CrewBee has already completed the **CrewBee → OpenCode** MVP path:
+Code generation is only one part of delivery. What matters is requirements understanding, codebase exploration, implementation planning, implementation changes, independent review, validation, and delivery notes.
 
-* Host-agnostic Team / Agent definitions
-* Team Library assembly and validation
-* Runtime Projection and formal leader default selection
-* OpenCode agent config projection, aliases, config patches, and session binding
-* OpenCode plugin entry, delegation tools, event wiring, and system prompt injection
-* Local build, user-level installation, doctor checks, and uninstall flow
+When these concerns are scattered across prompts, agents, rules, review checklists, and ad-hoc conventions, agent work becomes hard to maintain, reuse, and improve.
 
-> Simple mental model:
->
-> **CrewBee = Agent Team definition framework + Runtime Projection layer + Host adapter layer, currently for OpenCode**
+CrewBee focuses on three current product differentiators:
+
+* **Agent Team assets** — Turn prompts, agents, rules, review flows, and completion criteria into maintainable Team assets.
+* **Reusable Agent Teams for specialized workflows** — Build Team definitions for domain-specific work, including agents, tools / skills strategies, workflows, rules, review flows, and completion criteria.
+* **Built-in Coding Team** — Start from an owner-centered, review-backed Coding Team for development, fixing, debugging, refactoring, validation, and delivery notes.
+
+CrewBee does not make multi-agent collaboration a default ritual.
+
+Simple tasks stay lightweight. Complex tasks get support, review, validation, and completion criteria.
 
 ---
 
@@ -76,7 +80,7 @@ The same id is used for OpenCode `default_agent`, explicitly selected agents in 
 * [Quick Start](#quick-start)
 * [Agent Team and Agent Profile Definitions](#agent-team-and-agent-profile-definitions)
 * [How the OpenCode Runtime Works](#how-the-opencode-runtime-works)
-* [Built-in Coding Team Design](#built-in-coding-team-design)
+* [Built-in Coding Team](#built-in-coding-team)
 * [Next: Project Context](#next-project-context)
 * [Configuration, Installation, and Operations Scripts](#configuration-installation-and-operations-scripts)
 * [Uninstall](#uninstall)
@@ -86,314 +90,173 @@ The same id is used for OpenCode `default_agent`, explicitly selected agents in 
 
 ## What CrewBee Is
 
-CrewBee is an Agent Team framework for real host runtimes.
+CrewBee is an **Agent Team asset layer** with OpenCode as its first officially supported host.
 
-In CrewBee, the first-class object is not a single Agent, but a **Team**. A Team is not a concatenation of prompt fragments. It is a structured definition unit that includes at least:
+In CrewBee, the first-class object is not a single agent or a prompt fragment, but an **Agent Team asset**.
 
-* Team identity and positioning
-* formal leader
+An Agent Team asset can include:
+
+* Team mission and scope
+* formal Leader
 * members
+* shared policy
 * workflow
-* Team-level shared rules
+* review flow
+* completion criteria
 * Agent Profiles
-* Prompt Projection
-* host runtime mapping
+* tools / skills strategy
+* model preferences
+* host binding
 
-CrewBee aims to turn scattered agent prompts, rules, and collaboration conventions into maintainable, portable, and runnable Team assets.
+The goal is to turn a reusable way of working into a maintainable Team asset.
 
-The current usage model is:
+CrewBee does not replace OpenCode and does not try to become another all-in-one multi-agent runtime. Its current focus is to organize specialized engineering workflows into reusable Agent Teams and make the built-in Coding Team available in OpenCode.
 
-* The user selects a Team entry agent in the host runtime.
-* CrewBee projects the Team definition into the host runtime in a stable way.
-* At runtime, CrewBee preserves Team semantics through session binding, delegation, and system prompt injection.
-
-CrewBee does not currently force automatic Team selection or automatically decide the organization structure for every task. It first focuses on making Team definitions, Team projection, runtime binding, and OpenCode adaptation solid.
+CrewBee projects Team assets into OpenCode so they can run in the host environment. Runtime Projection, OpenCode Adapter, setup, doctor checks, per-agent model configuration, and projection-time fallback are implementation and usability supports, not the long-term product differentiators described above.
 
 ---
 
 ## What CrewBee Solves
 
-CrewBee mainly solves seven problems.
+CrewBee mainly solves the problem of turning scattered agent work into maintainable Team assets.
 
-### 1. Design different Agent Teams for different tasks or projects
+### 1. Scattered prompts, agents, and rules are hard to maintain
 
-Coding, research, writing, analysis, marketing, and long-running project maintenance are not the same kind of work. They need different role structures, working rules, tool boundaries, review flows, and completion criteria.
+Many AI coding setups start with a prompt, a few custom agents, some project rules, and a review checklist.
 
-CrewBee lets you design different Agent Teams for different tasks or projects instead of using one increasingly long general-purpose prompt for everything.
+Over time, these pieces become scattered across projects and host-specific configuration. They are hard to reuse, version, review, and improve.
 
-### 2. Switch flexibly between single-agent and multi-agent collaboration based on task complexity
+CrewBee turns them into maintainable Agent Team assets.
 
-Simple tasks need fast responses, fewer tokens, and fewer steps. Complex tasks need support agents, independent review, verification, and clearer completion gates.
+### 2. Complex engineering tasks need a reviewable, verifiable work structure
 
-CrewBee is not designed to turn every task into multi-agent collaboration by default. It is designed to choose the right execution mode based on task complexity.
+Reliable software delivery is not only code generation.
 
-### 3. Keep the main agent as the owner of the most complete context
+Complex tasks often involve requirements understanding, codebase exploration, implementation planning, implementation changes, independent review, validation, and delivery notes.
 
-In complex tasks, codebase exploration, external research, review, and verification may all produce important information.
+CrewBee organizes these responsibilities into a Team structure instead of leaving them in ad-hoc prompts.
 
-CrewBee keeps the main agent / formal leader as the owner of the most complete task context. The main agent collects the user goal, project constraints, support findings, review feedback, and verification results before making key decisions and closing the task.
+### 3. Specialized workflows need reusable Agent Teams
 
-### 4. Reduce the main agent’s context and attention load through context-isolated delegation
+Different work needs different responsibilities, tools, rules, review flows, and completion criteria.
 
-Complex work should not dump every search trace, side exploration, failed path, and low-signal detail into the main agent’s context.
+CrewBee helps you build reusable Agent Teams for specialized workflows: coding, code review, documentation, release work, research, bug triage, or other domain-specific work.
 
-CrewBee uses delegation so support agents can work in dedicated contexts for codebase exploration, research, review, or multimodal interpretation, then return high-signal findings to the main agent. This reduces main-context pollution and the main agent’s attention load.
+This is not a mature template marketplace today. The current value is the engineering ability to define and run reusable Team assets.
 
-### 5. Built-in mature Coding Team with review flow and completion criteria
+### 4. Complex coding tasks should not depend on a single Coder self-declaring completion
 
-Coding tasks need more than code generation. They need codebase exploration, external research, independent review, verification evidence, and completion criteria.
+The built-in Coding Team is CrewBee’s flagship sample.
 
-CrewBee’s built-in Coding Team uses direct responsibility-based role names and emphasizes review and completion criteria, helping complex coding tasks reach a more reliable closure.
+It gives complex coding tasks a clearer structure:
 
-### 6. Project Context direction across sessions
+```text
+Main Owner
++ Codebase Exploration
++ Focused Implementation
++ Independent Review
++ Completion Criteria
+```
 
-Long-running projects should not require the user to re-explain project positioning, framework design, history, current state, and next steps every time a new session starts.
+The goal is not more agents by default. The goal is clearer ownership, better evidence, independent review, and more reliable completion.
 
-CrewBee’s next stage will strengthen automatically maintained Project Context, so agents can use project summaries to read code heuristically and reduce the context cost of repeatedly scanning the whole codebase.
+### 5. Simple tasks should stay lightweight
 
-### 7. Copyable, modifiable, and contributable Team templates
+CrewBee does not turn every task into a full Team workflow.
 
-A Team is not just internal configuration. It is an engineering asset that can be copied, modified, versioned, and contributed.
-
-This lets users start from built-in Teams or templates, then gradually build their own agent workflows.
+Simple tasks should stay lightweight. Complex tasks can use support roles, review, validation, and completion criteria when needed.
 
 ---
 
 ## Core Features
 
-### 1. Design different Agent Teams for different tasks or projects
+### 1. Agent Team assets
 
-CrewBee treats Team as a first-class object rather than focusing only on scattered agent prompts.
+CrewBee turns prompts, agents, rules, review flows, and completion criteria into maintainable Team assets.
 
-A Team can have its own:
+A Team asset can define:
 
-* task positioning
-* default entry agent
-* member responsibilities
+* mission and scope
+* formal Leader
+* members
 * workflow
 * shared rules
-* tool boundaries
+* tools / skills strategy
 * review flow
 * completion criteria
-* output style
+* output contract
+* model preferences
+* host binding
 
-This means you can design different Teams for different tasks or projects, such as:
+This makes the Team maintainable, reusable, and easier to evolve than scattered prompts or flat agent lists.
 
-* `CodingTeam`: development, fixing, debugging, refactoring, verification
-* `GeneralTeam`: research, analysis, writing, planning
-* `ResearchOpsTeam`: evidence retrieval, material organization, conclusion synthesis
-* `MarketingOpsTeam`: open-source release, promotion, community feedback
-* `ProjectContextTeam`: project context maintenance, state updates, cross-session handoff
-* `WukongTeam`: high-uncertainty exploration and long-running complex tasks
+### 2. Reusable Agent Teams for specialized workflows
 
-### 2. Switch between single-agent and multi-agent collaboration based on task complexity
+CrewBee lets you define Agent Teams for specialized workflows.
 
-CrewBee does not make multi-agent collaboration a default ritual. It supports choosing different execution modes based on task complexity.
+A specialized Team is not just a group of agents. It can also include tools / skills strategies, workflows, rules, review flows, and completion criteria.
 
-**Single-agent execution** fits:
+Examples of possible Team directions include:
 
-* simple questions
-* small code changes
-* local explanations
-* quick summarization
-* low-risk tasks
-* tasks with clear context and clear goals
+* Coding Team
+* Code Review Team
+* ResearchOps Team
+* Documentation Team
+* ReleaseOps Team
+* Bug Triage Team
+* MarketingOps Team
+* Product Planning Team
 
-**Multi-agent collaboration** fits:
+These are examples of what CrewBee’s Team asset model is designed to support. A broader Team template ecosystem is a roadmap direction, not a mature ecosystem today.
 
-* cross-file implementation
-* complex bug fixes
-* external research
-* architecture decisions
-* independent review
-* tasks requiring verification evidence
-* long-running project work
+### 3. Built-in Coding Team
 
-Simple tasks stay fast. Complex tasks use Team collaboration.
+CrewBee includes a built-in Coding Team as its current flagship sample.
 
-### 3. Main agent owns the most complete context for fuller decisions
-
-CrewBee Teams use the main agent / formal leader as the task entry point, mainline owner, and final closer.
-
-The main agent holds the most complete task context, including:
-
-* user goal
-* project constraints
-* current task state
-* findings returned by support agents
-* review feedback
-* verification results
-* risks and unresolved items
-
-Key decisions are made by the main agent based on this combined context, instead of being made globally by support agents that only hold partial information.
-
-### 4. Context-isolated delegation reduces the main agent’s context and attention load
-
-CrewBee’s support collaboration emphasizes context-isolated delegation:
+It is designed for owner-centered, review-backed coding:
 
 ```text
-The main agent owns the main task context.
-Support agents work on specialized tasks in dedicated contexts.
-Support agents return high-signal findings to the main agent.
-The main agent continues decision-making and final closure based on those findings.
+Main Owner
++ Codebase Exploration
++ Focused Implementation
++ Independent Review
++ Completion Criteria
 ```
 
-Support tasks include:
+This helps complex coding tasks avoid depending only on a single Coder agent self-declaring completion.
 
-* codebase exploration
-* external documentation research
-* evidence organization
-* multimodal interpretation
-* independent review
-* high-level architecture advice
+### 4. Lightweight path for simple tasks, support path for complex tasks
 
-This prevents side searches, failed paths, low-signal material, and review traces from polluting the main context.
+CrewBee does not make multi-agent collaboration a default ritual.
 
-### 5. Built-in mature Coding Team with review flow and completion criteria
+Simple tasks can stay lightweight. Complex tasks can use support agents, review, validation, and completion criteria when needed.
 
-CrewBee’s most important methodology sample today is the built-in Coding Team.
+### 5. OpenCode usability support
 
-It is not a single Coder Agent, but an Agent Team designed for software engineering work. The recommended structure includes:
+CrewBee is available for OpenCode today.
 
-```text
-coding-leader
-coding-executor
-codebase-explorer
-web-researcher
-reviewer
-principal-advisor
-multimodal-looker
-task-orchestrator
-```
+The current OpenCode path includes user-level setup, doctor checks, OpenCode configuration support, delegation tooling, and per-agent model configuration.
 
-The built-in Coding Team uses direct responsibility-based role names so users can quickly understand what each agent does.
+These are productization and usability supports. They help users install, run, configure, and diagnose CrewBee, but they are not CrewBee’s long-term core differentiators.
 
-| Built-in Coding Team Role | Responsibility                                                                                      |
-| ------------------------- | --------------------------------------------------------------------------------------------------- |
-| `coding-leader`           | Default entry point, task owner, and final closer                                                   |
-| `coding-executor`         | Implements clear development, fixing, debugging, and local refactoring tasks                        |
-| `codebase-explorer`       | Locates code entry points, call chains, similar implementations, and historical clues               |
-| `web-researcher`          | Researches official docs, external references, open-source implementations, and version differences |
-| `reviewer`                | Independently reviews risks, omissions, verification evidence, and completion criteria              |
-| `principal-advisor`       | Provides high-level advice on architecture, performance, and complexity decisions                   |
-| `multimodal-looker`       | Interprets screenshots, charts, PDFs, UI images, and visual materials                               |
-| `task-orchestrator`       | Handles large plans, multi-wave tasks, and unified QA orchestration                                 |
+### 6. Implementation details that support Team assets
 
-Completion in the Coding Team should not depend only on “the agent thinks it is done.” It should include explicit completion criteria whenever possible, such as:
+CrewBee also includes implementation details that make Team assets runnable and usable in OpenCode:
 
-```text
-- The target issue has been located.
-- The change has a clear rationale.
-- The required implementation or fix has been completed.
-- Available diagnostics / build / tests have been run.
-- The reviewer found no real blocking issue.
-- Unverified items and residual risks have been stated.
-```
+* Prompt Projection keeps Agent prompts structured while preserving execution semantics.
+* Collaboration sections generate runtime-usable delegation targets.
+* Team Contract rendering compresses policy into `Working Rules` and `Approval & Safety`.
+* Team assets can be copied, modified, and versioned.
 
-### 6. Host-agnostic definitions and OpenCode Runtime Projection
+These details are important for implementation quality, but they are not the three main product differentiators.
 
-CrewBee first converts the Team-first structure into a unified intermediate representation, then maps it into concrete host runtimes.
+### 7. Roadmap directions
 
-The current primary host is OpenCode.
+The following are next-stage directions, not mature current advantages:
 
-The current OpenCode MVP path includes:
-
-* Team Library loading
-* Team / Agent validation
-* Runtime Projection
-* formal leader default selection
-* projected agent generation
-* OpenCode config patch
-* session binding
-* delegation tooling
-* plugin entry
-* user-level install
-* doctor verification
-
-This makes CrewBee more than a prompt folder. It is a runtime framework that can actually plug into OpenCode.
-
-### 7. Copyable, modifiable, and contributable Team templates
-
-CrewBee Teams are file-based engineering assets that can be copied, modified, versioned, and contributed.
-
-Users can:
-
-* use built-in Teams
-* copy Team templates
-* modify role structures
-* adjust shared rules
-* encode their own workflow
-* contribute Teams back to the community
-
-Many users may not modify CrewBee core, but they can still start from a template and build their own Team.
-
-### 8. Prompts are decoupled while preserving execution semantics
-
-CrewBee does not fall back to an old pattern where every field needs a dedicated schema and renderer. It also does not simply dump every top-level block into the prompt.
-
-The current approach is:
-
-> **a small set of shared semantic sections + generic structural processing + structured rendering**
-
-For example, the Agent prompt skeleton is organized around execution cognition:
-
-* Persona Core
-* Responsibility Core
-* Core Principle
-* Scope Control
-* Ambiguity Policy
-* Support Triggers
-* Collaboration
-* Task Triage
-* Delegation & Review
-* Todo Discipline
-* Completion Gate
-* Failure Recovery
-* Operations
-* Output Contract
-* Templates
-* Guardrails
-* Heuristics
-* Anti Patterns
-* Tool Skill Strategy
-
-This helps the model quickly establish:
-
-* who I am
-* what I am responsible for
-* how I act by default
-* when to delegate / review / ask / stop
-* what counts as completion
-* how to recover from failure
-
-### 9. Collaboration generates runtime-usable delegation targets
-
-The generated `Collaboration` section is not just a simple list of collaboration bindings from the profile. It combines:
-
-* subagent collaboration declarations from the Agent Profile
-* `members` descriptions from the Team Manifest
-* projected ids that OpenCode can resolve
-
-Then it generates:
-
-* `Id`
-* `Description`
-* `When To Delegate`
-
-This makes delegation targets directly usable at runtime.
-
-### 10. Team Contract is compressed into an executable handbook
-
-The Team prompt does not mechanically render the entire governance config. It is compressed into:
-
-* `Working Rules`
-* `Approval & Safety`
-
-This makes the Team contract easier for the model to consume and avoids mechanical expansion of governance fields.
-
-### 11. User-level installation and operations flow
-
-CrewBee already has a complete local build, user-level installation, doctor verification, and uninstall flow, so it can be installed as a user-level OpenCode plugin.
+* Project Context for long-running, cross-session project work.
+* A broader Team template ecosystem.
+* More Agent Harness adapters and multi-host projection experiments.
 
 ---
 
@@ -430,6 +293,8 @@ Select `coding-leader` and run your first real task:
 Use CrewBee Coding Team to fix this issue with review-backed completion.
 ```
 
+The first recommended experience is to open a real project in OpenCode, select `coding-leader`, and run a coding task with review-backed completion.
+
 Verify anytime:
 
 ```bash
@@ -445,6 +310,12 @@ After installation:
 1. Open any project.
 2. Select a CrewBee-projected agent, such as `coding-leader`.
 3. Send your request normally.
+
+### OpenCode desktop preview
+
+The screenshot below shows CrewBee running inside OpenCode, with the Coding Team entry selected and review-backed work visible in the session.
+
+![CrewBee running inside OpenCode desktop](./assets/opencode-desktop.png?v=2)
 
 ---
 
@@ -612,6 +483,8 @@ Constraints:
 
 ## How the OpenCode Runtime Works
 
+This section explains the current OpenCode implementation path. Runtime Projection, OpenCode configuration patches, session binding, and delegation tooling are implementation details that make CrewBee’s Team assets runnable in OpenCode; they are not the main product differentiators described above.
+
 The current OpenCode plugin path is roughly:
 
 ```text
@@ -662,13 +535,38 @@ Injects minimal CrewBee runtime information into the system prompt:
 
 ---
 
-## Built-in Coding Team Design
+## Built-in Coding Team
 
-CrewBee’s most important methodology sample today is the built-in Coding Team.
+CrewBee’s built-in Coding Team is the current flagship sample of the Agent Team asset model.
+
+It is designed for owner-centered, review-backed coding work:
+
+```text
+Main Owner
++ Codebase Exploration
++ Focused Implementation
++ Independent Review
++ Completion Criteria
+```
+
+The value is not that there are more coding agents. The value is that complex coding tasks get clearer ownership, code evidence, implementation focus, independent review, validation, and delivery notes.
+
+The built-in Coding Team uses direct responsibility-based role names so users can quickly understand what each agent does.
+
+| Built-in Coding Team Role | Responsibility                                                                                      |
+| ------------------------- | --------------------------------------------------------------------------------------------------- |
+| `coding-leader`           | Default entry, task owner, decision context owner, and final handoff                                |
+| `coding-executor`         | Focused implementation, fixes, debugging, and local refactoring                                     |
+| `codebase-explorer`       | Code entry points, call chains, related implementations, and historical clues                       |
+| `web-researcher`          | Official docs, external references, open-source implementations, and version differences            |
+| `reviewer`                | Independent review of risks, omissions, verification evidence, and completion criteria              |
+| `principal-advisor`       | Architecture, performance, and complexity advice                                                    |
+| `multimodal-looker`       | Screenshots, charts, PDFs, UI images, and visual materials                                          |
+| `task-orchestrator`       | Large plans, multi-wave tasks, and unified QA orchestration                                         |
 
 ### 1. The main agent owns the most complete context
 
-The Coding Team’s main agent / formal leader is the default entry point, mainline owner, and final closer.
+The Coding Team’s main agent / formal leader is the default entry point, mainline owner, decision context owner, and final handoff owner.
 
 It collects:
 
@@ -722,16 +620,21 @@ For coding tasks, CrewBee emphasizes:
 * Principal Advisor provides high-level judgment when needed
 * the main agent receives high-signal findings, then decides and closes the task
 
+The Coding Team should prove one thing first: complex coding tasks can be organized as a reusable Team asset, instead of being handled by a single Coder agent that writes code and declares the task done.
+
 ---
 
 ## Next: Project Context
 
-Project Context is an important next-stage product direction for CrewBee.
+Project Context is a next-stage product direction for CrewBee.
 
-Its goal is to automatically maintain project context across sessions, so long-running projects keep high-signal summary information, including:
+It should not be understood as a fully mature feature today.
+
+The goal is to help long-running projects avoid making agents onboard from zero in every new session.
+
+A future Project Context capability should maintain high-signal project information such as:
 
 * project positioning
-* framework design
 * architecture summary
 * key history
 * current implementation state
@@ -852,8 +755,12 @@ npm run doctor
 
 ## Acknowledgements
 
-CrewBee is inspired by OpenCode and community projects such as oh-my-openagent. These projects explored the value of Agent Team workflows in real development environments and helped more developers see the potential of multi-agent collaboration.
+CrewBee is built with appreciation for OpenCode and the broader open-source agent ecosystem.
 
-Thanks to their developers and maintainers.
+OpenCode is CrewBee’s first officially supported host and provides the runtime environment where CrewBee’s current Coding Team can be used.
 
-CrewBee continues in this direction by organizing Agent Teams from prompt fragments or role configurations into manageable, projectable, configurable, and reusable engineering assets, so Agent Teams for different tasks or projects can be defined, run, and evolved more clearly.
+Community projects such as oh-my-openagent have also helped more developers explore real-world agent workflows in OpenCode and related environments.
+
+CrewBee continues from a different layer: organizing prompts, agents, rules, review flows, and completion criteria into maintainable Agent Team assets.
+
+Thanks to the developers, maintainers, and community members who keep pushing the open-source agent ecosystem forward.
