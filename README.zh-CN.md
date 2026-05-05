@@ -4,10 +4,9 @@
 
 > [!NOTE]
 >
-> [![CrewBee - 把分散的智能体变成真正的团队。](./assets/web-home.png?v=2)](https://crewbeelab.github.io)
+> [![CrewBee - 把分散的智能体变成真正的团队。](./assets/web-home-cn.png?v=2)](https://crewbeelab.github.io)
 > > **CrewBee 把研发工作中的 prompts、agents、规则、review 流程和验收标准，整理成可维护的 Agent Team 资产。<br />访问官网：[crewbeelab.github.io](https://crewbeelab.github.io)。**
 
-<p align="center"><strong>把分散的智能体变成真正的团队。</strong></p>
 
 CrewBee 是当前优先适配 OpenCode 的 **Agent Team 资产层**。
 
@@ -32,6 +31,12 @@ CrewBee 帮助你为专项业务场景定制可复用 Agent Team：不只是 age
 代码生成只是其中一环。真正影响交付质量的，往往是需求理解、代码定位、方案判断、实现变更、独立审查、验证确认和交付说明。
 
 如果这些内容分散在 prompts、agents、rules、review checklist 和临时约定里，Agent 工作方式会越来越难维护，也更难判断结果是否真的完成。
+
+### CrewBee 在 OpenCode 中运行
+
+下图展示了 CrewBee 在 OpenCode 中运行时的界面：已选择 Coding Team 入口，并能看到带 review 支撑的任务执行过程。
+
+![CrewBee 在 OpenCode 桌面中运行](./assets/opencode-desktop.png?v=2)
 
 CrewBee 让你把这些内容整理成可维护的 Agent Team 资产：定义 Team、选择 Leader，并在 OpenCode 中运行结构化 Agent Team 工作流。
 
@@ -304,12 +309,6 @@ npx crewbee@latest doctor
 1. 打开任意项目
 2. 选择 CrewBee 投影出的 agent（例如 `coding-leader`）
 3. 正常发送请求
-
-### OpenCode 桌面使用界面
-
-下图展示了 CrewBee 在 OpenCode 中运行时的界面：已选择 Coding Team 入口，并能看到带 review 支撑的任务执行过程。
-
-![CrewBee 在 OpenCode 桌面中运行](./assets/opencode-desktop.png?v=2)
 
 ---
 

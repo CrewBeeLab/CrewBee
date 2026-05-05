@@ -4,10 +4,9 @@
 
 > [!NOTE]
 >
-> [![CrewBee - Turn scattered agents into real teams.](./assets/web-home.png?v=2)](https://crewbeelab.github.io)
+> [![CrewBee - Turn scattered agents into real teams.](./assets/web-home-en.png?v=2)](https://crewbeelab.github.io)
 > > **CrewBee turns prompts, agents, rules, review flows, and completion criteria into maintainable Agent Team assets. <br />Visit the website [here](https://crewbeelab.github.io).**
 
-<p align="center"><strong>Turn scattered agents into real teams.</strong></p>
 
 CrewBee is an **Agent Team asset layer** with OpenCode as its first officially supported host.
 
@@ -32,6 +31,12 @@ Complex engineering tasks need a reviewable, verifiable work structure.
 Code generation is only one part of delivery. What matters is requirements understanding, codebase exploration, implementation planning, implementation changes, independent review, validation, and delivery notes.
 
 When these concerns are scattered across prompts, agents, rules, review checklists, and ad-hoc conventions, agent work becomes hard to maintain, reuse, and improve.
+
+### CrewBee in OpenCode
+
+The screenshot below shows CrewBee running inside OpenCode, with the Coding Team entry selected and review-backed work visible in the session.
+
+![CrewBee running inside OpenCode desktop](./assets/opencode-desktop.png?v=2)
 
 CrewBee focuses on three current product differentiators:
 
@@ -310,12 +315,6 @@ After installation:
 1. Open any project.
 2. Select a CrewBee-projected agent, such as `coding-leader`.
 3. Send your request normally.
-
-### OpenCode desktop preview
-
-The screenshot below shows CrewBee running inside OpenCode, with the Coding Team entry selected and review-backed work visible in the session.
-
-![CrewBee running inside OpenCode desktop](./assets/opencode-desktop.png?v=2)
 
 ---
 
