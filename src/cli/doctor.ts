@@ -2,7 +2,7 @@ import type { Writable } from "node:stream";
 
 import { formatTeamValidationIssue } from "../agent-teams";
 import { runDoctor } from "../install";
-import { readPackageVersion } from "../version/package-version";
+import { readPackageVersion } from "./package-version";
 
 import { parseCommandPathOptions } from "./parse-command-path-options";
 

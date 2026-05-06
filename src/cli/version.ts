@@ -1,7 +1,7 @@
 import type { Writable } from "node:stream";
 
 import { detectInstalledPackageRoot, resolveInstallRoot } from "../install";
-import { readPackageName, readPackageVersion } from "../version/package-version";
+import { readPackageName, readPackageVersion } from "./package-version";
 
 interface VersionOptions {
   installRoot?: string;

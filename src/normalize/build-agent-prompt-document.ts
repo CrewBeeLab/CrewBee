@@ -54,11 +54,11 @@ function pushBlock(blocks: PromptBlock[], key: string, value: unknown, order: nu
   return order + 1;
 }
 
-export function buildAgentPromptSource(agent: AgentProfileSpec): NormalizedProfileDocument {
-  return buildAgentPromptSourceWithOverrides(agent, {});
+export function buildAgentPromptDocument(agent: AgentProfileSpec): NormalizedProfileDocument {
+  return buildAgentPromptDocumentWithOverrides(agent, {});
 }
 
-export function buildAgentPromptSourceWithOverrides(
+export function buildAgentPromptDocumentWithOverrides(
   agent: AgentProfileSpec,
   overrides: {
     collaborationValue?: unknown;

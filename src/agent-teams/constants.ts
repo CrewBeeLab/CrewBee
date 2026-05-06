@@ -10,6 +10,12 @@ export const BUILTIN_CODING_TEAM_MODEL_PRESET = "sota-2026-05";
 export const BUILTIN_CODING_TEAM_MODEL_FALLBACK = "builtin-role-chain";
 export const BUILTIN_CODING_TEAM_FALLBACK_TO_HOST_DEFAULT = true;
 
+/**
+ * Current config version for crewbee.json. Bump this when adding new fields
+ * so that existing user configs get auto-migrated with new defaults.
+ */
+export const CREWBEE_CONFIG_VERSION = 2;
+
 export const BUILTIN_CODING_TEAM_AGENT_MODELS: Record<string, string> = {
   "coding-leader": "openai/gpt-5.5",
   "coordination-leader": "openai/gpt-5.5",

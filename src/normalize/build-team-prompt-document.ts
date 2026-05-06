@@ -23,7 +23,7 @@ function asMetadataRecord(value: PromptValue | undefined): Record<string, Prompt
   return value as Record<string, PromptValue>;
 }
 
-export function buildTeamPromptSource(
+export function buildTeamPromptDocument(
   manifest: Pick<TeamManifest, "id" | "promptProjection"> & { name?: string },
   policy: TeamPolicySpec,
   bodySections: LoadedBodySection[] = [],

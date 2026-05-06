@@ -170,14 +170,17 @@ test("ensureCrewBeeConfigFile preserves existing non-object team entries while a
 
   assert.equal(result.changed, true);
   assert.equal(result.reason, "added-default-coding-team");
-  assert.deepEqual(written.teams, [
-    readExpectedCrewBeeConfigTemplate().teams[0],
-    "legacy-entry",
-    {
-      path: "@tmp/custom-team",
-      enabled: true,
-    },
-  ]);
+  // Migration also adds config_version and appends missing default teams.
+  assert.equal(written.config_version, readExpectedCrewBeeConfigTemplate().config_version);
+  // First team is the default coding-team, followed by preserved user entries.
+  assert.deepEqual(written.teams[0], readExpectedCrewBeeConfigTemplate().teams[0]);
+  assert.equal(written.teams[1], "legacy-entry");
+  assert.deepEqual(written.teams[2], { path: "@tmp/custom-team", enabled: true });
+  // Additional default teams appended by migration.
+  const template = readExpectedCrewBeeConfigTemplate();
+  for (let i = 1; i < template.teams.length; i++) {
+    assert.deepEqual(written.teams[2 + i], template.teams[i]);
+  }
   assert.equal(existsSync(path.join(configRoot, "teams")), false);
 });
 
