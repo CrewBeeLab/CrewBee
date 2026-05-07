@@ -1,4 +1,4 @@
-import type { AgentRuntimeModelConfig } from "../../core";
+import type { AgentRuntimeModelConfig, TeamAgentModelOverride } from "../../core";
 import type { ProjectedAgent } from "../../runtime";
 import { BUILTIN_CODING_TEAM_ID, BUILTIN_CODING_TEAM_MODEL_FALLBACK } from "../../agent-teams/constants";
 
@@ -58,6 +58,43 @@ function resolveRuntimeModelId(runtime: AgentRuntimeModelConfig | undefined): st
   return runtime.provider ? `${runtime.provider}/${runtime.model}` : runtime.model;
 }
 
+function mergeModelOptions(
+  baseOptions: Record<string, unknown> | undefined,
+  overrideOptions: Record<string, unknown> | undefined,
+): Record<string, unknown> | undefined {
+  const merged = {
+    ...(baseOptions ?? {}),
+    ...(overrideOptions ?? {}),
+  };
+
+  return Object.keys(merged).length > 0 ? merged : undefined;
+}
+
+function applyAgentModelOverride(
+  runtime: AgentRuntimeModelConfig | undefined,
+  override: TeamAgentModelOverride | undefined,
+): AgentRuntimeModelConfig | undefined {
+  if (!override) {
+    return runtime;
+  }
+
+  const model = override.model ?? runtime?.model;
+  if (!model) {
+    return runtime;
+  }
+
+  return {
+    provider: runtime?.provider,
+    model,
+    temperature: runtime?.temperature,
+    topP: runtime?.topP,
+    variant: override.variant ?? runtime?.variant,
+    options: mergeModelOptions(runtime?.options, override.options),
+    fallbackModels: runtime?.fallbackModels,
+    fallbackToHostDefault: runtime?.fallbackToHostDefault,
+  };
+}
+
 function parseProviderModel(model: string): { providerID: string; modelID: string } | undefined {
   const separator = model.indexOf("/");
   if (separator <= 0 || separator >= model.length - 1) {
@@ -107,25 +144,37 @@ function createHostDefaultTrace(input: {
 
 function appendConfiguredModelCandidate(input: {
   candidates: ModelCandidate[];
-  agentOverrideModel?: string;
+  agentOverride?: TeamAgentModelOverride;
   runtime?: AgentRuntimeModelConfig;
   defaultRuntime?: AgentRuntimeModelConfig;
 }): void {
   const runtimeModel = resolveRuntimeModelId(input.runtime);
   const defaultRuntimeModel = resolveRuntimeModelId(input.defaultRuntime);
 
-  if (input.agentOverrideModel) {
-    appendUniqueCandidate(input.candidates, { model: input.agentOverrideModel, source: "crewbee-json", runtime: input.runtime });
+  if (input.agentOverride?.model) {
+    appendUniqueCandidate(input.candidates, {
+      model: input.agentOverride.model,
+      source: "crewbee-json",
+      runtime: applyAgentModelOverride(input.runtime ?? input.defaultRuntime, input.agentOverride),
+    });
     return;
   }
 
   if (runtimeModel) {
-    appendUniqueCandidate(input.candidates, { model: runtimeModel, source: "team-manifest", runtime: input.runtime });
+    appendUniqueCandidate(input.candidates, {
+      model: runtimeModel,
+      source: "team-manifest",
+      runtime: applyAgentModelOverride(input.runtime, input.agentOverride),
+    });
     return;
   }
 
   if (defaultRuntimeModel) {
-    appendUniqueCandidate(input.candidates, { model: defaultRuntimeModel, source: "team-manifest-default", runtime: input.defaultRuntime });
+    appendUniqueCandidate(input.candidates, {
+      model: defaultRuntimeModel,
+      source: "team-manifest-default",
+      runtime: applyAgentModelOverride(input.defaultRuntime, input.agentOverride),
+    });
   }
 }
 
@@ -138,6 +187,8 @@ export function resolveAgentModel(input: {
   const agentOverride = teamOverride?.agents?.[agent.canonicalAgentId];
   const runtime = agent.sourceTeam.manifest.agentRuntime?.[agent.canonicalAgentId];
   const defaultRuntime = agent.sourceTeam.manifest.agentRuntime?.$default;
+  const runtimeWithOverride = applyAgentModelOverride(runtime, agentOverride);
+  const defaultRuntimeWithOverride = applyAgentModelOverride(defaultRuntime, agentOverride);
   const fallbackStrategy = teamOverride?.fallback
     ?? (agent.teamId === BUILTIN_CODING_TEAM_ID ? BUILTIN_CODING_TEAM_MODEL_FALLBACK : TEAM_MANIFEST_FALLBACK_STRATEGY);
   const fallbackToHostDefault = teamOverride?.fallbackToHostDefault
@@ -150,9 +201,9 @@ export function resolveAgentModel(input: {
 
   appendConfiguredModelCandidate({
     candidates,
-    agentOverrideModel: agentOverride?.model,
-    runtime,
-    defaultRuntime,
+    agentOverride,
+    runtime: runtimeWithOverride,
+    defaultRuntime: defaultRuntimeWithOverride,
   });
 
   if (agentOverride?.model === HOST_DEFAULT_MODEL_ID || (!agentOverride?.model && runtimeModel === HOST_DEFAULT_MODEL_ID)) {
@@ -172,11 +223,11 @@ export function resolveAgentModel(input: {
   const sourceAgentId = agent.sourceAgent.metadata.sourceId ?? agent.canonicalAgentId;
   if (fallbackStrategy === BUILTIN_CODING_TEAM_MODEL_FALLBACK && agent.teamId === BUILTIN_CODING_TEAM_ID) {
     for (const model of BUILTIN_ROLE_FALLBACKS[sourceAgentId] ?? BUILTIN_ROLE_FALLBACKS[agent.canonicalAgentId] ?? []) {
-      appendUniqueCandidate(candidates, { model, source: "builtin-role-chain", runtime });
+      appendUniqueCandidate(candidates, { model, source: "builtin-role-chain", runtime: runtimeWithOverride });
     }
   } else {
-    for (const model of runtime?.fallbackModels ?? defaultRuntime?.fallbackModels ?? []) {
-      appendUniqueCandidate(candidates, { model, source: "team-manifest", runtime });
+    for (const model of runtimeWithOverride?.fallbackModels ?? defaultRuntimeWithOverride?.fallbackModels ?? []) {
+      appendUniqueCandidate(candidates, { model, source: "team-manifest", runtime: runtimeWithOverride ?? defaultRuntimeWithOverride });
     }
   }
 

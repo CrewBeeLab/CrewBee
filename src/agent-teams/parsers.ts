@@ -86,6 +86,22 @@ function asStringArray(value: unknown, label: string): string[] {
   return value.map((entry, index) => asString(entry, `${label}[${index}]`));
 }
 
+function mapProviderOptions(record: UnknownRecord): Record<string, unknown> | undefined {
+  const options = { ...(asOptionalRecord(record.options) ?? {}) };
+  const thinkingLevel = asOptionalString(record.thinking_level ?? record.thinkingLevel);
+  const reasoningEffort = asOptionalString(record.reasoning_effort ?? record.reasoningEffort);
+
+  if (thinkingLevel) {
+    options.thinkingLevel = thinkingLevel;
+  }
+
+  if (reasoningEffort) {
+    options.reasoningEffort = reasoningEffort;
+  }
+
+  return Object.keys(options).length > 0 ? options : undefined;
+}
+
 function readTextFile(filePath: string): string {
   return readFileSync(filePath, "utf8");
 }
@@ -707,7 +723,7 @@ function mapAgentRuntime(raw: UnknownRecord | undefined): TeamAgentRuntimeMap | 
   return Object.fromEntries(
     Object.entries(raw).map(([agentId, value]) => {
       const record = asRecord(value, `agent_runtime.${agentId}`);
-      const options = asOptionalRecord(record.options);
+      const options = mapProviderOptions(record);
 
       const runtime: AgentRuntimeModelConfig = {
         provider: record.provider !== undefined ? asString(record.provider, `agent_runtime.${agentId}.provider`) : undefined,
@@ -715,7 +731,7 @@ function mapAgentRuntime(raw: UnknownRecord | undefined): TeamAgentRuntimeMap | 
         temperature: record.temperature !== undefined ? Number(record.temperature) : undefined,
         topP: record.top_p !== undefined || record.topP !== undefined ? Number(record.top_p ?? record.topP) : undefined,
         variant: asOptionalString(record.variant),
-        options: options ? { ...options } : undefined,
+        options,
         fallbackModels: record.fallback_models || record.fallbackModels
           ? asStringArray(record.fallback_models ?? record.fallbackModels, `agent_runtime.${agentId}.fallback_models`)
           : undefined,

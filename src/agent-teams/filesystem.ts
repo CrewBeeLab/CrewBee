@@ -45,7 +45,7 @@ export interface ConfiguredTeamModelOverride {
   modelPreset?: string;
   fallback?: string;
   fallbackToHostDefault?: boolean;
-  agents?: Record<string, { model?: string }>;
+  agents?: Record<string, { model?: string; variant?: string; options?: Record<string, unknown> }>;
 }
 
 export interface ConfiguredEmbeddedTeamSource {
@@ -136,6 +136,26 @@ function getOptionalString(value: unknown): string | undefined {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
 }
 
+function getOptionalRecord(value: unknown): Record<string, unknown> | undefined {
+  return typeof value === "object" && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
+}
+
+function createProviderOptionOverrides(raw: Record<string, unknown>): Record<string, unknown> | undefined {
+  const options = { ...(getOptionalRecord(raw.options) ?? {}) };
+  const thinkingLevel = getOptionalString(raw.thinkingLevel ?? raw.thinking_level);
+  const reasoningEffort = getOptionalString(raw.reasoningEffort ?? raw.reasoning_effort);
+
+  if (thinkingLevel) {
+    options.thinkingLevel = thinkingLevel;
+  }
+
+  if (reasoningEffort) {
+    options.reasoningEffort = reasoningEffort;
+  }
+
+  return Object.keys(options).length > 0 ? options : undefined;
+}
+
 function normalizeConfiguredTeamModelOverride(raw: RawConfiguredTeamEntry): ConfiguredTeamModelOverride | undefined {
   const modelPreset = getOptionalString(raw.model_preset ?? raw.modelPreset);
   const fallback = getOptionalString(raw.fallback);
@@ -149,7 +169,13 @@ function normalizeConfiguredTeamModelOverride(raw: RawConfiguredTeamEntry): Conf
           }
 
           const model = getOptionalString(value.model);
-          return [[agentId, { ...(model ? { model } : {}) }]];
+          const variant = getOptionalString(value.variant);
+          const options = createProviderOptionOverrides(value);
+          return [[agentId, {
+            ...(model ? { model } : {}),
+            ...(variant ? { variant } : {}),
+            ...(options ? { options } : {}),
+          }]];
         }),
       )
     : undefined;

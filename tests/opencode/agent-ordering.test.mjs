@@ -378,6 +378,57 @@ test("coding-team unavailable user model falls back through builtin role chain",
   }
 });
 
+test("coding-team crewbee.json agents model override projects variant and provider options", () => {
+  const workspace = mkdtempSync(path.join(os.tmpdir(), "crewbee-coding-model-options-"));
+  const previousConfigDir = process.env.OPENCODE_CONFIG_DIR;
+
+  try {
+    const configRoot = path.join(workspace, ".config", "opencode");
+    process.env.OPENCODE_CONFIG_DIR = configRoot;
+
+    writeFile(path.join(configRoot, "crewbee.json"), createCrewBeeConfig([
+      {
+        id: "coding-team",
+        enabled: true,
+        priority: 0,
+        agents: {
+          "coding-leader": {
+            model: "openai/gpt-5.5",
+            variant: "high",
+            thinkingLevel: "high",
+            reasoningEffort: "high",
+          },
+        },
+      },
+    ]));
+
+    const bootstrap = createOpenCodeBootstrap({
+      teamLibrary: loadDefaultTeamLibrary(workspace),
+      defaults: { defaultMode: "single-executor" },
+    });
+    const leader = bootstrap.projectedAgents.find((agent) => agent.configKey === "coding-leader");
+    const definition = bootstrap.configPatch.agent["coding-leader"];
+
+    assert.ok(leader);
+    assert.equal(leader.resolvedModel?.providerID, "openai");
+    assert.equal(leader.resolvedModel?.modelID, "gpt-5.5");
+    assert.equal(leader.resolvedModel?.variant, "high");
+    assert.equal(leader.resolvedModel?.options?.thinkingLevel, "high");
+    assert.equal(leader.resolvedModel?.options?.reasoningEffort, "high");
+    assert.equal(definition.variant, "high");
+    assert.equal(definition.options?.thinkingLevel, "high");
+    assert.equal(definition.options?.reasoningEffort, "high");
+  } finally {
+    if (previousConfigDir === undefined) {
+      delete process.env.OPENCODE_CONFIG_DIR;
+    } else {
+      process.env.OPENCODE_CONFIG_DIR = previousConfigDir;
+    }
+
+    rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
 test("file-based team agent_runtime fallback_models resolve during projection", () => {
   const workspace = mkdtempSync(path.join(os.tmpdir(), "crewbee-custom-model-fallback-"));
   const previousConfigDir = process.env.OPENCODE_CONFIG_DIR;
@@ -457,6 +508,102 @@ tags:
     assert.equal(leader.resolvedModel?.providerID, "google");
     assert.equal(leader.resolvedModel?.modelID, "gemini-3.1-pro-preview");
     assert.equal(leader.modelResolution.source, "team-manifest");
+  } finally {
+    if (previousConfigDir === undefined) {
+      delete process.env.OPENCODE_CONFIG_DIR;
+    } else {
+      process.env.OPENCODE_CONFIG_DIR = previousConfigDir;
+    }
+
+    rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("file-based team agent_runtime projects variant and provider options", () => {
+  const workspace = mkdtempSync(path.join(os.tmpdir(), "crewbee-custom-model-options-"));
+  const previousConfigDir = process.env.OPENCODE_CONFIG_DIR;
+
+  try {
+    const configRoot = path.join(workspace, ".config", "opencode");
+    const teamDir = path.join(configRoot, "teams", "CustomOptionsTeam");
+    process.env.OPENCODE_CONFIG_DIR = configRoot;
+
+    writeFile(path.join(configRoot, "crewbee.json"), createCrewBeeConfig([
+      { path: "@teams/CustomOptionsTeam", enabled: true, priority: 0 },
+    ]));
+    writeFile(path.join(teamDir, "team.manifest.yaml"), `id: custom-options-team
+version: 1.0.0
+name: CustomOptionsTeam
+description: Test custom model options.
+mission:
+  objective: Test custom model options.
+  success_definition:
+    - Model options project.
+scope:
+  in_scope:
+    - tests
+  out_of_scope:
+    - none
+leader:
+  agent_ref: custom-leader
+  responsibilities:
+    - Lead the team
+members:
+  custom-leader:
+    responsibility: Delivery
+    delegate_when: Always.
+    delegate_mode: direct execution.
+workflow:
+  stages:
+    - intake
+governance:
+  instruction_precedence:
+    - platform rules
+  approval_policy:
+    required_for:
+      - destructive actions
+    allow_assume_for:
+      - low-risk implementation details
+  forbidden_actions:
+    - fabricate evidence
+  quality_floor:
+    required_checks:
+      - diagnostics
+    evidence_required: true
+  working_rules:
+    - leader is the primary interface
+agent_runtime:
+  custom-leader:
+    model: google/antigravity-gemini-3-pro
+    variant: high
+    thinking_level: high
+    reasoning_effort: high
+tags:
+  - tests
+`);
+    writeFile(path.join(teamDir, "team.policy.yaml"), createTeamPolicy());
+    writeFile(
+      path.join(teamDir, "custom-leader.agent.md"),
+      createAgentProfile("custom-leader", "Custom Leader", "user-selectable", "leader", undefined, undefined),
+    );
+
+    const bootstrap = createOpenCodeBootstrap({
+      teamLibrary: loadDefaultTeamLibrary(workspace),
+      defaults: { defaultMode: "single-executor" },
+    });
+    const leader = bootstrap.projectedAgents.find((agent) => agent.teamId === "custom-options-team");
+
+    assert.ok(leader);
+    const definition = bootstrap.configPatch.agent[leader.configKey];
+
+    assert.equal(leader.resolvedModel?.providerID, "google");
+    assert.equal(leader.resolvedModel?.modelID, "antigravity-gemini-3-pro");
+    assert.equal(leader.resolvedModel?.variant, "high");
+    assert.equal(leader.resolvedModel?.options?.thinkingLevel, "high");
+    assert.equal(leader.resolvedModel?.options?.reasoningEffort, "high");
+    assert.equal(definition.variant, "high");
+    assert.equal(definition.options?.thinkingLevel, "high");
+    assert.equal(definition.options?.reasoningEffort, "high");
   } finally {
     if (previousConfigDir === undefined) {
       delete process.env.OPENCODE_CONFIG_DIR;

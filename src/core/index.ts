@@ -49,6 +49,8 @@ export type TeamAgentRuntimeMap = Record<string, AgentRuntimeModelConfig>;
 
 export interface TeamAgentModelOverride {
   model?: string;
+  variant?: string;
+  options?: Record<string, unknown>;
 }
 
 export interface TeamModelConfigOverride {
