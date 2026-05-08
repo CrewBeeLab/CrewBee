@@ -55,7 +55,12 @@ export function createOpenCodePermissionRules(
   agent: ProjectedAgent,
   availableTools?: AvailableToolContext,
 ): OpenCodePermissionRule[] {
-  return mapPermissionRulesWithAvailability(agent.sourceAgent.runtimeConfig.permission, availableTools);
+  const rules = mapPermissionRulesWithAvailability(agent.sourceAgent.runtimeConfig.permission, availableTools)
+    .filter((rule) => rule.permission !== "task");
+
+  rules.push({ permission: "task", action: "deny", pattern: "*" });
+
+  return rules;
 }
 
 export function createOpenCodePermissionConfig(permissionRules: OpenCodePermissionRule[]): OpenCodePermissionConfig {

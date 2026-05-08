@@ -75,6 +75,43 @@ test("CrewBee projects canonical config keys and display names", async () => {
   assert.equal(config.agent["[CodingTeam]leader"], undefined);
 });
 
+test("CrewBee disables host built-in agents while Team agents own execution", async () => {
+  const plugin = await OpenCodeCrewBeePlugin(createPluginInput());
+  const config = { agent: {} };
+
+  await plugin.config?.(config);
+
+  assert.equal(config.agent.build.disable, true);
+  assert.equal(config.agent.plan.disable, true);
+  assert.equal(config.agent.general.disable, true);
+});
+
+test("CrewBee sanitizes native task tool schema so host agents are not advertised", async () => {
+  const plugin = await OpenCodeCrewBeePlugin(createPluginInput());
+  const output = {
+    description: "Delegate to built-ins.\n- general\n- coding-reviewer",
+    parameters: {
+      type: "object",
+      properties: {
+        subagent_type: {
+          type: "string",
+          enum: ["general", "coding-reviewer"],
+          description: "All subagents",
+        },
+      },
+    },
+  };
+
+  await plugin["tool.definition"]?.({ toolID: "task" }, output);
+
+  assert.doesNotMatch(output.description, /CrewBee subagent aliases/);
+  assert.doesNotMatch(output.description, /general/);
+  assert.doesNotMatch(output.description, /coding-reviewer/);
+  assert.match(output.description, /native task tool is disabled/);
+  assert.equal(output.parameters.properties.subagent_type.enum, undefined);
+  assert.match(output.parameters.properties.subagent_type.description, /delegate_task/);
+});
+
 test("CrewBee config hook force-overwrites a foreign default agent", async () => {
   const plugin = await OpenCodeCrewBeePlugin(createPluginInput());
   const config = {
@@ -109,11 +146,14 @@ test("CrewBee removes task from built-in coding leaders that use delegate_task",
   const coordinationLeader = config.agent["coding-coordination-leader"];
   const reviewer = config.agent["coding-reviewer"];
 
-  assert.equal(leader.permission.task, undefined);
+  assert.equal(leader.permission.task["*"], "deny");
+  assert.equal(leader.tools.task, false);
   assert.equal(leader.permission.delegate_task["*"], "allow");
-  assert.equal(coordinationLeader.permission.task, undefined);
+  assert.equal(coordinationLeader.permission.task["*"], "deny");
+  assert.equal(coordinationLeader.tools.task, false);
   assert.equal(coordinationLeader.permission.delegate_task["*"], "allow");
   assert.equal(reviewer.permission.task?.["*"] ?? "deny", "deny");
+  assert.equal(reviewer.tools.task, false);
   assert.equal(reviewer.permission.delegate_task["*"], "deny");
 });
 
@@ -161,7 +201,8 @@ test("CrewBee upgrades principal-advisor prompt and runtime for oracle-style con
 
   const agent = config.agent["coding-principal-advisor"];
 
-  assert.equal(agent.permission.task["*"], "allow");
+  assert.equal(agent.permission.task["*"], "deny");
+  assert.equal(agent.tools.task, false);
   assert.equal(agent.permission.edit["*"], "deny");
   assert.equal(agent.permission.write?.["*"] ?? "deny", "deny");
   assert.equal(agent.permission.bash["*"], "deny");

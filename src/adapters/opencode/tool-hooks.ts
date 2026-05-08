@@ -1,29 +1,37 @@
 import type { OpenCodeAgentAliasEntry } from "./projection";
 import {
-  createProjectedAgentTaskAliasHelpLines,
   resolveProjectedAgentAlias,
   type OpenCodeAgentConfig,
 } from "./projection";
 import { parseDelegateTaskResult, stringifyDelegateTaskResult } from "./delegation/tool-result";
 import type { DelegateTaskResult } from "./delegation/types";
 
-function deduplicateTaskDescription(description: string): string {
-  const seen = new Set<string>();
-  return description
-    .split("\n")
-    .filter((line) => {
-      if (!line.startsWith("- ")) {
-        return true;
-      }
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
-      if (seen.has(line)) {
-        return false;
-      }
+function sanitizeNativeTaskParameters(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((entry) => sanitizeNativeTaskParameters(entry));
+  }
 
-      seen.add(line);
-      return true;
-    })
-    .join("\n");
+  if (!isRecord(value)) {
+    return value;
+  }
+
+  const next = Object.fromEntries(
+    Object.entries(value).map(([key, entry]) => [key, sanitizeNativeTaskParameters(entry)]),
+  );
+  const properties = next.properties;
+
+  if (isRecord(properties) && isRecord(properties.subagent_type)) {
+    properties.subagent_type = {
+      type: "string",
+      description: "Disabled for CrewBee Agent Team sessions. Use delegate_task with an agent listed in the current Agent Profile collaboration section.",
+    };
+  }
+
+  return next;
 }
 
 function buildRetryGuidance(result: DelegateTaskResult): string | undefined {
@@ -93,26 +101,16 @@ function withRetryGuidance(result: DelegateTaskResult): DelegateTaskResult {
   };
 }
 
-export function createToolDefinitionHook(getAgents: () => OpenCodeAgentConfig[]) {
+export function createToolDefinitionHook(_getAgents: () => OpenCodeAgentConfig[]) {
   return async (input: { toolID: string }, output: { description: string; parameters: unknown }) => {
     if (input.toolID !== "task") {
       return;
     }
 
-    const helpLines = createProjectedAgentTaskAliasHelpLines(getAgents());
-    if (helpLines.length === 0) {
-      return;
-    }
-
-    output.description = deduplicateTaskDescription(output.description);
     output.description = [
-      output.description,
-      "",
-      "CrewBee subagent aliases:",
-      ...helpLines,
-      "",
-      "When delegating inside CrewBee, prefer the CrewBee source-agent alias shown on each line.",
+      "CrewBee Agent Team boundary: this native task tool is disabled for CrewBee Team agents. Use delegate_task, and only target agents listed in the current Agent Profile collaboration section.",
     ].join("\n");
+    output.parameters = sanitizeNativeTaskParameters(output.parameters);
   };
 }
 

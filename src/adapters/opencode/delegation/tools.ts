@@ -190,6 +190,19 @@ function launchBackground(input: {
   });
 }
 
+function findBoundSourceAgent(input: {
+  agents: OpenCodeAgentConfig[];
+  binding: SessionRuntimeBinding | undefined;
+}): OpenCodeAgentConfig | undefined {
+  if (!input.binding) {
+    return undefined;
+  }
+
+  return input.agents.find((agent) => {
+    return agent.teamId === input.binding?.teamId && agent.canonicalAgentId === input.binding.selectedAgentId;
+  });
+}
+
 export function createDelegateTools(input: CreateDelegateToolsInput) {
   const delegate_task = createToolDefinition({
     description: "Delegate work to a CrewBee team member.",
@@ -215,16 +228,19 @@ export function createDelegateTools(input: CreateDelegateToolsInput) {
         return stringifyDelegateTaskResult(createFailedResult(ctx.sessionID, "unsupported_mode", "Use mode=foreground or mode=background."));
       }
 
+      const projectedAgents = input.getProjectedAgents();
+      const binding = input.bindings.get(ctx.sessionID);
+      const sourceAgent = findBoundSourceAgent({ agents: projectedAgents, binding });
       const target = resolveDelegateAgent({
-        agents: input.getProjectedAgents(),
+        agents: projectedAgents,
         aliasIndex: input.getAliasIndex(),
         agent: args.agent,
+        sourceAgent,
       });
       if (!target) {
-        return stringifyDelegateTaskResult(createFailedResult(ctx.sessionID, "unknown_agent", `Unknown CrewBee agent: ${args.agent}`));
+        return stringifyDelegateTaskResult(createFailedResult(ctx.sessionID, "unknown_agent", `Unknown or disallowed CrewBee delegate target: ${args.agent}`));
       }
 
-      const binding = input.bindings.get(ctx.sessionID);
       if (isSelfDelegate(binding, target.canonicalAgentId)) {
         return stringifyDelegateTaskResult(createFailedResult(ctx.sessionID, "self_delegate_forbidden", "Do not delegate a CrewBee session back to the same active agent."));
       }

@@ -123,6 +123,28 @@ test("delegate_task foreground returns structured result with resume hint", asyn
   assert.match(result.resume_hint, /delegate_task\(session_id=/);
 });
 
+test("delegate_task rejects agents outside the active Team member collaboration list", async () => {
+  const fixture = createPluginInput();
+  const plugin = await OpenCodeCrewBeePlugin(fixture.input);
+  const config = { agent: {} };
+
+  await plugin.config?.(config);
+  await plugin["chat.message"]?.(
+    { sessionID: "ses-parent", agent: "coding-leader" },
+    { message: { role: "user", parts: [] }, parts: [] },
+  );
+
+  const raw = await plugin.tool.delegate_task.execute(
+    { agent: "coding-coordination-leader", prompt: "Coordinate this instead.", mode: "foreground" },
+    createToolContext(fixture.worktree),
+  );
+  const result = parseJson(raw);
+
+  assert.equal(result.status, "failed");
+  assert.equal(result.error_code, "unknown_agent");
+  assert.match(result.message, /disallowed/);
+});
+
 test("delegate_task background is finalized from session events and appears in compaction context", async () => {
   const fixture = createPluginInput();
   const plugin = await OpenCodeCrewBeePlugin(fixture.input);

@@ -34,6 +34,11 @@ function createCollaborationPromptValue(agent: ProjectedAgent): unknown {
   return {
     defaultConsults: agent.sourceAgent.collaboration.defaultConsults.map(mapBinding),
     defaultHandoffs: agent.sourceAgent.collaboration.defaultHandoffs.map(mapBinding),
+    delegationBoundary: [
+      "Only delegate to agents explicitly listed in default_consults or default_handoffs for this Agent Profile.",
+      "Do not delegate to host-provided agents, OpenCode built-in agents, agents from other Teams, or agents not listed here.",
+      "Use CrewBee delegate_task for delegation; do not use the host task tool for CrewBee Team delegation.",
+    ],
   };
 }
 

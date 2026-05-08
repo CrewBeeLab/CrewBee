@@ -56,6 +56,18 @@ export interface OpenCodeAgentMetadata {
   exposure: ProjectedAgent["exposure"];
 }
 
+export interface OpenCodeDelegationTarget {
+  configKey: string;
+  canonicalAgentId: string;
+  sourceAgentId?: string;
+  description: string;
+  via: "consult" | "handoff";
+}
+
+export interface OpenCodeDelegationPolicy {
+  allowedTargets: OpenCodeDelegationTarget[];
+}
+
 export interface OpenCodeAgentConfig {
   configKey: string;
   teamId: string;
@@ -69,6 +81,7 @@ export interface OpenCodeAgentConfig {
   resolvedModel?: OpenCodeResolvedModelConfig;
   modelResolution: ModelResolutionTrace;
   resolvedTooling: OpenCodeResolvedToolConfig;
+  delegation: OpenCodeDelegationPolicy;
   metadata: OpenCodeAgentMetadata;
 }
 
@@ -77,6 +90,8 @@ export interface OpenCodeAgentDefinition {
   description: string;
   mode: OpenCodeAgentMode;
   hidden?: boolean;
+  disable?: boolean;
+  tools?: Record<string, boolean>;
   model?: string;
   temperature?: number;
   top_p?: number;
@@ -89,6 +104,7 @@ export interface OpenCodeAgentDefinition {
 export interface OpenCodeAgentConfigPatch {
   agent: Record<string, OpenCodeAgentDefinition>;
   defaultAgent?: string;
+  forceUpdateAgentKeys?: string[];
 }
 
 export interface OpenCodeAgentSelectionInput {
@@ -120,6 +136,50 @@ function sanitizeSegment(value: string): string {
 
 export function createOpenCodeConfigKey(agent: ProjectedAgent): string {
   return agent.canonicalAgentId;
+}
+
+function resolveTeamAgentByRef(agent: ProjectedAgent, agentRef: string): ProjectedAgent["sourceAgent"] | undefined {
+  return agent.sourceTeam.agents.find((candidate) => {
+    return candidate.metadata.id === agentRef || candidate.canonicalAgentId === agentRef;
+  });
+}
+
+function createDelegationPolicy(agent: ProjectedAgent): OpenCodeDelegationPolicy {
+  const createTarget = (
+    binding: ProjectedAgent["sourceAgent"]["collaboration"]["defaultConsults"][number],
+    via: OpenCodeDelegationTarget["via"],
+  ): OpenCodeDelegationTarget | undefined => {
+    const agentRef = typeof binding === "string" ? binding : binding.agentRef;
+    const targetAgent = resolveTeamAgentByRef(agent, agentRef);
+    if (!targetAgent) {
+      return undefined;
+    }
+
+    const canonicalAgentId = targetAgent.canonicalAgentId ?? targetAgent.metadata.id;
+    const member = agent.sourceTeam.manifest.members[targetAgent.metadata.id] ?? agent.sourceTeam.manifest.members[agentRef];
+
+    return {
+      configKey: canonicalAgentId,
+      canonicalAgentId,
+      sourceAgentId: targetAgent.metadata.id,
+      description: member?.responsibility ?? targetAgent.responsibilityCore.description,
+      via,
+    };
+  };
+
+  const targets = [
+    ...agent.sourceAgent.collaboration.defaultConsults.map((binding) => createTarget(binding, "consult")),
+    ...agent.sourceAgent.collaboration.defaultHandoffs.map((binding) => createTarget(binding, "handoff")),
+  ].filter((target): target is OpenCodeDelegationTarget => Boolean(target));
+  const deduped = new Map<string, OpenCodeDelegationTarget>();
+
+  for (const target of targets) {
+    if (!deduped.has(target.configKey)) {
+      deduped.set(target.configKey, target);
+    }
+  }
+
+  return { allowedTargets: [...deduped.values()] };
 }
 
 export function createOpenCodeAgentConfig(
@@ -167,6 +227,7 @@ export function createOpenCodeAgentConfig(
       availabilitySource: availableToolContext.source,
       availabilityIsExplicit: availableToolContext.hasExplicitTools,
     },
+    delegation: createDelegationPolicy(agent),
     metadata: {
       teamId: agent.teamId,
       teamName: agent.teamName,
@@ -191,6 +252,7 @@ export function createOpenCodeAgentDefinition(agent: OpenCodeAgentConfig): OpenC
     description: agent.description,
     mode: agent.mode,
     hidden: agent.hidden || undefined,
+    tools: { task: false },
     model: agent.resolvedModel
       ? `${agent.resolvedModel.providerID}/${agent.resolvedModel.modelID}`
       : undefined,
@@ -217,11 +279,45 @@ export function createOpenCodeAgentConfigPatch(input: {
   agents: OpenCodeAgentConfig[];
   defaultAgentConfigKey?: string;
 }): OpenCodeAgentConfigPatch {
+  const disabledHostAgents: Record<string, OpenCodeAgentDefinition> = {
+    build: {
+      name: "build",
+      description: "Disabled by CrewBee while a CrewBee Agent Team owns the session.",
+      mode: "subagent",
+      disable: true,
+      tools: {},
+      prompt: "",
+      permission: {},
+    },
+    plan: {
+      name: "plan",
+      description: "Disabled by CrewBee while a CrewBee Agent Team owns the session.",
+      mode: "subagent",
+      disable: true,
+      tools: {},
+      prompt: "",
+      permission: {},
+    },
+    general: {
+      name: "general",
+      description: "Disabled by CrewBee while a CrewBee Agent Team owns the session.",
+      mode: "subagent",
+      disable: true,
+      tools: {},
+      prompt: "",
+      permission: {},
+    },
+  };
+
   return {
-    agent: Object.fromEntries(
-      input.agents.map((agent) => [agent.configKey, createOpenCodeAgentDefinition(agent)]),
-    ),
+    agent: {
+      ...Object.fromEntries(
+        input.agents.map((agent) => [agent.configKey, createOpenCodeAgentDefinition(agent)]),
+      ),
+      ...disabledHostAgents,
+    },
     defaultAgent: input.defaultAgentConfigKey,
+    forceUpdateAgentKeys: Object.keys(disabledHostAgents),
   };
 }
 

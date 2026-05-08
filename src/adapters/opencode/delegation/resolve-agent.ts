@@ -11,11 +11,12 @@ export function resolveDelegateAgent(input: {
   agents: OpenCodeAgentConfig[];
   aliasIndex: Map<string, OpenCodeAgentAliasEntry>;
   agent: string;
+  sourceAgent?: OpenCodeAgentConfig;
 }): ResolvedDelegateAgent | undefined {
   const bySelection = resolveProjectedAgentSelection(input.agents, {
     configKey: input.agent,
   });
-  if (bySelection) {
+  if (bySelection && isAllowedDelegateTarget(input.sourceAgent, bySelection)) {
     return {
       agent: bySelection,
       configKey: bySelection.configKey,
@@ -24,7 +25,7 @@ export function resolveDelegateAgent(input: {
   }
 
   const byAlias = resolveProjectedAgentAlias(input.aliasIndex, input.agent);
-  if (!byAlias) {
+  if (!byAlias || !isAllowedDelegateTarget(input.sourceAgent, byAlias.agent)) {
     return undefined;
   }
 
@@ -33,6 +34,14 @@ export function resolveDelegateAgent(input: {
     configKey: byAlias.agent.configKey,
     canonicalAgentId: byAlias.agent.canonicalAgentId,
   };
+}
+
+function isAllowedDelegateTarget(sourceAgent: OpenCodeAgentConfig | undefined, targetAgent: OpenCodeAgentConfig): boolean {
+  if (!sourceAgent) {
+    return false;
+  }
+
+  return sourceAgent.delegation.allowedTargets.some((target) => target.configKey === targetAgent.configKey);
 }
 
 export function isSelfDelegate(binding: SessionRuntimeBinding | undefined, canonicalAgentId: string): boolean {
