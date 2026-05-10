@@ -506,7 +506,7 @@ package.json
 
 注册：
 
-* `delegate_task`
+* `task`（CrewBee 面向 OpenCode 的委派实现）
 * `delegate_status`
 * `delegate_cancel`
 

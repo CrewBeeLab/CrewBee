@@ -95,13 +95,13 @@ function createPluginInput() {
 
 async function runAfterHook(plugin, output) {
   await plugin["tool.execute.after"]?.(
-    { tool: "delegate_task", sessionID: "ses-parent", callID: "call-1" },
+    { tool: "task", sessionID: "ses-parent", callID: "call-1" },
     output,
   );
   return parseJson(output.output);
 }
 
-test("delegate_task foreground returns structured result with resume hint", async () => {
+test("task foreground returns structured result with resume hint", async () => {
   const fixture = createPluginInput();
   const plugin = await OpenCodeCrewBeePlugin(fixture.input);
   const config = { agent: {} };
@@ -112,18 +112,21 @@ test("delegate_task foreground returns structured result with resume hint", asyn
     { message: { role: "user", parts: [] }, parts: [] },
   );
 
-  const raw = await plugin.tool.delegate_task.execute(
-    { agent: "coding-reviewer", prompt: "Review the current implementation.", mode: "foreground" },
+  const raw = await plugin.tool.task.execute(
+    { subagent_type: "coding-reviewer", prompt: "Review the current implementation." },
     createToolContext(fixture.worktree),
   );
-  const result = await runAfterHook(plugin, { title: "delegate_task", output: raw, metadata: {} });
+  const output = { title: "task", output: raw, metadata: {} };
+  const result = await runAfterHook(plugin, output);
 
   assert.equal(result.status, "completed");
   assert.match(result.message, /done by coding-reviewer/);
-  assert.match(result.resume_hint, /delegate_task\(session_id=/);
+  assert.match(result.resume_hint, /task\(task_id=/);
+  assert.equal(output.metadata.sessionId, result.session_id);
+  assert.equal(output.metadata.taskId, result.session_id);
 });
 
-test("delegate_task rejects agents outside the active Team member collaboration list", async () => {
+test("task rejects agents outside the active Team member collaboration list", async () => {
   const fixture = createPluginInput();
   const plugin = await OpenCodeCrewBeePlugin(fixture.input);
   const config = { agent: {} };
@@ -134,8 +137,8 @@ test("delegate_task rejects agents outside the active Team member collaboration 
     { message: { role: "user", parts: [] }, parts: [] },
   );
 
-  const raw = await plugin.tool.delegate_task.execute(
-    { agent: "coding-coordination-leader", prompt: "Coordinate this instead.", mode: "foreground" },
+  const raw = await plugin.tool.task.execute(
+    { subagent_type: "coding-coordination-leader", prompt: "Coordinate this instead." },
     createToolContext(fixture.worktree),
   );
   const result = parseJson(raw);
@@ -145,7 +148,7 @@ test("delegate_task rejects agents outside the active Team member collaboration 
   assert.match(result.message, /disallowed/);
 });
 
-test("delegate_task background is finalized from session events and appears in compaction context", async () => {
+test("task background is finalized from session events and appears in compaction context", async () => {
   const fixture = createPluginInput();
   const plugin = await OpenCodeCrewBeePlugin(fixture.input);
   const config = { agent: {} };
@@ -156,14 +159,18 @@ test("delegate_task background is finalized from session events and appears in c
     { message: { role: "user", parts: [] }, parts: [] },
   );
 
-  const raw = await plugin.tool.delegate_task.execute(
-    { agent: "coding-reviewer", prompt: "Review the current implementation.", mode: "background" },
+  const raw = await plugin.tool.task.execute(
+    { subagent_type: "coding-reviewer", prompt: "Review the current implementation.", run_in_background: true },
     createToolContext(fixture.worktree),
   );
-  const launched = parseJson(raw);
+  const output = { title: "task", output: raw, metadata: {} };
+  const launched = await runAfterHook(plugin, output);
 
   assert.equal(launched.status, "running");
   assert.ok(launched.task_ref);
+  assert.equal(output.metadata.sessionId, launched.session_id);
+  assert.equal(output.metadata.taskId, launched.session_id);
+  assert.equal(output.metadata.taskRef, launched.task_ref);
 
   await plugin.event?.({ event: { type: "session.status", properties: { sessionID: launched.session_id, status: { type: "busy" } } } });
   await plugin.event?.({ event: { type: "session.idle", properties: { sessionID: launched.session_id } } });
@@ -182,7 +189,7 @@ test("delegate_task background is finalized from session events and appears in c
   assert.match(compacting.context.join("\n"), new RegExp(launched.session_id));
 });
 
-test("delegate_task foreground sessions also appear in compaction context", async () => {
+test("task foreground sessions also appear in compaction context", async () => {
   const fixture = createPluginInput();
   const plugin = await OpenCodeCrewBeePlugin(fixture.input);
   const config = { agent: {} };
@@ -193,8 +200,8 @@ test("delegate_task foreground sessions also appear in compaction context", asyn
     { message: { role: "user", parts: [] }, parts: [] },
   );
 
-  const raw = await plugin.tool.delegate_task.execute(
-    { agent: "coding-reviewer", prompt: "Review the current implementation.", mode: "foreground" },
+  const raw = await plugin.tool.task.execute(
+    { subagent_type: "coding-reviewer", prompt: "Review the current implementation." },
     createToolContext(fixture.worktree),
   );
   const result = parseJson(raw);
@@ -218,8 +225,8 @@ test("delegate_cancel marks a background delegation as cancelled", async () => {
     { message: { role: "user", parts: [] }, parts: [] },
   );
 
-  const launched = parseJson(await plugin.tool.delegate_task.execute(
-    { agent: "coding-reviewer", prompt: "Review the current implementation.", mode: "background" },
+  const launched = parseJson(await plugin.tool.task.execute(
+    { subagent_type: "coding-reviewer", prompt: "Review the current implementation.", run_in_background: true },
     createToolContext(fixture.worktree),
   ));
   const cancelled = parseJson(await plugin.tool.delegate_cancel.execute({ task_ref: launched.task_ref }, createToolContext(fixture.worktree)));
@@ -240,14 +247,14 @@ test("background resume updates the latest task for a reused delegated session",
     { message: { role: "user", parts: [] }, parts: [] },
   );
 
-  const first = parseJson(await plugin.tool.delegate_task.execute(
-    { agent: "coding-reviewer", prompt: "First review pass.", mode: "background" },
+  const first = parseJson(await plugin.tool.task.execute(
+    { subagent_type: "coding-reviewer", prompt: "First review pass.", run_in_background: true },
     createToolContext(fixture.worktree),
   ));
   await plugin.event?.({ event: { type: "session.idle", properties: { sessionID: first.session_id } } });
 
-  const second = parseJson(await plugin.tool.delegate_task.execute(
-    { agent: "coding-reviewer", prompt: "Second review pass.", mode: "background", session_id: first.session_id },
+  const second = parseJson(await plugin.tool.task.execute(
+    { subagent_type: "coding-reviewer", prompt: "Second review pass.", run_in_background: true, task_id: first.session_id },
     createToolContext(fixture.worktree),
   ));
   await plugin.event?.({ event: { type: "session.status", properties: { sessionID: second.session_id, status: { type: "busy" } } } });
@@ -257,7 +264,7 @@ test("background resume updates the latest task for a reused delegated session",
   assert.equal(status.status, "completed");
 });
 
-test("delegate_task failure adds retry guidance", async () => {
+test("task failure adds retry guidance", async () => {
   const fixture = createPluginInput();
   const plugin = await OpenCodeCrewBeePlugin(fixture.input);
   const config = { agent: {} };
@@ -268,11 +275,11 @@ test("delegate_task failure adds retry guidance", async () => {
     { message: { role: "user", parts: [] }, parts: [] },
   );
 
-  const raw = await plugin.tool.delegate_task.execute(
-    { agent: "missing-agent", prompt: "Review the current implementation.", mode: "foreground" },
+  const raw = await plugin.tool.task.execute(
+    { subagent_type: "missing-agent", prompt: "Review the current implementation." },
     createToolContext(fixture.worktree),
   );
-  const result = await runAfterHook(plugin, { title: "delegate_task", output: raw, metadata: {} });
+  const result = await runAfterHook(plugin, { title: "task", output: raw, metadata: {} });
 
   assert.equal(result.status, "failed");
   assert.equal(result.error_code, "unknown_agent");
@@ -290,13 +297,13 @@ test("delegated subagents cannot delegate again", async () => {
     { message: { role: "user", parts: [] }, parts: [] },
   );
 
-  const first = parseJson(await plugin.tool.delegate_task.execute(
-    { agent: "coding-reviewer", prompt: "Review the current implementation.", mode: "foreground" },
+  const first = parseJson(await plugin.tool.task.execute(
+    { subagent_type: "coding-reviewer", prompt: "Review the current implementation." },
     createToolContext(fixture.worktree),
   ));
 
-  const nestedRaw = await plugin.tool.delegate_task.execute(
-    { agent: "coding-principal-advisor", prompt: "Escalate this review.", mode: "foreground" },
+  const nestedRaw = await plugin.tool.task.execute(
+    { subagent_type: "coding-principal-advisor", prompt: "Escalate this review." },
     createToolContext(fixture.worktree, first.session_id),
   );
   const nested = parseJson(nestedRaw);

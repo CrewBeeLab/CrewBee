@@ -208,7 +208,11 @@ export function createOpenCodeAgentConfig(
     hidden: agent.exposure !== "user-selectable",
     description: agent.description,
     prompt: createOpenCodeAgentPrompt(agent, requestedTools),
-    permission: createOpenCodePermissionRules(agent, availableToolContext),
+    permission: createOpenCodePermissionRules(
+      agent,
+      availableToolContext,
+      createDelegationPolicy(agent).allowedTargets.map((target) => target.configKey),
+    ),
     runtimeConfig: {
       requestedTools,
       permission: runtimeConfig.permission,
@@ -252,7 +256,6 @@ export function createOpenCodeAgentDefinition(agent: OpenCodeAgentConfig): OpenC
     description: agent.description,
     mode: agent.mode,
     hidden: agent.hidden || undefined,
-    tools: { task: false },
     model: agent.resolvedModel
       ? `${agent.resolvedModel.providerID}/${agent.resolvedModel.modelID}`
       : undefined,
@@ -300,6 +303,24 @@ export function createOpenCodeAgentConfigPatch(input: {
     },
     general: {
       name: "general",
+      description: "Disabled by CrewBee while a CrewBee Agent Team owns the session.",
+      mode: "subagent",
+      disable: true,
+      tools: {},
+      prompt: "",
+      permission: {},
+    },
+    explore: {
+      name: "explore",
+      description: "Disabled by CrewBee while a CrewBee Agent Team owns the session.",
+      mode: "subagent",
+      disable: true,
+      tools: {},
+      prompt: "",
+      permission: {},
+    },
+    scout: {
+      name: "scout",
       description: "Disabled by CrewBee while a CrewBee Agent Team owns the session.",
       mode: "subagent",
       disable: true,

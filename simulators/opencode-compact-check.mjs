@@ -202,12 +202,12 @@ await plugin["chat.message"]?.(
   { message: { role: "user", parts: [] }, parts: [] },
 )
 
-const foreground = parseJson(await plugin.tool.delegate_task.execute(
-  { agent: "coding-reviewer", prompt: "Review the current implementation.", mode: "foreground" },
+const foreground = parseJson(await plugin.tool.task.execute(
+  { subagent_type: "coding-reviewer", prompt: "Review the current implementation." },
   createToolContext("ses-parent"),
 ))
-const background = parseJson(await plugin.tool.delegate_task.execute(
-  { agent: "coding-reviewer", prompt: "Review the current implementation.", mode: "background" },
+const background = parseJson(await plugin.tool.task.execute(
+  { subagent_type: "coding-reviewer", prompt: "Review the current implementation.", run_in_background: true },
   createToolContext("ses-parent"),
 ))
 

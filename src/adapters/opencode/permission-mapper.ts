@@ -18,6 +18,7 @@ const TOOL_MAP: Record<string, string | undefined> = {
   patch: "edit",
   multiedit: "edit",
   lsp_diagnostics: "lsp",
+  delegate_task: "task",
   look_at: undefined,
 };
 
@@ -54,11 +55,18 @@ function mapPermissionRulesWithAvailability(
 export function createOpenCodePermissionRules(
   agent: ProjectedAgent,
   availableTools?: AvailableToolContext,
+  allowedTaskTargets: readonly string[] = [],
 ): OpenCodePermissionRule[] {
-  const rules = mapPermissionRulesWithAvailability(agent.sourceAgent.runtimeConfig.permission, availableTools)
-    .filter((rule) => rule.permission !== "task");
+  const mappedRules = mapPermissionRulesWithAvailability(agent.sourceAgent.runtimeConfig.permission, availableTools);
+  const rules = mappedRules.filter((rule) => rule.permission !== "task");
+  const taskAllowed = mappedRules.some((rule) => rule.permission === "task" && rule.action !== "deny");
 
   rules.push({ permission: "task", action: "deny", pattern: "*" });
+  if (taskAllowed) {
+    for (const target of allowedTaskTargets) {
+      rules.push({ permission: "task", action: "allow", pattern: target });
+    }
+  }
 
   return rules;
 }

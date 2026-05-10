@@ -12,12 +12,12 @@ export interface CrewBeePluginToolDefinition {
 }
 
 const CREWBEE_PLUGIN_TOOLS: Record<string, CrewBeePluginToolDefinition> = {
-  delegate_task: {
-    id: "delegate_task",
+  task: {
+    id: "task",
     source: "crewbee-plugin",
     status: "implemented",
     visibility: "agent-addressable",
-    description: "Delegate work to a CrewBee team member with foreground or background execution.",
+    description: "Delegate work to a CrewBee team member through the OpenCode-compatible task tool.",
     hostTargets: ["opencode"],
   },
   delegate_status: {

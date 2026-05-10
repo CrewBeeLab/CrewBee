@@ -515,7 +515,7 @@ Reads the currently selected agent and establishes a CrewBee session binding.
 
 Registers:
 
-* `delegate_task`
+* `task` (CrewBee delegate task implementation for OpenCode)
 * `delegate_status`
 * `delegate_cancel`
 

@@ -69,7 +69,7 @@ export function createCodingExecutorAgent(): AgentProfileSpec {
         ],
         outOfScope: [
           "多代理实现类委派",
-          "task tool / delegate_task 类编排",
+          "task tool 类编排",
           "纯规划工作",
           "未经明确请求的提交",
           "用类型压制、跳过验证或删除测试来伪造完成",
@@ -131,7 +131,7 @@ export function createCodingExecutorAgent(): AgentProfileSpec {
       },
       guardrails: {
         critical: [
-          "禁止 task tool / delegate_task 类实现编排。",
+          "禁止 task tool 类实现编排。",
           "研究可以借助外部角色，执行不可以外包。",
           "多步骤任务没有 todo = 未完成。",
           "没有验证证据 = 未完成。",

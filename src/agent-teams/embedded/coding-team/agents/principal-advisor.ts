@@ -103,7 +103,6 @@ export function createPrincipalAdvisorAgent(): AgentProfileSpec {
           { permission: "webfetch", pattern: "*", action: "allow" },
           { permission: "websearch", pattern: "*", action: "allow" },
           { permission: "task", pattern: "*", action: "allow" },
-          { permission: "delegate_task", pattern: "*", action: "deny" },
           { permission: "delegate_status", pattern: "*", action: "deny" },
           { permission: "delegate_cancel", pattern: "*", action: "deny" },
           { permission: "edit", pattern: "*", action: "deny" },
