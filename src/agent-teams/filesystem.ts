@@ -7,7 +7,6 @@ import { resolveOpenCodeConfigRoot } from "../install/install-root";
 
 import type { TeamValidationIssue } from "./types";
 import {
-  BUILTIN_CODING_TEAM_AGENT_MODELS,
   BUILTIN_CODING_TEAM_FALLBACK_TO_HOST_DEFAULT,
   BUILTIN_CODING_TEAM_ID,
   BUILTIN_CODING_TEAM_MODEL_FALLBACK,
@@ -45,7 +44,7 @@ export interface ConfiguredTeamModelOverride {
   modelPreset?: string;
   fallback?: string;
   fallbackToHostDefault?: boolean;
-  agents?: Record<string, { model?: string; variant?: string; options?: Record<string, unknown> }>;
+  agents?: Record<string, { model?: string; variant?: string; options?: Record<string, unknown>; fallbackModels?: string[]; strict?: boolean }>;
 }
 
 export interface ConfiguredEmbeddedTeamSource {
@@ -128,6 +127,15 @@ function getOptionalBoolean(value: unknown, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
 }
 
+function getOptionalStringArray(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  const entries = value.filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0);
+  return entries.length > 0 ? entries : undefined;
+}
+
 function getOptionalPriority(value: unknown, fallback: number): number {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
@@ -171,10 +179,15 @@ function normalizeConfiguredTeamModelOverride(raw: RawConfiguredTeamEntry): Conf
           const model = getOptionalString(value.model);
           const variant = getOptionalString(value.variant);
           const options = createProviderOptionOverrides(value);
+          const fallbackModels = getOptionalStringArray(value.fallback_models ?? value.fallbackModels);
+          const strictValue = value.strict;
+          const strict = typeof strictValue === "boolean" ? strictValue : undefined;
           return [[agentId, {
             ...(model ? { model } : {}),
             ...(variant ? { variant } : {}),
             ...(options ? { options } : {}),
+            ...(fallbackModels ? { fallbackModels } : {}),
+            ...(strict !== undefined ? { strict } : {}),
           }]];
         }),
       )
@@ -219,9 +232,6 @@ function createDefaultCodingTeamConfigEntry(): Record<string, unknown> {
     model_preset: BUILTIN_CODING_TEAM_MODEL_PRESET,
     fallback: BUILTIN_CODING_TEAM_MODEL_FALLBACK,
     fallback_to_host_default: BUILTIN_CODING_TEAM_FALLBACK_TO_HOST_DEFAULT,
-    agents: Object.fromEntries(
-      Object.entries(BUILTIN_CODING_TEAM_AGENT_MODELS).map(([agentId, model]) => [agentId, { model }]),
-    ),
   };
 }
 

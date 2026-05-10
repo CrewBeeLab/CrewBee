@@ -523,6 +523,38 @@ package.json
 * Active Owner
 * Mode
 
+### 模型解析与 fallback
+
+CrewBee 的模型策略以可靠交付为第一原则：内置 Coding Team 的推荐模型不是硬依赖，除非用户显式设置 `strict: true`。
+
+在投影 OpenCode agent config 时，CrewBee 会通过插件 client 读取 OpenCode 当前配置的 provider/model registry，并把它作为可用性过滤依据：
+
+* 用户 `strict: true` model：原样投影；失败视为用户显式配置负责
+* 用户非 strict model：作为 primary；不可用时继续尝试 fallback candidates
+* 内置推荐模型：只有出现在 OpenCode provider/model registry 中才投影
+* registry 不可得：CrewBee 不假设内置推荐模型可用，而是通过不写 `model` 回退到 OpenCode host default
+
+在实际执行 delegated `task(...)` 时，如果非 strict model 触发 model-not-found，CrewBee 会自动重试一次不带 model 的请求，让 OpenCode 使用 host default。Strict model 不会被自动重试。
+
+示例覆盖：
+
+```jsonc
+{
+  "teams": [
+    {
+      "id": "coding-team",
+      "agents": {
+        "reviewer": {
+          "model": "anthropic/claude-opus-4-7",
+          "strict": false,
+          "fallback_models": ["openai/gpt-5.5"]
+        }
+      }
+    }
+  ]
+}
+```
+
 ---
 
 ## 内置 Coding Team 的设计思想

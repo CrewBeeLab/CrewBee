@@ -43,6 +43,7 @@ export interface AgentRuntimeModelConfig {
   options?: Record<string, unknown>;
   fallbackModels?: string[];
   fallbackToHostDefault?: boolean;
+  strict?: boolean;
 }
 
 export type TeamAgentRuntimeMap = Record<string, AgentRuntimeModelConfig>;
@@ -51,6 +52,8 @@ export interface TeamAgentModelOverride {
   model?: string;
   variant?: string;
   options?: Record<string, unknown>;
+  fallbackModels?: string[];
+  strict?: boolean;
 }
 
 export interface TeamModelConfigOverride {

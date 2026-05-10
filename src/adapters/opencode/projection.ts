@@ -37,6 +37,7 @@ export interface OpenCodeResolvedModelConfig {
   variant?: string;
   options?: Record<string, unknown>;
   source: "crewbee-json" | "team-manifest" | "team-manifest-default" | "builtin-role-chain";
+  strict?: boolean;
 }
 
 export interface OpenCodeResolvedToolConfig {

@@ -16,6 +16,7 @@ export function resolveDelegateModel(target: OpenCodeAgentConfig, fallback?: Del
     return {
       providerID: target.resolvedModel.providerID,
       modelID: target.resolvedModel.modelID,
+      strict: target.resolvedModel.strict,
     };
   }
 

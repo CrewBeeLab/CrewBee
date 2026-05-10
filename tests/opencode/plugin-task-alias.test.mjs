@@ -5,12 +5,26 @@ import { createChatMessageHook, createOpenCodeBootstrap } from "../../dist/src/a
 import { OpenCodeCrewBeePlugin } from "../../dist/src/adapters/opencode/plugin.js";
 import { loadDefaultTeamLibrary } from "../../dist/src/agent-teams/index.js";
 
-function createPluginInput() {
+function createPluginInput(options = {}) {
   return {
     client: {
       app: {
         log: async () => {},
       },
+      config: options.availableModels
+        ? {
+          providers: async () => ({
+            providers: Object.values(options.availableModels.reduce((acc, model) => {
+              const separator = model.indexOf("/");
+              const providerID = model.slice(0, separator);
+              const modelID = model.slice(separator + 1);
+              acc[providerID] ??= { id: providerID, models: {} };
+              acc[providerID].models[modelID] = { id: modelID, name: modelID };
+              return acc;
+            }, {})),
+          }),
+        }
+        : undefined,
     },
     project: {
       id: "test-project",
@@ -131,6 +145,17 @@ test("CrewBee projects CodingTeam executor edit/write permissions as allow by de
   assert.equal(config.agent["coding-executor"].permission.bash["*"], "allow");
   assert.equal(config.agent["coding-executor"].permission.edit["*"], "allow");
   assert.equal(config.agent["coding-coordination-leader"].permission.bash["*"], "allow");
+});
+
+test("CrewBee reads OpenCode configured provider models before projecting agent models", async () => {
+  const plugin = await OpenCodeCrewBeePlugin(createPluginInput({ availableModels: ["openai/gpt-5.4-mini"] }));
+  const config = { agent: {} };
+
+  await plugin.config?.(config);
+
+  assert.equal(config.agent["coding-codebase-explorer"].model, "openai/gpt-5.4-mini");
+  assert.equal(config.agent["coding-reviewer"].model, undefined);
+  assert.equal(config.agent["coding-multimodal-looker"].model, undefined);
 });
 
 test("CrewBee exposes task as the CrewBee delegation tool with Team-scoped targets", async () => {

@@ -59,6 +59,7 @@ export interface DelegateCancelResult {
 export interface DelegatePromptModel {
   providerID: string;
   modelID: string;
+  strict?: boolean;
 }
 
 export interface DelegateCheckpoint {

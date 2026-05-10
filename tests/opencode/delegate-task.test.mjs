@@ -22,15 +22,26 @@ function createToolContext(worktree, sessionID = "ses-parent") {
   };
 }
 
-function createPluginInput() {
+function createPluginInput(options = {}) {
   const worktree = mkdtempSync(path.join(os.tmpdir(), "crewbee-delegate-"));
   const sessions = new Map();
+  const promptBodies = [];
   let counter = 0;
+  let modelFailureInjected = false;
 
   const runPrompt = async ({ path: p, body }) => {
     const session = sessions.get(p.id);
     if (!session) {
       throw new Error("missing session");
+    }
+
+    promptBodies.push(body);
+
+    if (options.failFirstModelPrompt && body.model && !modelFailureInjected) {
+      modelFailureInjected = true;
+      const error = new Error("Model not found");
+      error.name = "ProviderModelNotFoundError";
+      throw error;
     }
 
     if (body.noReply) {
@@ -56,6 +67,20 @@ function createPluginInput() {
     app: {
       log: async () => {},
     },
+    config: options.availableModels
+      ? {
+        providers: async () => ({
+          providers: Object.values(options.availableModels.reduce((acc, model) => {
+            const separator = model.indexOf("/");
+            const providerID = model.slice(0, separator);
+            const modelID = model.slice(separator + 1);
+            acc[providerID] ??= { id: providerID, models: {} };
+            acc[providerID].models[modelID] = { id: modelID, name: modelID };
+            return acc;
+          }, {})),
+        }),
+      }
+      : undefined,
     session: {
       create: async ({ body }) => {
         const id = `ses-child-${++counter}`;
@@ -80,6 +105,7 @@ function createPluginInput() {
   return {
     worktree,
     sessions,
+    promptBodies,
     input: {
       client,
       project: { id: "test-project", directory: worktree, worktree },
@@ -124,6 +150,32 @@ test("task foreground returns structured result with resume hint", async () => {
   assert.match(result.resume_hint, /task\(task_id=/);
   assert.equal(output.metadata.sessionId, result.session_id);
   assert.equal(output.metadata.taskId, result.session_id);
+});
+
+test("task foreground retries with host default when non-strict delegated model is unavailable", async () => {
+  const fixture = createPluginInput({
+    availableModels: ["openai/gpt-5.5"],
+    failFirstModelPrompt: true,
+  });
+  const plugin = await OpenCodeCrewBeePlugin(fixture.input);
+  const config = { agent: {} };
+
+  await plugin.config?.(config);
+  await plugin["chat.message"]?.(
+    { sessionID: "ses-parent", agent: "coding-leader" },
+    { message: { role: "user", parts: [] }, parts: [] },
+  );
+
+  const raw = await plugin.tool.task.execute(
+    { subagent_type: "coding-reviewer", prompt: "Review the current implementation." },
+    createToolContext(fixture.worktree),
+  );
+  const result = parseJson(raw);
+  const delegatedPrompts = fixture.promptBodies.filter((body) => body.agent === "coding-reviewer");
+
+  assert.equal(result.status, "completed");
+  assert.ok(delegatedPrompts[0].model, "first delegated prompt should use the resolved model");
+  assert.equal(delegatedPrompts[1].model, undefined, "retry should fall back to OpenCode host default");
 });
 
 test("task rejects agents outside the active Team member collaboration list", async () => {

@@ -10,7 +10,7 @@ import { resolveDelegateAgent, isSelfDelegate } from "./resolve-agent";
 import { unwrapSdkResponse } from "./sdk-response";
 import { DelegateStateStore } from "./store";
 import { createFailedResult, stringifyDelegateCancelResult, stringifyDelegateStatusResult, stringifyDelegateTaskResult } from "./tool-result";
-import type { DelegateCancelArgs, DelegateStatusArgs, DelegateTaskArgs, DelegateTaskRecord, DelegateTaskResult } from "./types";
+import type { DelegateCancelArgs, DelegatePromptModel, DelegateStatusArgs, DelegateTaskArgs, DelegateTaskRecord, DelegateTaskResult } from "./types";
 
 interface CrewBeeToolContext {
   sessionID: string;
@@ -71,6 +71,18 @@ function resolveRequestedMode(args: DelegateTaskArgs): DelegateTaskArgs["mode"] 
   }
 
   return args.mode ?? "foreground";
+}
+
+function createPromptModel(model: DelegatePromptModel | undefined): { providerID: string; modelID: string } | undefined {
+  return model ? { providerID: model.providerID, modelID: model.modelID } : undefined;
+}
+
+function isModelUnavailableError(error: unknown): boolean {
+  const text = String(error instanceof Error ? `${error.name} ${error.message}` : error).toLowerCase();
+  return text.includes("providermodelnotfounderror")
+    || text.includes("model not found")
+    || text.includes("model_not_found")
+    || text.includes("unknown model");
 }
 
 async function resolveChildSession(input: {
@@ -136,14 +148,29 @@ async function runForeground(input: {
     prompt: input.args.prompt,
   });
   input.store.setCheckpoint(input.sessionID, createCheckpoint(input.target, model));
-  await input.client.session.prompt({
-    path: { id: input.sessionID },
-    body: {
-      agent: input.target.configKey,
-      model,
-      parts: [{ type: "text", text: envelope }],
-    },
-  });
+  try {
+    await input.client.session.prompt({
+      path: { id: input.sessionID },
+      body: {
+        agent: input.target.configKey,
+        model: createPromptModel(model),
+        parts: [{ type: "text", text: envelope }],
+      },
+    });
+  } catch (error) {
+    if (!model || model.strict || !isModelUnavailableError(error)) {
+      throw error;
+    }
+
+    input.store.setCheckpoint(input.sessionID, createCheckpoint(input.target, undefined));
+    await input.client.session.prompt({
+      path: { id: input.sessionID },
+      body: {
+        agent: input.target.configKey,
+        parts: [{ type: "text", text: envelope }],
+      },
+    });
+  }
   const message = await extractAssistantText(input.client, input.sessionID, anchor);
   const result: DelegateTaskResult = {
     status: "completed",
@@ -201,11 +228,25 @@ function launchBackground(input: {
     path: { id: input.sessionID },
     body: {
       agent: input.target.configKey,
-      model,
+      model: createPromptModel(model),
       parts: [{ type: "text", text: envelope }],
     },
   }).catch((error) => {
-    input.store.setTaskStatus(input.taskRef, "failed", { lastError: String(error), message: String(error) });
+    if (!model || model.strict || !isModelUnavailableError(error)) {
+      input.store.setTaskStatus(input.taskRef, "failed", { lastError: String(error), message: String(error) });
+      return;
+    }
+
+    input.store.setCheckpoint(input.sessionID, createCheckpoint(input.target, undefined));
+    void launcher({
+      path: { id: input.sessionID },
+      body: {
+        agent: input.target.configKey,
+        parts: [{ type: "text", text: envelope }],
+      },
+    }).catch((retryError) => {
+      input.store.setTaskStatus(input.taskRef, "failed", { lastError: String(retryError), message: String(retryError) });
+    });
   });
 }
 

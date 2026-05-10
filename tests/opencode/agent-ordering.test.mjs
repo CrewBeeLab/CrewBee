@@ -317,6 +317,7 @@ test("coding-team crewbee.json agents model override supports host-default", () 
     const bootstrap = createOpenCodeBootstrap({
       teamLibrary: loadDefaultTeamLibrary(workspace),
       defaults: { defaultMode: "single-executor" },
+      availableModels: ["openai/gpt-5.5"],
     });
     const reviewer = bootstrap.projectedAgents.find((agent) => agent.configKey === "coding-reviewer");
 
@@ -324,6 +325,90 @@ test("coding-team crewbee.json agents model override supports host-default", () 
     assert.equal(reviewer.resolvedModel, undefined);
     assert.equal(reviewer.modelResolution.resolvedModel, "host-default");
     assert.equal(bootstrap.configPatch.agent["coding-reviewer"].model, undefined);
+  } finally {
+    if (previousConfigDir === undefined) {
+      delete process.env.OPENCODE_CONFIG_DIR;
+    } else {
+      process.env.OPENCODE_CONFIG_DIR = previousConfigDir;
+    }
+
+    rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("builtin coding-team model recommendations fall back to host-default when availability is unknown", () => {
+  const workspace = mkdtempSync(path.join(os.tmpdir(), "crewbee-coding-model-unknown-"));
+  const previousConfigDir = process.env.OPENCODE_CONFIG_DIR;
+
+  try {
+    const configRoot = path.join(workspace, ".config", "opencode");
+    process.env.OPENCODE_CONFIG_DIR = configRoot;
+
+    writeFile(path.join(configRoot, "crewbee.json"), createCrewBeeConfig([
+      {
+        id: "coding-team",
+        enabled: true,
+        priority: 0,
+        fallback: "builtin-role-chain",
+        fallback_to_host_default: true,
+      },
+    ]));
+
+    const bootstrap = createOpenCodeBootstrap({
+      teamLibrary: loadDefaultTeamLibrary(workspace),
+      defaults: { defaultMode: "single-executor" },
+    });
+    const reviewer = bootstrap.projectedAgents.find((agent) => agent.configKey === "coding-reviewer");
+
+    assert.ok(reviewer);
+    assert.equal(reviewer.resolvedModel, undefined);
+    assert.equal(reviewer.modelResolution.resolvedModel, "host-default");
+    assert.equal(reviewer.modelResolution.availability, "unavailable");
+    assert.ok(reviewer.modelResolution.skipped.some((entry) => entry.reason.includes("availability registry unavailable")));
+  } finally {
+    if (previousConfigDir === undefined) {
+      delete process.env.OPENCODE_CONFIG_DIR;
+    } else {
+      process.env.OPENCODE_CONFIG_DIR = previousConfigDir;
+    }
+
+    rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
+test("strict user model is projected even when availability check does not list it", () => {
+  const workspace = mkdtempSync(path.join(os.tmpdir(), "crewbee-coding-model-strict-"));
+  const previousConfigDir = process.env.OPENCODE_CONFIG_DIR;
+
+  try {
+    const configRoot = path.join(workspace, ".config", "opencode");
+    process.env.OPENCODE_CONFIG_DIR = configRoot;
+
+    writeFile(path.join(configRoot, "crewbee.json"), createCrewBeeConfig([
+      {
+        id: "coding-team",
+        enabled: true,
+        priority: 0,
+        fallback: "builtin-role-chain",
+        fallback_to_host_default: true,
+        agents: {
+          reviewer: { model: "anthropic/claude-opus-4-7", strict: true },
+        },
+      },
+    ]));
+
+    const bootstrap = createOpenCodeBootstrap({
+      teamLibrary: loadDefaultTeamLibrary(workspace),
+      defaults: { defaultMode: "single-executor" },
+      availableModels: ["openai/gpt-5.5"],
+    });
+    const reviewer = bootstrap.projectedAgents.find((agent) => agent.configKey === "coding-reviewer");
+
+    assert.ok(reviewer);
+    assert.equal(bootstrap.configPatch.agent["coding-reviewer"].model, "anthropic/claude-opus-4-7");
+    assert.equal(reviewer.resolvedModel?.strict, true);
+    assert.equal(reviewer.modelResolution.strict, true);
+    assert.match(reviewer.modelResolution.reason, /strict model selected/);
   } finally {
     if (previousConfigDir === undefined) {
       delete process.env.OPENCODE_CONFIG_DIR;
@@ -405,6 +490,7 @@ test("coding-team crewbee.json agents model override projects variant and provid
     const bootstrap = createOpenCodeBootstrap({
       teamLibrary: loadDefaultTeamLibrary(workspace),
       defaults: { defaultMode: "single-executor" },
+      availableModels: ["openai/gpt-5.5"],
     });
     const leader = bootstrap.projectedAgents.find((agent) => agent.configKey === "coding-leader");
     const definition = bootstrap.configPatch.agent["coding-leader"];
@@ -590,6 +676,7 @@ tags:
     const bootstrap = createOpenCodeBootstrap({
       teamLibrary: loadDefaultTeamLibrary(workspace),
       defaults: { defaultMode: "single-executor" },
+      availableModels: ["google/antigravity-gemini-3-pro"],
     });
     const leader = bootstrap.projectedAgents.find((agent) => agent.teamId === "custom-options-team");
 

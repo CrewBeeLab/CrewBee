@@ -532,6 +532,38 @@ Injects minimal CrewBee runtime information into the system prompt:
 * Active Owner
 * Mode
 
+### Model resolution and fallback
+
+CrewBee's model policy is reliability-first: recommended Coding Team models are not treated as hard requirements unless the user explicitly marks them strict.
+
+During OpenCode projection, CrewBee reads OpenCode's configured provider/model registry through the plugin client and uses it as an availability filter:
+
+* user `strict: true` model: projected as-is; failures belong to the explicit user configuration
+* user non-strict model: used as primary when available; otherwise fallback candidates are considered
+* built-in recommendations: projected only when the model is visible in the OpenCode provider/model registry
+* unknown registry: CrewBee does not assume built-in recommendations are usable and falls back to OpenCode host default by omitting `model`
+
+During delegated `task(...)` execution, non-strict model-not-found failures are retried once without a model so OpenCode can use the host default. Strict models are not retried.
+
+Example override:
+
+```jsonc
+{
+  "teams": [
+    {
+      "id": "coding-team",
+      "agents": {
+        "reviewer": {
+          "model": "anthropic/claude-opus-4-7",
+          "strict": false,
+          "fallback_models": ["openai/gpt-5.5"]
+        }
+      }
+    }
+  ]
+}
+```
+
 ---
 
 ## Built-in Coding Team

@@ -89,8 +89,10 @@ export async function runDoctorCommand(argv: string[], io: {
         `- ${entry.teamId}/${entry.agentId}: ${entry.resolvedModel}`,
         `  configured: ${entry.configuredModel ?? "none"}`,
         `  source: ${entry.source}`,
+        `  availability: ${entry.availability}`,
         `  fallback: ${entry.fallback}`,
         `  fallback_to_host_default: ${entry.fallbackToHostDefault}`,
+        entry.strict ? "  strict: true" : undefined,
         entry.skipped.length > 0
           ? `  skipped: ${entry.skipped.map((skipped) => `${skipped.model} (${skipped.reason})`).join(", ")}`
           : undefined,

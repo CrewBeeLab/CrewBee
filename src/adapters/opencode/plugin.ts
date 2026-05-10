@@ -31,7 +31,7 @@ export const OpenCodeCrewBeePlugin: Plugin = async (ctx) => {
   const teamLibrary = loadDefaultTeamLibrary(ctx.worktree);
   await validateAndLogTeamLibrary(ctx, teamLibrary);
 
-  const initial = createInitialBootstrap(teamLibrary);
+  const initial = await createInitialBootstrap(ctx, teamLibrary);
   await logCrewBee(ctx, "CrewBee plugin initialized", {
     worktree: ctx.worktree,
     projectedAgentCount: initial.boot.projectedAgents.length,

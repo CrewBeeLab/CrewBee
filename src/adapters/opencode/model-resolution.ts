@@ -1,6 +1,6 @@
 import type { AgentRuntimeModelConfig, TeamAgentModelOverride } from "../../core";
 import type { ProjectedAgent } from "../../runtime";
-import { BUILTIN_CODING_TEAM_ID, BUILTIN_CODING_TEAM_MODEL_FALLBACK } from "../../agent-teams/constants";
+import { BUILTIN_CODING_TEAM_AGENT_MODELS, BUILTIN_CODING_TEAM_ID, BUILTIN_CODING_TEAM_MODEL_FALLBACK } from "../../agent-teams/constants";
 
 export interface ModelResolutionTrace {
   teamId: string;
@@ -12,6 +12,8 @@ export interface ModelResolutionTrace {
   fallbackToHostDefault: boolean;
   candidates: string[];
   skipped: Array<{ model: string; reason: string }>;
+  availability: "checked" | "unavailable";
+  strict?: boolean;
   reason?: string;
 }
 
@@ -23,12 +25,15 @@ export interface ResolvedModelSelection {
   variant?: string;
   options?: Record<string, unknown>;
   source: "crewbee-json" | "team-manifest" | "team-manifest-default" | "builtin-role-chain";
+  strict?: boolean;
 }
 
 interface ModelCandidate {
   model: string;
   source: ResolvedModelSelection["source"];
   runtime?: AgentRuntimeModelConfig;
+  strict?: boolean;
+  allowWhenAvailabilityUnknown?: boolean;
 }
 
 const HOST_DEFAULT_MODEL_ID = "host-default";
@@ -90,8 +95,9 @@ function applyAgentModelOverride(
     topP: runtime?.topP,
     variant: override.variant ?? runtime?.variant,
     options: mergeModelOptions(runtime?.options, override.options),
-    fallbackModels: runtime?.fallbackModels,
+    fallbackModels: override.fallbackModels ?? runtime?.fallbackModels,
     fallbackToHostDefault: runtime?.fallbackToHostDefault,
+    strict: override.strict ?? runtime?.strict,
   };
 }
 
@@ -126,6 +132,7 @@ function createHostDefaultTrace(input: {
   fallbackToHostDefault: boolean;
   candidates: readonly ModelCandidate[];
   skipped: ModelResolutionTrace["skipped"];
+  availability: ModelResolutionTrace["availability"];
   reason: string;
 }): ModelResolutionTrace {
   return {
@@ -138,8 +145,26 @@ function createHostDefaultTrace(input: {
     fallbackToHostDefault: input.fallbackToHostDefault,
     candidates: getCandidateModelIds(input.candidates),
     skipped: input.skipped,
+    availability: input.availability,
     reason: input.reason,
   };
+}
+
+function isBuiltinCodingTeamDefaultModel(input: {
+  agent: ProjectedAgent;
+  model: string;
+}): boolean {
+  if (input.agent.teamId !== BUILTIN_CODING_TEAM_ID) {
+    return false;
+  }
+
+  const sourceAgentId = input.agent.sourceAgent.metadata.sourceId ?? input.agent.canonicalAgentId;
+  if (BUILTIN_CODING_TEAM_AGENT_MODELS[sourceAgentId] === input.model || BUILTIN_CODING_TEAM_AGENT_MODELS[input.agent.canonicalAgentId] === input.model) {
+    return true;
+  }
+
+  return BUILTIN_ROLE_FALLBACKS[sourceAgentId]?.includes(input.model) === true
+    || BUILTIN_ROLE_FALLBACKS[input.agent.canonicalAgentId]?.includes(input.model) === true;
 }
 
 function appendConfiguredModelCandidate(input: {
@@ -147,6 +172,7 @@ function appendConfiguredModelCandidate(input: {
   agentOverride?: TeamAgentModelOverride;
   runtime?: AgentRuntimeModelConfig;
   defaultRuntime?: AgentRuntimeModelConfig;
+  allowWhenAvailabilityUnknown?: boolean;
 }): void {
   const runtimeModel = resolveRuntimeModelId(input.runtime);
   const defaultRuntimeModel = resolveRuntimeModelId(input.defaultRuntime);
@@ -156,6 +182,8 @@ function appendConfiguredModelCandidate(input: {
       model: input.agentOverride.model,
       source: "crewbee-json",
       runtime: applyAgentModelOverride(input.runtime ?? input.defaultRuntime, input.agentOverride),
+      strict: input.agentOverride.strict === true,
+      allowWhenAvailabilityUnknown: input.allowWhenAvailabilityUnknown ?? true,
     });
     return;
   }
@@ -165,6 +193,8 @@ function appendConfiguredModelCandidate(input: {
       model: runtimeModel,
       source: "team-manifest",
       runtime: applyAgentModelOverride(input.runtime, input.agentOverride),
+      strict: input.runtime?.strict === true,
+      allowWhenAvailabilityUnknown: input.runtime?.strict === true,
     });
     return;
   }
@@ -174,8 +204,50 @@ function appendConfiguredModelCandidate(input: {
       model: defaultRuntimeModel,
       source: "team-manifest-default",
       runtime: applyAgentModelOverride(input.defaultRuntime, input.agentOverride),
+      strict: input.defaultRuntime?.strict === true,
+      allowWhenAvailabilityUnknown: input.defaultRuntime?.strict === true,
     });
   }
+}
+
+function createResolvedModel(input: {
+  agent: ProjectedAgent;
+  candidate: ModelCandidate;
+  parsed: { providerID: string; modelID: string };
+  configuredModel?: string;
+  fallbackStrategy: string;
+  fallbackToHostDefault: boolean;
+  candidates: ModelCandidate[];
+  skipped: ModelResolutionTrace["skipped"];
+  availability: ModelResolutionTrace["availability"];
+  reason?: string;
+}): { model: ResolvedModelSelection; trace: ModelResolutionTrace } {
+  return {
+    model: {
+      providerID: input.parsed.providerID,
+      modelID: input.parsed.modelID,
+      temperature: input.candidate.runtime?.temperature,
+      topP: input.candidate.runtime?.topP,
+      variant: input.candidate.runtime?.variant,
+      options: input.candidate.runtime?.options,
+      source: input.candidate.source,
+      strict: input.candidate.strict === true,
+    },
+    trace: {
+      teamId: input.agent.teamId,
+      agentId: input.agent.canonicalAgentId,
+      configuredModel: input.configuredModel,
+      resolvedModel: input.candidate.model,
+      source: input.candidate.source,
+      fallback: input.fallbackStrategy,
+      fallbackToHostDefault: input.fallbackToHostDefault,
+      candidates: getCandidateModelIds(input.candidates),
+      skipped: input.skipped,
+      availability: input.availability,
+      strict: input.candidate.strict === true,
+      reason: input.reason,
+    },
+  };
 }
 
 export function resolveAgentModel(input: {
@@ -197,13 +269,20 @@ export function resolveAgentModel(input: {
     ?? true;
   const runtimeModel = resolveRuntimeModelId(runtime);
   const configuredModel = agentOverride?.model ?? runtimeModel ?? resolveRuntimeModelId(defaultRuntime);
+  const configuredIsBuiltinDefault = configuredModel
+    ? isBuiltinCodingTeamDefaultModel({ agent, model: configuredModel })
+    : false;
   const candidates: ModelCandidate[] = [];
+  const availableModels = input.availableModels ? new Set(input.availableModels) : undefined;
+  const availability: ModelResolutionTrace["availability"] = availableModels ? "checked" : "unavailable";
+  const skipped: ModelResolutionTrace["skipped"] = [];
 
   appendConfiguredModelCandidate({
     candidates,
     agentOverride,
     runtime: runtimeWithOverride,
     defaultRuntime: defaultRuntimeWithOverride,
+    allowWhenAvailabilityUnknown: !configuredIsBuiltinDefault,
   });
 
   if (agentOverride?.model === HOST_DEFAULT_MODEL_ID || (!agentOverride?.model && runtimeModel === HOST_DEFAULT_MODEL_ID)) {
@@ -215,6 +294,7 @@ export function resolveAgentModel(input: {
         fallbackToHostDefault,
         candidates,
         skipped: [],
+        availability,
         reason: "host-default selected explicitly",
       }),
     };
@@ -223,16 +303,20 @@ export function resolveAgentModel(input: {
   const sourceAgentId = agent.sourceAgent.metadata.sourceId ?? agent.canonicalAgentId;
   if (fallbackStrategy === BUILTIN_CODING_TEAM_MODEL_FALLBACK && agent.teamId === BUILTIN_CODING_TEAM_ID) {
     for (const model of BUILTIN_ROLE_FALLBACKS[sourceAgentId] ?? BUILTIN_ROLE_FALLBACKS[agent.canonicalAgentId] ?? []) {
-      appendUniqueCandidate(candidates, { model, source: "builtin-role-chain", runtime: runtimeWithOverride });
+      appendUniqueCandidate(candidates, { model, source: "builtin-role-chain", runtime: runtimeWithOverride, allowWhenAvailabilityUnknown: false });
     }
   } else {
     for (const model of runtimeWithOverride?.fallbackModels ?? defaultRuntimeWithOverride?.fallbackModels ?? []) {
-      appendUniqueCandidate(candidates, { model, source: "team-manifest", runtime: runtimeWithOverride ?? defaultRuntimeWithOverride });
+      const fallbackRuntime = runtimeWithOverride ?? defaultRuntimeWithOverride;
+      appendUniqueCandidate(candidates, {
+        model,
+        source: "team-manifest",
+        runtime: fallbackRuntime,
+        strict: fallbackRuntime?.strict === true,
+        allowWhenAvailabilityUnknown: fallbackRuntime?.strict === true,
+      });
     }
   }
-
-  const availableModels = input.availableModels ? new Set(input.availableModels) : undefined;
-  const skipped: ModelResolutionTrace["skipped"] = [];
 
   for (const candidate of candidates) {
     if (candidate.model === HOST_DEFAULT_MODEL_ID) {
@@ -244,6 +328,7 @@ export function resolveAgentModel(input: {
           fallbackToHostDefault,
           candidates,
           skipped,
+          availability,
           reason: "host-default selected from candidate chain",
         }),
       };
@@ -255,33 +340,44 @@ export function resolveAgentModel(input: {
       continue;
     }
 
+    if (candidate.strict) {
+      return createResolvedModel({
+        agent,
+        candidate,
+        parsed,
+        configuredModel,
+        fallbackStrategy,
+        fallbackToHostDefault,
+        candidates,
+        skipped,
+        availability,
+        reason: availableModels && !availableModels.has(candidate.model)
+          ? "strict model selected; availability check bypassed"
+          : undefined,
+      });
+    }
+
+    if (!availableModels && !candidate.allowWhenAvailabilityUnknown) {
+      skipped.push({ model: candidate.model, reason: "availability registry unavailable; candidate is not strict user configuration" });
+      continue;
+    }
+
     if (availableModels && !availableModels.has(candidate.model)) {
       skipped.push({ model: candidate.model, reason: "model not available in current OpenCode environment" });
       continue;
     }
 
-    return {
-      model: {
-        providerID: parsed.providerID,
-        modelID: parsed.modelID,
-        temperature: candidate.runtime?.temperature,
-        topP: candidate.runtime?.topP,
-        variant: candidate.runtime?.variant,
-        options: candidate.runtime?.options,
-        source: candidate.source,
-      },
-      trace: {
-        teamId: agent.teamId,
-        agentId: agent.canonicalAgentId,
-        configuredModel,
-        resolvedModel: candidate.model,
-        source: candidate.source,
-        fallback: fallbackStrategy,
-        fallbackToHostDefault,
-        candidates: getCandidateModelIds(candidates),
-        skipped,
-      },
-    };
+    return createResolvedModel({
+      agent,
+      candidate,
+      parsed,
+      configuredModel,
+      fallbackStrategy,
+      fallbackToHostDefault,
+      candidates,
+      skipped,
+      availability,
+    });
   }
 
   return {
@@ -292,6 +388,7 @@ export function resolveAgentModel(input: {
       fallbackToHostDefault,
       candidates,
       skipped,
+      availability,
       reason: fallbackToHostDefault ? "no usable model candidate; fallback_to_host_default enabled" : "no usable model candidate",
     }),
   };
