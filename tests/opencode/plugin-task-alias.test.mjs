@@ -158,6 +158,35 @@ test("CrewBee reads OpenCode configured provider models before projecting agent 
   assert.equal(config.agent["coding-multimodal-looker"].model, undefined);
 });
 
+test("CrewBee calls OpenCode provider registry with SDK receiver binding", async () => {
+  let calledWithConfigReceiver = false;
+  const configApi = {
+    providerPayload: {
+      providers: [
+        {
+          id: "openai",
+          models: {
+            "gpt-5.4-mini": { id: "gpt-5.4-mini", name: "gpt-5.4-mini" },
+          },
+        },
+      ],
+    },
+    async providers() {
+      calledWithConfigReceiver = this === configApi;
+      return this.providerPayload;
+    },
+  };
+  const input = createPluginInput();
+  input.client.config = configApi;
+  const plugin = await OpenCodeCrewBeePlugin(input);
+  const config = { agent: {} };
+
+  await plugin.config?.(config);
+
+  assert.equal(calledWithConfigReceiver, true);
+  assert.equal(config.agent["coding-codebase-explorer"].model, "openai/gpt-5.4-mini");
+});
+
 test("CrewBee exposes task as the CrewBee delegation tool with Team-scoped targets", async () => {
   const plugin = await OpenCodeCrewBeePlugin(createPluginInput());
   const config = { agent: {} };

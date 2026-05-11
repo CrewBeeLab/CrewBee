@@ -20,13 +20,21 @@ function getProviders(value: unknown): ProviderLike[] | undefined {
 
 export async function listOpenCodeAvailableModels(input: {
   client: unknown;
+  timeoutMs?: number;
 }): Promise<string[] | undefined> {
   if (!isRecord(input.client) || !isRecord(input.client.config) || typeof input.client.config.providers !== "function") {
     return undefined;
   }
 
-  const providers = input.client.config.providers as () => Promise<unknown>;
-  const response = await providers().catch(() => undefined);
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  const providerRegistry = input.client.config.providers().catch(() => undefined);
+  const timeoutRegistry = new Promise<undefined>((resolve) => {
+    timeout = setTimeout(() => resolve(undefined), input.timeoutMs ?? 750);
+  });
+  const response = await Promise.race([providerRegistry, timeoutRegistry]);
+  if (timeout) {
+    clearTimeout(timeout);
+  }
   const providerList = getProviders(response);
   if (!providerList) {
     return undefined;
