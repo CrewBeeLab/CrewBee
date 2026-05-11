@@ -683,6 +683,7 @@ npm run typecheck
 npm run test
 npm run pack:local
 npm run pack:release
+npm run smoke:package
 npm run release:registry:dry-run
 npm run setup
 npm run install:local:user
@@ -702,6 +703,7 @@ npm run simulate:compact
 * `test`：运行测试
 * `pack:local`：打包本地 tarball
 * `pack:release`：打包版本化 release tarball
+* `smoke:package`：安装并 smoke-test 打包后的 npm package 形态
 * `release:registry:dry-run`：在本地执行 registry 发布预检但不真正发布
 * `setup`：面向用户的产品化安装；必要时安装 OpenCode，安装 CrewBee，写入配置并运行 doctor
 * `install:local:user`：执行完整用户级安装

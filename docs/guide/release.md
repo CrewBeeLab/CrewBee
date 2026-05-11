@@ -63,7 +63,7 @@ This path is useful when you want to prepare or manually publish from your own m
 - `node ./scripts/release-registry.mjs --dryRun`
   - computes next version
   - updates local package files
-  - runs `typecheck`, `test`, `doctor`, `pack:release`
+  - runs `typecheck`, `test`, `doctor`, simulators, `pack:release`, and package smoke
   - **does not publish**
 - `node ./scripts/release-registry.mjs --publish`
   - does the same validation
@@ -119,7 +119,10 @@ node ./scripts/release-registry.mjs --publish --version 0.2.0-beta.1 --tag beta
    - `npm run typecheck`
    - `npm run test`
    - `npm run doctor`
+   - `npm run simulate:opencode`
+   - `npm run simulate:compact`
    - `npm run pack:release`
+   - `npm run smoke:package`
 6. Optionally publishes to npm.
 
 > Note: the local publish path requests npm provenance. Some local shells are not recognized by npm as supported provenance providers. If validation and `pack:release` have already passed but npm fails with `Automatic provenance generation not supported for provider: null`, publish the prepared package from the same checked version with `npm publish --access public --tag <tag>` and record the provenance fallback in the release notes / handoff.
@@ -143,9 +146,9 @@ This keeps the local manual path explicit and safe.
 
 ---
 
-## Option B: GitHub Actions Release Flow
+## Option B: GitHub Actions Release PR Flow
 
-This is the recommended **official** release path.
+This is the recommended **official** release path. Humans only create and merge a release PR; the tag and npm publish happen automatically after that PR lands on `main`.
 
 ### CI workflow
 
@@ -161,6 +164,64 @@ It runs:
 - `npm test`
 - `npm run typecheck`
 - `npm run build`
+- `npm run simulate:opencode`
+- `npm run simulate:compact`
+- `npm run doctor`
+- `npm run pack:release`
+- packed package smoke via `scripts/smoke-packed-package.mjs`
+
+### Release CI workflow
+
+File:
+
+```text
+.github/workflows/release-ci.yml
+```
+
+Trigger:
+
+- pull requests targeting `main` whose branch starts with `release/v`
+- or pull requests targeting `main` with the `release` label
+
+Release PR requirements:
+
+- the PR must come from this repository, not a fork
+- `package.json`, `package-lock.json`, and the release branch version must match
+- the target version must not already exist on npm
+- the PR may only change `package.json` and `package-lock.json`
+
+Release CI gates:
+
+- `npm run typecheck`
+- `npm test`
+- `npm run build`
+- `npm run simulate:opencode`
+- `npm run simulate:compact`
+- `npm run doctor`
+- `npm run pack:release`
+- packed tarball smoke test
+- install local tarball into the OpenCode user-level workspace
+- `opencode models --print-logs --log-level DEBUG`
+- `opencode agent list --print-logs --log-level DEBUG`
+
+### Release tag workflow
+
+File:
+
+```text
+.github/workflows/release-tag.yml
+```
+
+Trigger:
+
+- push to `main`
+
+Behavior:
+
+- if the push to `main` changed `package.json` or `package-lock.json`, validate that both files contain the same release version `X.Y.Z`
+- refuse to tag if `crewbee@X.Y.Z` already exists on npm
+- create and push tag `vX.Y.Z` when it does not already exist
+- pushes that do not change package version files are ignored
 
 ### Publish workflow
 
@@ -172,38 +233,35 @@ File:
 
 Trigger:
 
-- manual dispatch in GitHub Actions
-
-Inputs:
-
-- `bump`: `patch | minor | major`
-- `version`: optional explicit version override
+- push of tag `vX.Y.Z`
 
 ### What the publish workflow does
 
-1. Runs `test`, `typecheck`, and `build` gates.
-2. Computes the release version.
-3. Checks whether that version already exists on npm.
-4. Updates `package.json` and `package-lock.json`.
-5. Builds the package.
-6. Publishes `crewbee` to npm.
-7. Commits the released version back to the repository.
-8. Pushes the version commit.
-9. Creates a git tag.
-10. Creates a GitHub release with generated notes.
+1. Checks out the immutable release tag.
+2. Validates that tag, `package.json`, and `package-lock.json` versions match.
+3. Rejects the release if that npm version is already published.
+4. Runs the full release gates: `typecheck`, tests, build, simulators, doctor, pack, package smoke, and real OpenCode loading smoke.
+5. Publishes the verified tarball to a staging dist-tag:
+   - stable releases first publish to `next`
+   - prereleases publish to their prerelease tag, for example `beta`
+6. Fetches the just-published package back from npm and smoke-tests it.
+7. For stable releases, promotes `crewbee@X.Y.Z` to `latest`.
+8. For stable releases, installs from the registry and reruns OpenCode smoke.
+9. Creates a GitHub release with generated notes.
 
 ### GitHub Actions release steps
 
-1. Go to **Actions**.
-2. Open the **publish** workflow.
-3. Click **Run workflow**.
-4. Choose either:
-   - `bump = patch|minor|major`, or
-   - set explicit `version`
-5. Run the workflow.
-6. After success, verify:
+1. Create a branch named `release/vX.Y.Z` from `main`.
+2. Update only `package.json` and `package-lock.json` to `X.Y.Z`.
+3. Commit with subject `Release vX.Y.Z`.
+4. Open a PR from `release/vX.Y.Z` to `main`.
+5. Wait for `ci` and `release-ci` to pass.
+6. Merge the release PR.
+7. `release-tag.yml` detects the package version bump on `main` and creates `vX.Y.Z` automatically.
+8. `publish.yml` publishes the tag automatically.
+9. After success, verify:
    - npm has `crewbee@<version>`
-   - repo contains commit `Release v<version>`
+   - `latest` points to the released stable version
    - tag `v<version>` exists
    - GitHub release exists
 
@@ -269,13 +327,13 @@ node ./scripts/release-registry.mjs --dryRun
 
 ### For official releases
 
-Prefer GitHub Actions:
+Use the release PR flow:
 
 ```text
-Actions -> publish -> Run workflow
+release/vX.Y.Z -> Release PR -> merge -> automatic tag -> automatic publish
 ```
 
-This is the safest and most reproducible path.
+This keeps a single human entry point while preserving an immutable tag as the publish boundary.
 
 ---
 
@@ -286,7 +344,10 @@ Before release:
 - `npm run typecheck`
 - `npm run test`
 - `npm run doctor`
+- `npm run simulate:opencode`
+- `npm run simulate:compact`
 - `npm run pack:release`
+- `npm run smoke:package`
 
 After release:
 

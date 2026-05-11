@@ -53,3 +53,77 @@ jobs:
 
       - name: Build package
         run: npm run build
+
+  simulate-opencode:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run OpenCode simulator
+        run: npm run simulate:opencode
+
+  simulate-compact:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run compaction simulator
+        run: npm run simulate:compact
+
+  doctor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run doctor
+        run: npm run doctor
+
+  package-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Pack release tarball
+        run: npm run pack:release
+
+      - name: Smoke test packed package
+        run: |
+          set -euo pipefail
+          TARBALL=$(find .artifacts/release -name 'crewbee-*.tgz' -print -quit)
+          if [ -z "$TARBALL" ]; then
+            echo "::error::release tarball was not generated."
+            exit 1
+          fi
+          node ./scripts/smoke-packed-package.mjs "$TARBALL"

@@ -703,6 +703,7 @@ npm run typecheck
 npm run test
 npm run pack:local
 npm run pack:release
+npm run smoke:package
 npm run release:registry:dry-run
 npm run setup
 npm run install:local:user
@@ -722,6 +723,7 @@ npm run simulate:compact
 * `test`: runs tests
 * `pack:local`: packs a local tarball
 * `pack:release`: packs a versioned release tarball
+* `smoke:package`: installs and smoke-tests the packed npm package shape
 * `release:registry:dry-run`: runs local registry release checks without publishing
 * `setup`: productized setup for users; installs OpenCode when missing, installs CrewBee, writes config, and runs doctor
 * `install:local:user`: runs the complete user-level installation flow

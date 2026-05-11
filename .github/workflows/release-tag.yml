@@ -1,0 +1,65 @@
+name: release-tag
+
+on:
+  push:
+    branches: [main]
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+permissions:
+  contents: write
+
+jobs:
+  create-release-tag:
+    if: github.repository == 'CrewBeeLab/CrewBee'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate package version bump and create tag
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+
+          CHANGED=$(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" -- package.json package-lock.json || true)
+          if [ -z "$CHANGED" ]; then
+            echo "No package version files changed in this push; skipping tag creation."
+            exit 0
+          fi
+
+          PREVIOUS_VERSION=$(git show "$BEFORE_SHA:package.json" | node -pe "JSON.parse(require('fs').readFileSync(0, 'utf8')).version")
+          VERSION=$(node -p "require('./package.json').version")
+          LOCK_VERSION=$(node -p "require('./package-lock.json').version")
+          LOCK_ROOT_VERSION=$(node -p "require('./package-lock.json').packages[''].version")
+
+          if [ "$VERSION" = "$PREVIOUS_VERSION" ]; then
+            echo "Package files changed, but package version remained $VERSION; skipping release tag creation."
+            exit 0
+          fi
+
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$ ]]; then
+            echo "::error::Invalid package version: $VERSION"
+            exit 1
+          fi
+
+          if [ "$VERSION" != "$LOCK_VERSION" ] || [ "$VERSION" != "$LOCK_ROOT_VERSION" ]; then
+            echo "::error::package.json and package-lock.json versions must match before release tagging."
+            exit 1
+          fi
+
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://registry.npmjs.org/crewbee/${VERSION}")
+          if [ "$STATUS" = "200" ]; then
+            echo "::error::crewbee@${VERSION} is already published; refusing to create a new release tag."
+            exit 1
+          fi
+
+          if git ls-remote --exit-code --tags origin "refs/tags/v${VERSION}" >/dev/null 2>&1; then
+            echo "Tag v${VERSION} already exists; skipping tag creation."
+            exit 0
+          fi
+
+          git tag "v${VERSION}" "$GITHUB_SHA"
+          git push origin "refs/tags/v${VERSION}"

@@ -37,6 +37,7 @@
     "prepublishOnly": "npm run clean && npm run build",
     "pack:local": "node ./scripts/pack-local.mjs",
     "pack:release": "node ./scripts/pack-release.mjs",
+    "smoke:package": "node ./scripts/smoke-packed-package.mjs",
     "release:registry:dry-run": "node ./scripts/release-registry.mjs --dryRun",
     "setup": "node ./bin/crewbee.js setup --with-opencode",
     "install:local:user": "npm run pack:local && node ./bin/crewbee.js install --source local --local-tarball ./.artifacts/local/crewbee-local.tgz",

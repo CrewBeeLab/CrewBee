@@ -56,7 +56,15 @@ jobs:
                 ref: pr.head.sha,
               });
 
-              const requiredJobs = new Set(['typecheck', 'build', 'test']);
+              const requiredJobs = new Set([
+                'typecheck',
+                'build',
+                'test',
+                'simulate-opencode',
+                'simulate-compact',
+                'doctor',
+                'package-smoke',
+              ]);
               for (const checkRun of checkRuns.check_runs) {
                 if (requiredJobs.has(checkRun.name) && checkRun.status === 'completed' && checkRun.conclusion === 'success') {
                   requiredJobs.delete(checkRun.name);

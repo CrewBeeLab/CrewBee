@@ -104,7 +104,10 @@ run("node", ["./scripts/set-version.mjs", nextVersion]);
 run("npm", ["run", "typecheck"]);
 run("npm", ["run", "test"]);
 run("npm", ["run", "doctor"]);
+run("npm", ["run", "simulate:opencode"]);
+run("npm", ["run", "simulate:compact"]);
 run("npm", ["run", "pack:release"]);
+run("npm", ["run", "smoke:package"]);
 
 if (dryRun || !shouldPublish) {
   console.log("\nRelease preparation completed. No npm publish was performed.");

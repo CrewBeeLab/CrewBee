@@ -1,0 +1,114 @@
+name: release-ci
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, labeled, unlabeled, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  release-ci:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (startsWith(github.head_ref, 'release/v') || contains(github.event.pull_request.labels.*.name, 'release'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate release PR shape
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./package.json').version")
+          LOCK_VERSION=$(node -p "require('./package-lock.json').version")
+          LOCK_ROOT_VERSION=$(node -p "require('./package-lock.json').packages[''].version")
+
+          if [ "$VERSION" != "$LOCK_VERSION" ] || [ "$VERSION" != "$LOCK_ROOT_VERSION" ]; then
+            echo "::error::package.json and package-lock.json versions must match."
+            exit 1
+          fi
+
+          if [[ "$HEAD_REF" == release/v* ]]; then
+            EXPECTED_VERSION="${HEAD_REF#release/v}"
+            if [ "$VERSION" != "$EXPECTED_VERSION" ]; then
+              echo "::error::release branch version ($EXPECTED_VERSION) must match package version ($VERSION)."
+              exit 1
+            fi
+          fi
+
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://registry.npmjs.org/crewbee/${VERSION}")
+          if [ "$STATUS" = "200" ]; then
+            echo "::error::crewbee@${VERSION} is already published."
+            exit 1
+          fi
+
+          git fetch origin main --depth=1
+          CHANGED=$(git diff --name-only origin/main...HEAD)
+          if [ -z "$CHANGED" ]; then
+            echo "::error::release PR must contain the package version bump."
+            exit 1
+          fi
+
+          while IFS= read -r file; do
+            case "$file" in
+              package.json|package-lock.json) ;;
+              *)
+                echo "::error::release PRs must only change package.json and package-lock.json; found $file."
+                exit 1
+                ;;
+            esac
+          done <<< "$CHANGED"
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build package
+        run: npm run build
+
+      - name: Run OpenCode simulator
+        run: npm run simulate:opencode
+
+      - name: Run compaction simulator
+        run: npm run simulate:compact
+
+      - name: Run doctor
+        run: npm run doctor
+
+      - name: Pack release tarball
+        run: npm run pack:release
+
+      - name: Smoke test packed package
+        run: |
+          set -euo pipefail
+          TARBALL=$(find .artifacts/release -name 'crewbee-*.tgz' -print -quit)
+          if [ -z "$TARBALL" ]; then
+            echo "::error::release tarball was not generated."
+            exit 1
+          fi
+          node ./scripts/smoke-packed-package.mjs "$TARBALL"
+
+      - name: Install OpenCode CLI
+        run: npm install -g opencode-ai@latest
+
+      - name: Smoke test real OpenCode loading path
+        run: |
+          set -euo pipefail
+          npm run install:local:user
+          opencode models --print-logs --log-level DEBUG
+          opencode agent list --print-logs --log-level DEBUG
