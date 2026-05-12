@@ -51,9 +51,9 @@ jobs:
           fi
 
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://registry.npmjs.org/crewbee/${VERSION}")
+          ALREADY_PUBLISHED="false"
           if [ "$STATUS" = "200" ]; then
-            echo "::error::crewbee@${VERSION} is already published."
-            exit 1
+            ALREADY_PUBLISHED="true"
           fi
 
           DIST_TAG="next"
@@ -66,6 +66,7 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "dist_tag=$DIST_TAG" >> "$GITHUB_OUTPUT"
           echo "stable=$STABLE" >> "$GITHUB_OUTPUT"
+          echo "already_published=$ALREADY_PUBLISHED" >> "$GITHUB_OUTPUT"
 
       - name: Type check
         run: npm run typecheck
@@ -114,6 +115,7 @@ jobs:
           opencode agent list --print-logs --log-level DEBUG
 
       - name: Publish npm package to staging dist-tag
+        if: steps.release.outputs.already_published != 'true'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
