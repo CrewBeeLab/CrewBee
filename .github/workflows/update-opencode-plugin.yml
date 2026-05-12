@@ -54,6 +54,7 @@ jobs:
         if: steps.diff.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v6
         with:
+          token: ${{ secrets.CREWBEE_AUTOMATION_TOKEN || github.token }}
           branch: chore/update-opencode-plugin
           delete-branch: true
           title: "Update @opencode-ai/plugin to latest"

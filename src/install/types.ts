@@ -25,7 +25,7 @@ export interface InstallResult {
   configPath: string;
   crewbeeConfigChanged: boolean;
   crewbeeConfigPath: string;
-  crewbeeConfigReason: "created-default" | "repaired-invalid" | "added-default-coding-team" | "unchanged";
+  crewbeeConfigReason: "created-default" | "repaired-invalid" | "added-default-coding-team" | "migrated-config-version" | "unchanged";
   dryRun: boolean;
   installRoot: string;
   packageWorkspaceRoot: string;

@@ -1,30 +1,10 @@
 import type { OpenCodeAgentAliasEntry } from "./projection";
 import {
-  createProjectedAgentTaskAliasHelpLines,
   resolveProjectedAgentAlias,
   type OpenCodeAgentConfig,
 } from "./projection";
 import { parseDelegateTaskResult, stringifyDelegateTaskResult } from "./delegation/tool-result";
 import type { DelegateTaskResult } from "./delegation/types";
-
-function deduplicateTaskDescription(description: string): string {
-  const seen = new Set<string>();
-  return description
-    .split("\n")
-    .filter((line) => {
-      if (!line.startsWith("- ")) {
-        return true;
-      }
-
-      if (seen.has(line)) {
-        return false;
-      }
-
-      seen.add(line);
-      return true;
-    })
-    .join("\n");
-}
 
 function buildRetryGuidance(result: DelegateTaskResult): string | undefined {
   if (!result.error_code) {
@@ -32,9 +12,9 @@ function buildRetryGuidance(result: DelegateTaskResult): string | undefined {
   }
 
   const fixes: Record<string, string> = {
-    missing_agent: 'Fix: include `agent="reviewer"` or another CrewBee member id.',
-    unknown_agent: 'Fix: use a valid CrewBee member id or projected alias.',
-    invalid_session_id: 'Fix: use a delegated `session_id` previously returned by `delegate_task`.',
+    missing_agent: 'Fix: include `subagent_type="reviewer"` or another CrewBee member id.',
+    unknown_agent: 'Fix: use a valid CrewBee member id or projected alias as `subagent_type`.',
+    invalid_session_id: 'Fix: use a delegated `task_id` previously returned by `task`.',
     agent_session_mismatch: 'Fix: resume with the same agent that created the delegated session.',
     unsupported_mode: 'Fix: use `mode="foreground"` or `mode="background"`.',
     nested_delegate_forbidden: 'Fix: return the result to the parent session instead of delegating again from a delegated subagent.',
@@ -46,10 +26,10 @@ function buildRetryGuidance(result: DelegateTaskResult): string | undefined {
   }
 
   return [
-    "[delegate_task CALL FAILED - RETRY REQUIRED]",
+    "[task CALL FAILED - RETRY REQUIRED]",
     `Error: ${result.error_code}`,
     fix,
-    'Example: delegate_task(agent="reviewer", prompt="continue review")',
+    'Example: task(subagent_type="reviewer", prompt="continue review")',
   ].join("\n");
 }
 
@@ -58,7 +38,7 @@ function withResumeHint(result: DelegateTaskResult): DelegateTaskResult {
     return result;
   }
 
-  const hint = `to continue: delegate_task(session_id="${result.session_id}", agent="${result.session_id ? "..." : "reviewer"}", prompt="...")`;
+  const hint = `to continue: task(task_id="${result.session_id}", subagent_type="${result.session_id ? "..." : "reviewer"}", prompt="...")`;
   return {
     ...result,
     resume_hint: hint,
@@ -93,27 +73,8 @@ function withRetryGuidance(result: DelegateTaskResult): DelegateTaskResult {
   };
 }
 
-export function createToolDefinitionHook(getAgents: () => OpenCodeAgentConfig[]) {
-  return async (input: { toolID: string }, output: { description: string; parameters: unknown }) => {
-    if (input.toolID !== "task") {
-      return;
-    }
-
-    const helpLines = createProjectedAgentTaskAliasHelpLines(getAgents());
-    if (helpLines.length === 0) {
-      return;
-    }
-
-    output.description = deduplicateTaskDescription(output.description);
-    output.description = [
-      output.description,
-      "",
-      "CrewBee subagent aliases:",
-      ...helpLines,
-      "",
-      "When delegating inside CrewBee, prefer the CrewBee source-agent alias shown on each line.",
-    ].join("\n");
-  };
+export function createToolDefinitionHook(_getAgents: () => OpenCodeAgentConfig[]) {
+  return async () => {};
 }
 
 export function createToolExecuteBeforeHook(input: {
@@ -139,7 +100,7 @@ export function createToolExecuteBeforeHook(input: {
 
 export function createToolExecuteAfterHook() {
   return async (input: { tool: string; sessionID: string; callID: string }, output: { title: string; output: string; metadata: Record<string, unknown> }) => {
-    if (input.tool !== "delegate_task") {
+    if (input.tool !== "task") {
       return;
     }
 
@@ -148,6 +109,17 @@ export function createToolExecuteAfterHook() {
       return;
     }
 
-    output.output = stringifyDelegateTaskResult(withResumeHint(withRetryGuidance(withEmptyWarning(parsed))));
+    const result = withResumeHint(withRetryGuidance(withEmptyWarning(parsed)));
+    output.output = stringifyDelegateTaskResult(result);
+
+    if (result.status !== "failed" && result.session_id) {
+      output.title = output.title || "CrewBee task";
+      output.metadata = {
+        ...output.metadata,
+        sessionId: result.session_id,
+        taskId: result.task_id ?? result.session_id,
+        taskRef: result.task_ref,
+      };
+    }
   };
 }

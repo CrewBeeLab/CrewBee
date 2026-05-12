@@ -7,6 +7,7 @@ import { createOpenCodeBootstrap, type OpenCodeBootstrapOutput } from "./bootstr
 import type { OpenCodeConfigLike } from "./config-merge";
 import { DEFAULT_OPENCODE_EXECUTION_MODE } from "./defaults";
 import { logCrewBee } from "./logging";
+import { listOpenCodeAvailableModels } from "./model-availability";
 import { createProjectedAgentAliasIndex, type OpenCodeAgentAliasEntry } from "./projection";
 
 function summarizeProjectedAgents(boot: OpenCodeBootstrapOutput): Array<{
@@ -51,13 +52,17 @@ export async function validateAndLogTeamLibrary(ctx: PluginInput, teamLibrary: T
   );
 }
 
-export function createInitialBootstrap(teamLibrary: TeamLibrary): {
+export async function createInitialBootstrap(ctx: PluginInput, teamLibrary: TeamLibrary): Promise<{
   boot: OpenCodeBootstrapOutput;
   aliasIndex: Map<string, OpenCodeAgentAliasEntry>;
-} {
+}> {
+  const availableModels = await listOpenCodeAvailableModels({
+    client: ctx.client,
+  });
   const boot = createOpenCodeBootstrap({
     teamLibrary,
     defaults: { defaultMode: DEFAULT_OPENCODE_EXECUTION_MODE },
+    availableModels,
   });
   return {
     boot,
@@ -74,11 +79,15 @@ export function createConfigHook(input: {
 }) {
   return async (cfg: { agent?: Record<string, unknown> }) => {
     const current = getConfig(cfg);
+    const availableModels = await listOpenCodeAvailableModels({
+      client: input.ctx.client,
+    });
     const next = createOpenCodeBootstrap({
       teamLibrary: input.teamLibrary,
       defaults: { defaultMode: DEFAULT_OPENCODE_EXECUTION_MODE },
       existingConfig: current,
       existingDefaultAgent: typeof current.default_agent === "string" ? current.default_agent : undefined,
+      availableModels,
     });
 
     input.setBoot(next);

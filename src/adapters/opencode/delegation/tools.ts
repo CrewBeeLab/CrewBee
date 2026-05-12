@@ -10,7 +10,7 @@ import { resolveDelegateAgent, isSelfDelegate } from "./resolve-agent";
 import { unwrapSdkResponse } from "./sdk-response";
 import { DelegateStateStore } from "./store";
 import { createFailedResult, stringifyDelegateCancelResult, stringifyDelegateStatusResult, stringifyDelegateTaskResult } from "./tool-result";
-import type { DelegateCancelArgs, DelegateStatusArgs, DelegateTaskArgs, DelegateTaskRecord, DelegateTaskResult } from "./types";
+import type { DelegateCancelArgs, DelegatePromptModel, DelegateStatusArgs, DelegateTaskArgs, DelegateTaskRecord, DelegateTaskResult } from "./types";
 
 interface CrewBeeToolContext {
   sessionID: string;
@@ -57,6 +57,34 @@ function createDescription(prompt: string): string {
   return trimmed.length <= 60 ? trimmed : `${trimmed.slice(0, 57)}...`;
 }
 
+function resolveRequestedAgent(args: DelegateTaskArgs): string | undefined {
+  return args.subagent_type ?? args.agent;
+}
+
+function resolveRequestedSessionID(args: DelegateTaskArgs): string | undefined {
+  return args.task_id ?? args.session_id;
+}
+
+function resolveRequestedMode(args: DelegateTaskArgs): DelegateTaskArgs["mode"] {
+  if (args.run_in_background === true) {
+    return "background";
+  }
+
+  return args.mode ?? "foreground";
+}
+
+function createPromptModel(model: DelegatePromptModel | undefined): { providerID: string; modelID: string } | undefined {
+  return model ? { providerID: model.providerID, modelID: model.modelID } : undefined;
+}
+
+function isModelUnavailableError(error: unknown): boolean {
+  const text = String(error instanceof Error ? `${error.name} ${error.message}` : error).toLowerCase();
+  return text.includes("providermodelnotfounderror")
+    || text.includes("model not found")
+    || text.includes("model_not_found")
+    || text.includes("unknown model");
+}
+
 async function resolveChildSession(input: {
   args: DelegateTaskArgs;
   client: ClientLike;
@@ -66,7 +94,9 @@ async function resolveChildSession(input: {
   canonicalAgentId: string;
   configKey: string;
 }): Promise<{ sessionID: string; existing: boolean } | DelegateTaskResult> {
-  if (!input.args.session_id) {
+  const requestedSessionID = resolveRequestedSessionID(input.args);
+
+  if (!requestedSessionID) {
     const created = unwrapSdkResponse(await input.client.session.create({
       body: { parentID: input.parentSessionID, title: input.title },
     }));
@@ -80,23 +110,23 @@ async function resolveChildSession(input: {
     return { sessionID, existing: false };
   }
 
-  const known = input.store.getSession(input.args.session_id);
+  const known = input.store.getSession(requestedSessionID);
   if (!known) {
-    return createFailedResult(input.args.session_id, "invalid_session_id", "Use an existing delegated session_id returned by delegate_task.");
+    return createFailedResult(requestedSessionID, "invalid_session_id", "Use an existing task_id/session_id returned by task.");
   }
 
   if (known.parentSessionID !== input.parentSessionID) {
-    return createFailedResult(input.args.session_id, "invalid_session_id", "Use a delegated session_id created from the current parent session.");
+    return createFailedResult(requestedSessionID, "invalid_session_id", "Use a delegated task_id/session_id created from the current parent session.");
   }
 
   if (known.canonicalAgentId !== input.canonicalAgentId) {
-    return createFailedResult(input.args.session_id, "agent_session_mismatch", "The delegated session is already bound to a different agent.");
+    return createFailedResult(requestedSessionID, "agent_session_mismatch", "The delegated session is already bound to a different agent.");
   }
 
-  await input.client.session.get({ path: { id: input.args.session_id } }).catch(() => {
-    throw createFailedResult(input.args.session_id!, "invalid_session_id", "Use an existing delegated session_id returned by delegate_task.");
+  await input.client.session.get({ path: { id: requestedSessionID } }).catch(() => {
+    throw createFailedResult(requestedSessionID, "invalid_session_id", "Use an existing task_id/session_id returned by task.");
   });
-  return { sessionID: input.args.session_id, existing: true };
+  return { sessionID: requestedSessionID, existing: true };
 }
 
 async function runForeground(input: {
@@ -118,22 +148,38 @@ async function runForeground(input: {
     prompt: input.args.prompt,
   });
   input.store.setCheckpoint(input.sessionID, createCheckpoint(input.target, model));
-  await input.client.session.prompt({
-    path: { id: input.sessionID },
-    body: {
-      agent: input.target.configKey,
-      model,
-      parts: [{ type: "text", text: envelope }],
-    },
-  });
+  try {
+    await input.client.session.prompt({
+      path: { id: input.sessionID },
+      body: {
+        agent: input.target.configKey,
+        model: createPromptModel(model),
+        parts: [{ type: "text", text: envelope }],
+      },
+    });
+  } catch (error) {
+    if (!model || model.strict || !isModelUnavailableError(error)) {
+      throw error;
+    }
+
+    input.store.setCheckpoint(input.sessionID, createCheckpoint(input.target, undefined));
+    await input.client.session.prompt({
+      path: { id: input.sessionID },
+      body: {
+        agent: input.target.configKey,
+        parts: [{ type: "text", text: envelope }],
+      },
+    });
+  }
   const message = await extractAssistantText(input.client, input.sessionID, anchor);
   const result: DelegateTaskResult = {
     status: "completed",
     session_id: input.sessionID,
+    task_id: input.sessionID,
     message,
     resume_supported: true,
   };
-  input.ctx.metadata({ title: input.title, metadata: { sessionId: input.sessionID, agent: input.target.canonicalAgentId } });
+  input.ctx.metadata({ title: input.title, metadata: { sessionId: input.sessionID, taskId: input.sessionID, agent: input.target.canonicalAgentId, mode: "foreground" } });
   return result;
 }
 
@@ -182,26 +228,55 @@ function launchBackground(input: {
     path: { id: input.sessionID },
     body: {
       agent: input.target.configKey,
-      model,
+      model: createPromptModel(model),
       parts: [{ type: "text", text: envelope }],
     },
   }).catch((error) => {
-    input.store.setTaskStatus(input.taskRef, "failed", { lastError: String(error), message: String(error) });
+    if (!model || model.strict || !isModelUnavailableError(error)) {
+      input.store.setTaskStatus(input.taskRef, "failed", { lastError: String(error), message: String(error) });
+      return;
+    }
+
+    input.store.setCheckpoint(input.sessionID, createCheckpoint(input.target, undefined));
+    void launcher({
+      path: { id: input.sessionID },
+      body: {
+        agent: input.target.configKey,
+        parts: [{ type: "text", text: envelope }],
+      },
+    }).catch((retryError) => {
+      input.store.setTaskStatus(input.taskRef, "failed", { lastError: String(retryError), message: String(retryError) });
+    });
+  });
+}
+
+function findBoundSourceAgent(input: {
+  agents: OpenCodeAgentConfig[];
+  binding: SessionRuntimeBinding | undefined;
+}): OpenCodeAgentConfig | undefined {
+  if (!input.binding) {
+    return undefined;
+  }
+
+  return input.agents.find((agent) => {
+    return agent.teamId === input.binding?.teamId && agent.canonicalAgentId === input.binding.selectedAgentId;
   });
 }
 
 export function createDelegateTools(input: CreateDelegateToolsInput) {
-  const delegate_task = createToolDefinition({
-    description: "Delegate work to a CrewBee team member.",
+  const task = createToolDefinition({
+    description: "Delegate work to a CrewBee team member. This is CrewBee's OpenCode-compatible task implementation; use subagent_type to select an allowed Team member.",
     args: {
-      agent: z.string().optional().describe("CrewBee agent id or alias"),
-      prompt: z.string().describe("Delegated objective"),
-      session_id: z.string().optional().describe("Existing delegated session to continue"),
-      mode: z.enum(["foreground", "background"]).optional().describe("Execution mode, defaults to foreground"),
+      description: z.string().optional().describe("A short (3-5 words) description of the task"),
+      prompt: z.string().describe("The task for the CrewBee agent to perform"),
+      subagent_type: z.string().describe("CrewBee agent id or alias listed in the current Agent Profile collaboration section"),
+      task_id: z.string().optional().describe("Existing delegated session to continue"),
+      run_in_background: z.boolean().optional().describe("Launch the delegated task in background mode"),
     },
     async execute(args: DelegateTaskArgs, ctx: CrewBeeToolContext) {
-      if (!args.agent) {
-        return stringifyDelegateTaskResult(createFailedResult(ctx.sessionID, "missing_agent", "Provide the CrewBee agent field when delegating work."));
+      const requestedAgent = resolveRequestedAgent(args);
+      if (!requestedAgent) {
+        return stringifyDelegateTaskResult(createFailedResult(ctx.sessionID, "missing_agent", "Provide subagent_type when delegating work."));
       }
 
       if (input.store.getSession(ctx.sessionID)) {
@@ -210,26 +285,29 @@ export function createDelegateTools(input: CreateDelegateToolsInput) {
         );
       }
 
-      const mode = args.mode ?? "foreground";
+      const mode = resolveRequestedMode(args);
       if (mode !== "foreground" && mode !== "background") {
         return stringifyDelegateTaskResult(createFailedResult(ctx.sessionID, "unsupported_mode", "Use mode=foreground or mode=background."));
       }
 
+      const projectedAgents = input.getProjectedAgents();
+      const binding = input.bindings.get(ctx.sessionID);
+      const sourceAgent = findBoundSourceAgent({ agents: projectedAgents, binding });
       const target = resolveDelegateAgent({
-        agents: input.getProjectedAgents(),
+        agents: projectedAgents,
         aliasIndex: input.getAliasIndex(),
-        agent: args.agent,
+        agent: requestedAgent,
+        sourceAgent,
       });
       if (!target) {
-        return stringifyDelegateTaskResult(createFailedResult(ctx.sessionID, "unknown_agent", `Unknown CrewBee agent: ${args.agent}`));
+        return stringifyDelegateTaskResult(createFailedResult(ctx.sessionID, "unknown_agent", `Unknown or disallowed CrewBee delegate target: ${requestedAgent}`));
       }
 
-      const binding = input.bindings.get(ctx.sessionID);
       if (isSelfDelegate(binding, target.canonicalAgentId)) {
         return stringifyDelegateTaskResult(createFailedResult(ctx.sessionID, "self_delegate_forbidden", "Do not delegate a CrewBee session back to the same active agent."));
       }
 
-      const title = createDelegatedTitle(target.canonicalAgentId, args.prompt);
+      const title = args.description ?? createDelegatedTitle(target.canonicalAgentId, args.prompt);
       const child = await resolveChildSession({
         args,
         client: input.client,
@@ -273,6 +351,7 @@ export function createDelegateTools(input: CreateDelegateToolsInput) {
         anchor,
       });
       input.store.putTask(record);
+      input.store.setTaskStatus(record.taskRef, "running");
       launchBackground({
         args,
         client: input.client,
@@ -282,10 +361,11 @@ export function createDelegateTools(input: CreateDelegateToolsInput) {
         sessionID,
         taskRef: record.taskRef,
       });
-      ctx.metadata({ title, metadata: { sessionId: sessionID, taskRef: record.taskRef, agent: target.canonicalAgentId } });
+      ctx.metadata({ title, metadata: { sessionId: sessionID, taskId: sessionID, taskRef: record.taskRef, agent: target.canonicalAgentId, mode: "background" } });
       return stringifyDelegateTaskResult({
         status: "running",
         session_id: sessionID,
+        task_id: sessionID,
         task_ref: record.taskRef,
         message: "Delegated session launched in background.",
         resume_supported: true,
@@ -299,9 +379,16 @@ export function createDelegateTools(input: CreateDelegateToolsInput) {
       task_ref: z.string().describe("CrewBee background task reference"),
     },
     async execute(args: DelegateStatusArgs) {
-      const task = input.store.getTask(args.task_ref);
+      let task = input.store.getTask(args.task_ref);
       if (!task) {
         return stringifyDelegateStatusResult({ status: "failed", task_ref: args.task_ref, message: "Unknown background task reference." });
+      }
+
+      if (task.status === "queued" || task.status === "running") {
+        const message = await extractAssistantText(input.client, task.sessionID, task.anchor).catch(() => undefined);
+        if (message) {
+          task = input.store.setTaskStatus(task.taskRef, "completed", { message }) ?? task;
+        }
       }
 
       return stringifyDelegateStatusResult({
@@ -353,5 +440,5 @@ export function createDelegateTools(input: CreateDelegateToolsInput) {
     },
   });
 
-  return { delegate_task, delegate_status, delegate_cancel };
+  return { task, delegate_status, delegate_cancel };
 }

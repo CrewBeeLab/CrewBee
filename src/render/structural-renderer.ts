@@ -1,5 +1,5 @@
 import type { PromptNode, PromptPlan, PromptPlanSection, PromptScalar, PromptValue } from "../core";
-import { formatDisplayLabel } from "../catalog/build-prompt-catalog";
+import { formatDisplayLabel } from "./build-prompt-catalog";
 
 export interface StructuralRenderContext {
   indentUnit: string;

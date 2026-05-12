@@ -4,11 +4,11 @@ import assert from "node:assert/strict";
 import { createEmbeddedCodingTeam } from "../../dist/src/agent-teams/embedded/coding-team.js";
 import { loadDefaultTeamLibrary } from "../../dist/src/agent-teams/index.js";
 import { createOpenCodeAgentPrompt, createOpenCodePromptFromRawDocuments } from "../../dist/src/adapters/opencode/prompt-builder.js";
-import { buildPromptCatalog } from "../../dist/src/catalog/build-prompt-catalog.js";
+import { buildPromptCatalog } from "../../dist/src/render/build-prompt-catalog.js";
 import { loadAgentProfile } from "../../dist/src/loader/profile-loader.js";
 import { normalizeProfileDocument } from "../../dist/src/normalize/normalize-document.js";
-import { buildPromptPlan } from "../../dist/src/plan/build-prompt-plan.js";
-import { applyPromptProjection } from "../../dist/src/projection/apply-prompt-projection.js";
+import { buildPromptPlan } from "../../dist/src/render/build-prompt-plan.js";
+import { applyPromptProjection } from "../../dist/src/render/apply-prompt-projection.js";
 import { createTeamLibraryProjection } from "../../dist/src/runtime/index.js";
 import { renderPromptPlan } from "../../dist/src/render/structural-renderer.js";
 

@@ -1,0 +1,81 @@
+name: auto-merge-opencode-plugin-update
+
+on:
+  workflow_run:
+    workflows: ["ci"]
+    types: [completed]
+
+permissions:
+  checks: read
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    if: >-
+      github.repository == 'CrewBeeLab/CrewBee' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge verified OpenCode dependency update PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const run = context.payload.workflow_run;
+            const pullRequests = run.pull_requests ?? [];
+
+            if (pullRequests.length === 0) {
+              core.info('No pull request is associated with this workflow run.');
+              return;
+            }
+
+            for (const runPr of pullRequests) {
+              const { data: pr } = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: runPr.number,
+              });
+
+              const isTargetUpdate =
+                pr.state === 'open' &&
+                pr.base.ref === 'main' &&
+                pr.head.repo?.full_name === `${owner}/${repo}` &&
+                pr.head.ref === 'chore/update-opencode-plugin' &&
+                pr.title === 'Update @opencode-ai/plugin to latest';
+
+              if (!isTargetUpdate) {
+                core.info(`Skipping PR #${pr.number}; it is not the managed OpenCode dependency update PR.`);
+                continue;
+              }
+
+              const { data: checkRuns } = await github.rest.checks.listForRef({
+                owner,
+                repo,
+                ref: pr.head.sha,
+              });
+
+              const requiredJobs = new Set(['typecheck', 'build', 'test']);
+              for (const checkRun of checkRuns.check_runs) {
+                if (requiredJobs.has(checkRun.name) && checkRun.status === 'completed' && checkRun.conclusion === 'success') {
+                  requiredJobs.delete(checkRun.name);
+                }
+              }
+
+              if (requiredJobs.size > 0) {
+                core.info(`Skipping PR #${pr.number}; missing successful checks: ${[...requiredJobs].join(', ')}.`);
+                continue;
+              }
+
+              await github.rest.pulls.merge({
+                owner,
+                repo,
+                pull_number: pr.number,
+                merge_method: 'squash',
+                commit_title: 'Update @opencode-ai/plugin dependency',
+                commit_message: 'Update OpenCode plugin and transitive SDK dependency after CI passed.',
+              });
+
+              core.info(`Merged PR #${pr.number}.`);
+            }

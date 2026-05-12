@@ -14,14 +14,19 @@ export type DelegateTaskErrorCode =
 
 export interface DelegateTaskArgs {
   agent?: string;
+  subagent_type?: string;
   prompt: string;
+  description?: string;
   session_id?: string;
+  task_id?: string;
   mode?: DelegateMode;
+  run_in_background?: boolean;
 }
 
 export interface DelegateTaskResult {
   status: DelegateTaskStatus;
   session_id: string;
+  task_id?: string;
   task_ref?: string;
   message?: string;
   error_code?: DelegateTaskErrorCode;
@@ -54,6 +59,7 @@ export interface DelegateCancelResult {
 export interface DelegatePromptModel {
   providerID: string;
   modelID: string;
+  strict?: boolean;
 }
 
 export interface DelegateCheckpoint {

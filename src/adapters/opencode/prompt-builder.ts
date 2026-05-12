@@ -1,8 +1,8 @@
 import type { LoadedProfileDocument } from "../../core";
 import { attachMarkdownBodySections } from "../../loader/markdown-body-loader";
 import { loadAgentProfile, loadTeamManifest, loadTeamPolicy } from "../../loader/profile-loader";
-import { buildAgentPromptSourceWithOverrides } from "../../normalize/build-agent-prompt-source";
-import { buildTeamPromptSource } from "../../normalize/build-team-prompt-source";
+import { buildAgentPromptDocumentWithOverrides } from "../../normalize/build-agent-prompt-document";
+import { buildTeamPromptDocument } from "../../normalize/build-team-prompt-document";
 import { normalizeProfileDocument } from "../../normalize/normalize-document";
 import { renderLoadedPromptDocument, renderNormalizedPromptDocument } from "../../render/prompt-document-renderer";
 import type { ProjectedAgent } from "../../runtime";
@@ -34,6 +34,11 @@ function createCollaborationPromptValue(agent: ProjectedAgent): unknown {
   return {
     defaultConsults: agent.sourceAgent.collaboration.defaultConsults.map(mapBinding),
     defaultHandoffs: agent.sourceAgent.collaboration.defaultHandoffs.map(mapBinding),
+    delegationBoundary: [
+      "Only delegate to agents explicitly listed in default_consults or default_handoffs for this Agent Profile.",
+      "Do not delegate to host-provided agents, OpenCode built-in agents, agents from other Teams, or agents not listed here.",
+      "Use the OpenCode-compatible CrewBee task tool for delegation; it is implemented by CrewBee and constrained by this Team boundary.",
+    ],
   };
 }
 
@@ -70,7 +75,7 @@ export function createOpenCodePromptFromRawDocuments(input: {
   const agentPart = renderNormalizedPromptDocument(normalizedAgent);
 
   const loadedPolicy = loadTeamPolicy(input.teamPolicyRaw);
-  const teamSource = buildTeamPromptSource(
+  const teamDocument = buildTeamPromptDocument(
     {
       id: String(loadedTeamManifest.metadata.id),
       name: typeof loadedTeamManifest.metadata.name === "string" ? loadedTeamManifest.metadata.name : undefined,
@@ -79,7 +84,7 @@ export function createOpenCodePromptFromRawDocuments(input: {
     loadedPolicy,
     loadedTeamManifest.bodySections,
   );
-  const teamPart = renderNormalizedPromptDocument(teamSource);
+  const teamPart = renderNormalizedPromptDocument(teamDocument);
 
   return [renderPart("Team Contract", teamPart), renderPart("Agent Contract", agentPart)]
     .filter((block): block is string => Boolean(block))
@@ -87,7 +92,7 @@ export function createOpenCodePromptFromRawDocuments(input: {
 }
 
 export function createOpenCodeAgentPrompt(agent: ProjectedAgent, _requestedTools?: readonly string[]): string {
-  const teamSource = buildTeamPromptSource(
+  const teamDocument = buildTeamPromptDocument(
     {
       id: agent.sourceTeam.manifest.id,
       name: agent.sourceTeam.manifest.name,
@@ -95,8 +100,8 @@ export function createOpenCodeAgentPrompt(agent: ProjectedAgent, _requestedTools
     },
     agent.sourceTeam.policy,
   );
-  const teamPart = renderNormalizedPromptDocument(teamSource);
-  const normalizedAgent = buildAgentPromptSourceWithOverrides(agent.sourceAgent, {
+  const teamPart = renderNormalizedPromptDocument(teamDocument);
+  const normalizedAgent = buildAgentPromptDocumentWithOverrides(agent.sourceAgent, {
     collaborationValue: createCollaborationPromptValue(agent),
   });
   const agentPart = renderNormalizedPromptDocument(normalizedAgent);

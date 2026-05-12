@@ -18,6 +18,7 @@ export function applyOpenCodeAgentConfigPatch(
   patch: OpenCodeAgentConfigPatch,
 ): OpenCodeConfigMergeResult {
   const patchKeys = new Set(Object.keys(patch.agent));
+  const forceUpdateKeys = new Set(patch.forceUpdateAgentKeys ?? []);
   const nextAgents = Object.fromEntries(
     Object.entries(config.agent ?? {}).filter(([key, definition]) => {
       if (isManagedCrewBeeAgentDefinition(definition) && !patchKeys.has(key)) {
@@ -40,7 +41,7 @@ export function applyOpenCodeAgentConfigPatch(
 
     const existingDefinition = nextAgents[key];
 
-    if (isManagedCrewBeeAgentDefinition(existingDefinition)) {
+    if (forceUpdateKeys.has(key) || isManagedCrewBeeAgentDefinition(existingDefinition)) {
       nextAgents[key] = definition;
       updatedAgentKeys.push(key);
       continue;

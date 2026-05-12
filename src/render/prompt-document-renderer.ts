@@ -1,9 +1,9 @@
 import type { LoadedProfileDocument, NormalizedProfileDocument } from "../core";
-import { buildPromptCatalog } from "../catalog/build-prompt-catalog";
 import { normalizeProfileDocument } from "../normalize/normalize-document";
-import { buildPromptPlan } from "../plan/build-prompt-plan";
-import { applyPromptProjection } from "../projection/apply-prompt-projection";
 
+import { applyPromptProjection } from "./apply-prompt-projection";
+import { buildPromptCatalog } from "./build-prompt-catalog";
+import { buildPromptPlan } from "./build-prompt-plan";
 import { defaultRenderContext, renderPromptPlan } from "./structural-renderer";
 
 export function renderNormalizedPromptDocument(document: NormalizedProfileDocument): string {

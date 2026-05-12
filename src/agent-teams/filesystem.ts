@@ -7,12 +7,12 @@ import { resolveOpenCodeConfigRoot } from "../install/install-root";
 
 import type { TeamValidationIssue } from "./types";
 import {
-  BUILTIN_CODING_TEAM_AGENT_MODELS,
   BUILTIN_CODING_TEAM_FALLBACK_TO_HOST_DEFAULT,
   BUILTIN_CODING_TEAM_ID,
   BUILTIN_CODING_TEAM_MODEL_FALLBACK,
   BUILTIN_CODING_TEAM_MODEL_PRESET,
   CREWBEE_CONFIG_FILE,
+  CREWBEE_CONFIG_VERSION,
   DEFAULT_EMBEDDED_TEAM_PRIORITY,
   DEFAULT_FILE_TEAM_PRIORITY,
   TEAM_CONFIG_ROOT,
@@ -44,7 +44,7 @@ export interface ConfiguredTeamModelOverride {
   modelPreset?: string;
   fallback?: string;
   fallbackToHostDefault?: boolean;
-  agents?: Record<string, { model?: string }>;
+  agents?: Record<string, { model?: string; variant?: string; options?: Record<string, unknown>; fallbackModels?: string[]; strict?: boolean }>;
 }
 
 export interface ConfiguredEmbeddedTeamSource {
@@ -85,10 +85,11 @@ interface TeamConfigSourceDescriptor {
 }
 
 export interface CrewBeeConfigFile {
+  config_version?: number;
   teams: Array<Record<string, unknown>>;
 }
 
-export type CrewBeeConfigEnsureReason = "created-default" | "repaired-invalid" | "added-default-coding-team" | "unchanged";
+export type CrewBeeConfigEnsureReason = "created-default" | "repaired-invalid" | "added-default-coding-team" | "migrated-config-version" | "unchanged";
 
 export interface CrewBeeConfigEnsureResult {
   changed: boolean;
@@ -126,12 +127,41 @@ function getOptionalBoolean(value: unknown, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
 }
 
+function getOptionalStringArray(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  const entries = value.filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0);
+  return entries.length > 0 ? entries : undefined;
+}
+
 function getOptionalPriority(value: unknown, fallback: number): number {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
 function getOptionalString(value: unknown): string | undefined {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
+}
+
+function getOptionalRecord(value: unknown): Record<string, unknown> | undefined {
+  return typeof value === "object" && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
+}
+
+function createProviderOptionOverrides(raw: Record<string, unknown>): Record<string, unknown> | undefined {
+  const options = { ...(getOptionalRecord(raw.options) ?? {}) };
+  const thinkingLevel = getOptionalString(raw.thinkingLevel ?? raw.thinking_level);
+  const reasoningEffort = getOptionalString(raw.reasoningEffort ?? raw.reasoning_effort);
+
+  if (thinkingLevel) {
+    options.thinkingLevel = thinkingLevel;
+  }
+
+  if (reasoningEffort) {
+    options.reasoningEffort = reasoningEffort;
+  }
+
+  return Object.keys(options).length > 0 ? options : undefined;
 }
 
 function normalizeConfiguredTeamModelOverride(raw: RawConfiguredTeamEntry): ConfiguredTeamModelOverride | undefined {
@@ -147,7 +177,18 @@ function normalizeConfiguredTeamModelOverride(raw: RawConfiguredTeamEntry): Conf
           }
 
           const model = getOptionalString(value.model);
-          return [[agentId, { ...(model ? { model } : {}) }]];
+          const variant = getOptionalString(value.variant);
+          const options = createProviderOptionOverrides(value);
+          const fallbackModels = getOptionalStringArray(value.fallback_models ?? value.fallbackModels);
+          const strictValue = value.strict;
+          const strict = typeof strictValue === "boolean" ? strictValue : undefined;
+          return [[agentId, {
+            ...(model ? { model } : {}),
+            ...(variant ? { variant } : {}),
+            ...(options ? { options } : {}),
+            ...(fallbackModels ? { fallbackModels } : {}),
+            ...(strict !== undefined ? { strict } : {}),
+          }]];
         }),
       )
     : undefined;
@@ -191,9 +232,6 @@ function createDefaultCodingTeamConfigEntry(): Record<string, unknown> {
     model_preset: BUILTIN_CODING_TEAM_MODEL_PRESET,
     fallback: BUILTIN_CODING_TEAM_MODEL_FALLBACK,
     fallback_to_host_default: BUILTIN_CODING_TEAM_FALLBACK_TO_HOST_DEFAULT,
-    agents: Object.fromEntries(
-      Object.entries(BUILTIN_CODING_TEAM_AGENT_MODELS).map(([agentId, model]) => [agentId, { model }]),
-    ),
   };
 }
 
@@ -252,6 +290,7 @@ export function createDefaultCrewBeeConfig(): CrewBeeConfigFile {
   }
 
   return {
+    config_version: CREWBEE_CONFIG_VERSION,
     teams: [createDefaultCodingTeamConfigEntry()],
   };
 }
@@ -330,6 +369,100 @@ function createUpdatedCrewBeeConfigWithDefaultTeam(config: Record<string, unknow
   };
 }
 
+/**
+ * Migrate an existing config to the latest version by merging in new default
+ * fields while preserving all user-configured values. Returns whether any
+ * changes were made and the resulting config.
+ */
+function migrateCrewBeeConfig(existing: Record<string, unknown>): {
+  changed: boolean;
+  config: CrewBeeConfigFile;
+} {
+  const currentVersion = typeof existing.config_version === "number" ? existing.config_version : 1;
+
+  if (currentVersion >= CREWBEE_CONFIG_VERSION) {
+    // Already up-to-date; cast and return as-is.
+    return { changed: false, config: existing as unknown as CrewBeeConfigFile };
+  }
+
+  const defaults = createDefaultCrewBeeConfig();
+
+  // Start with a shallow copy of the existing config so we preserve all user keys.
+  const migrated: Record<string, unknown> = { ...existing };
+
+  // Stamp the new version.
+  migrated.config_version = CREWBEE_CONFIG_VERSION;
+
+  // Merge top-level keys from defaults that are missing in the existing config.
+  for (const key of Object.keys(defaults)) {
+    if (!(key in migrated)) {
+      migrated[key] = (defaults as unknown as Record<string, unknown>)[key];
+    }
+  }
+
+  // Deep-merge each team entry: for teams that match by id, merge missing fields
+  // from the corresponding default team entry.
+  const existingTeams = Array.isArray(migrated.teams) ? migrated.teams : [];
+  const defaultTeams = defaults.teams ?? [];
+
+  const mergedTeams = existingTeams.map((entry: unknown) => {
+    if (!isRecord(entry)) return entry;
+
+    const teamId = getOptionalString(entry.id);
+    if (!teamId) return entry;
+
+    const defaultEntry = defaultTeams.find(
+      (d: Record<string, unknown>) => isRecord(d) && d.id === teamId,
+    );
+    if (!defaultEntry || !isRecord(defaultEntry)) return entry;
+
+    // Shallow-merge missing top-level team fields from default.
+    const merged: Record<string, unknown> = { ...entry };
+    for (const key of Object.keys(defaultEntry)) {
+      if (!(key in merged)) {
+        merged[key] = defaultEntry[key];
+      }
+    }
+
+    // Deep-merge agents: preserve user agent models, add new agents from default.
+    if (isRecord(defaultEntry.agents)) {
+      const existingAgents = isRecord(merged.agents) ? { ...merged.agents } : {};
+      for (const [agentId, agentConfig] of Object.entries(defaultEntry.agents)) {
+        if (!(agentId in existingAgents)) {
+          existingAgents[agentId] = agentConfig;
+        }
+      }
+      merged.agents = existingAgents;
+    }
+
+    return merged;
+  });
+
+  // Append any default teams that don't exist in the user config at all.
+  for (const defaultEntry of defaultTeams) {
+    if (!isRecord(defaultEntry)) continue;
+    const defaultId = getOptionalString(defaultEntry.id);
+    const defaultPath = getOptionalString(defaultEntry.path);
+    const key = defaultId ?? defaultPath;
+    if (!key) continue;
+
+    const alreadyExists = mergedTeams.some((entry: unknown) => {
+      if (!isRecord(entry)) return false;
+      if (defaultId) return entry.id === defaultId;
+      if (defaultPath) return entry.path === defaultPath;
+      return false;
+    });
+
+    if (!alreadyExists) {
+      mergedTeams.push(defaultEntry);
+    }
+  }
+
+  migrated.teams = mergedTeams;
+
+  return { changed: true, config: migrated as unknown as CrewBeeConfigFile };
+}
+
 export function ensureCrewBeeConfigFile(input: {
   configRoot?: string;
   dryRun?: boolean;
@@ -371,15 +504,27 @@ export function ensureCrewBeeConfigFile(input: {
   }
 
   if (input.mode === "startup") {
+    // Even in startup mode, migrate outdated configs to add new default fields.
+    const migration = migrateCrewBeeConfig(parsed.config);
+    if (migration.changed && !input.dryRun) {
+      writeCrewBeeConfig(configPath, migration.config);
+    }
+
     return {
-      changed: false,
+      changed: migration.changed,
       configPath,
-      reason: "unchanged",
+      reason: migration.changed ? "migrated-config-version" : "unchanged",
     };
   }
 
   const updated = createUpdatedCrewBeeConfigWithDefaultTeam(parsed.config);
-  if (!updated.changed) {
+  
+  // After ensuring the coding team exists, also migrate to latest config version.
+  const migration = migrateCrewBeeConfig(updated.next as unknown as Record<string, unknown>);
+  const finalConfig = migration.config;
+  const changed = updated.changed || migration.changed;
+
+  if (!changed) {
     return {
       changed: false,
       configPath,
@@ -388,13 +533,13 @@ export function ensureCrewBeeConfigFile(input: {
   }
 
   if (!input.dryRun) {
-    writeCrewBeeConfig(configPath, updated.next);
+    writeCrewBeeConfig(configPath, finalConfig);
   }
 
   return {
     changed: true,
     configPath,
-    reason: "added-default-coding-team",
+    reason: updated.changed ? "added-default-coding-team" : "migrated-config-version",
   };
 }
 
