@@ -127,7 +127,16 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .artifacts/registry-smoke
-          npm pack "crewbee@${VERSION}" --pack-destination .artifacts/registry-smoke
+          for attempt in {1..12}; do
+            if npm pack "crewbee@${VERSION}" --pack-destination .artifacts/registry-smoke; then
+              break
+            fi
+            if [ "$attempt" = "12" ]; then
+              echo "::error::crewbee@${VERSION} was not visible in the npm registry after retries."
+              exit 1
+            fi
+            sleep 10
+          done
           TARBALL=$(find .artifacts/registry-smoke -name 'crewbee-*.tgz' -print -quit)
           if [ -z "$TARBALL" ]; then
             echo "::error::registry smoke tarball was not generated."
