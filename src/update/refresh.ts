@@ -18,7 +18,6 @@ import { invalidateWorkspacePackage, readInstalledWorkspaceVersion, syncWorkspac
 
 import type { CrewBeeReleaseCheckResult, CrewBeeReleaseRefreshDependencies } from "./types";
 
-const SUCCESS_RECHECK_MS = 60 * 60 * 1000;
 const FAILURE_RECHECK_MS = 30 * 60 * 1000;
 
 export function startBackgroundReleaseRefresh(ctx: PluginInput, deps: CrewBeeReleaseRefreshDependencies = createDefaultDependencies()): void {
@@ -44,21 +43,8 @@ export async function runBackgroundReleaseRefresh(ctx: PluginInput, deps: CrewBe
     return { needsRefresh: false, reason: "plugin-not-configured" };
   }
 
-  const state = readCrewBeeReleaseState();
-  const now = Date.now();
-  const currentVersion = readInstalledWorkspaceVersion(intent.workspaceRoot) ?? state.lastKnownVersion;
-
-  if (shouldSkipByCooldown(state, now)) {
-    await logCrewBee(ctx, "CrewBee release refresh skipped by cooldown", {
-      currentVersion,
-      lastCheckedAt: state.lastCheckedAt,
-      lastFailureAt: state.lastFailureAt,
-      lastSucceededAt: state.lastSucceededAt,
-    }, "debug");
-    return { currentVersion, needsRefresh: false, reason: "up-to-date" };
-  }
-
   if (intent.isPinned) {
+    const currentVersion = readInstalledWorkspaceVersion(intent.workspaceRoot);
     await logCrewBee(ctx, "CrewBee release refresh skipped for pinned version", {
       entry: intent.entry,
       pinnedVersion: intent.requestedVersion,
@@ -66,6 +52,10 @@ export async function runBackgroundReleaseRefresh(ctx: PluginInput, deps: CrewBe
     });
     return { currentVersion, latestVersion: intent.requestedVersion, needsRefresh: false, reason: "pinned-version" };
   }
+
+  const state = readCrewBeeReleaseState();
+  const now = Date.now();
+  const currentVersion = readInstalledWorkspaceVersion(intent.workspaceRoot) ?? state.lastKnownVersion;
 
   const latestVersion = await fetchTargetVersion({ intent, fetchJson: deps.fetchJson });
   if (!latestVersion) {
@@ -96,6 +86,16 @@ export async function runBackgroundReleaseRefresh(ctx: PluginInput, deps: CrewBe
       workspaceRoot: intent.workspaceRoot,
     }, "debug");
     return { currentVersion, latestVersion, needsRefresh: false, reason: "up-to-date" };
+  }
+
+  if (shouldSkipFailedTargetByCooldown(state, now, latestVersion)) {
+    await logCrewBee(ctx, "CrewBee release refresh skipped by failure cooldown", {
+      currentVersion,
+      latestVersion,
+      lastCheckedAt: state.lastCheckedAt,
+      lastFailureAt: state.lastFailureAt,
+    }, "debug");
+    return { currentVersion, latestVersion, needsRefresh: true, reason: "refresh-required" };
   }
 
   await logCrewBee(ctx, "CrewBee release refresh found newer version", {
@@ -160,14 +160,12 @@ export function shouldEnableCrewBeeReleaseRefresh(currentPackageRoot: string = r
   return !existsSync(path.join(currentPackageRoot, ".git"));
 }
 
-function shouldSkipByCooldown(state: ReturnType<typeof readCrewBeeReleaseState>, now: number): boolean {
-  if (state.lastFailureAt && now - state.lastFailureAt < FAILURE_RECHECK_MS) {
-    return true;
-  }
-  if (state.lastSucceededAt && now - state.lastSucceededAt < SUCCESS_RECHECK_MS) {
-    return true;
-  }
-  return false;
+function shouldSkipFailedTargetByCooldown(state: ReturnType<typeof readCrewBeeReleaseState>, now: number, latestVersion: string): boolean {
+  return Boolean(
+    state.lastFailureAt
+    && state.lastAttemptedVersion === latestVersion
+    && now - state.lastFailureAt < FAILURE_RECHECK_MS,
+  );
 }
 
 function resolveCurrentPackageRoot(): string {
