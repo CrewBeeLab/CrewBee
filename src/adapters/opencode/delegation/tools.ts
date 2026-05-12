@@ -52,6 +52,27 @@ interface CreateDelegateToolsInput {
   bindings: Map<string, SessionRuntimeBinding>;
 }
 
+async function createChildSession(input: {
+  client: ClientLike;
+  parentSessionID: string;
+  title: string;
+  store: DelegateStateStore;
+  canonicalAgentId: string;
+  configKey: string;
+}): Promise<{ sessionID: string; existing: false }> {
+  const created = unwrapSdkResponse(await input.client.session.create({
+    body: { parentID: input.parentSessionID, title: input.title },
+  }));
+  const sessionID = (created as { id: string }).id;
+  input.store.putSession({
+    sessionID,
+    parentSessionID: input.parentSessionID,
+    canonicalAgentId: input.canonicalAgentId,
+    configKey: input.configKey,
+  });
+  return { sessionID, existing: false };
+}
+
 function createDescription(prompt: string): string {
   const trimmed = prompt.trim().replace(/\s+/g, " ");
   return trimmed.length <= 60 ? trimmed : `${trimmed.slice(0, 57)}...`;
@@ -97,22 +118,12 @@ async function resolveChildSession(input: {
   const requestedSessionID = resolveRequestedSessionID(input.args);
 
   if (!requestedSessionID) {
-    const created = unwrapSdkResponse(await input.client.session.create({
-      body: { parentID: input.parentSessionID, title: input.title },
-    }));
-    const sessionID = (created as { id: string }).id;
-    input.store.putSession({
-      sessionID,
-      parentSessionID: input.parentSessionID,
-      canonicalAgentId: input.canonicalAgentId,
-      configKey: input.configKey,
-    });
-    return { sessionID, existing: false };
+    return createChildSession(input);
   }
 
   const known = input.store.getSession(requestedSessionID);
   if (!known) {
-    return createFailedResult(requestedSessionID, "invalid_session_id", "Use an existing task_id/session_id returned by task.");
+    return createChildSession(input);
   }
 
   if (known.parentSessionID !== input.parentSessionID) {
@@ -123,9 +134,11 @@ async function resolveChildSession(input: {
     return createFailedResult(requestedSessionID, "agent_session_mismatch", "The delegated session is already bound to a different agent.");
   }
 
-  await input.client.session.get({ path: { id: requestedSessionID } }).catch(() => {
-    throw createFailedResult(requestedSessionID, "invalid_session_id", "Use an existing task_id/session_id returned by task.");
-  });
+  const exists = await input.client.session.get({ path: { id: requestedSessionID } }).then(() => true).catch(() => false);
+  if (!exists) {
+    input.store.clearSession(requestedSessionID);
+    return createChildSession(input);
+  }
   return { sessionID: requestedSessionID, existing: true };
 }
 

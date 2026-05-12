@@ -200,6 +200,57 @@ test("task rejects agents outside the active Team member collaboration list", as
   assert.match(result.message, /disallowed/);
 });
 
+test("task creates a new child session when task_id is unknown", async () => {
+  const fixture = createPluginInput();
+  const plugin = await OpenCodeCrewBeePlugin(fixture.input);
+  const config = { agent: {} };
+
+  await plugin.config?.(config);
+  await plugin["chat.message"]?.(
+    { sessionID: "ses-parent", agent: "coding-leader" },
+    { message: { role: "user", parts: [] }, parts: [] },
+  );
+
+  const result = parseJson(await plugin.tool.task.execute(
+    { subagent_type: "coding-codebase-explorer", prompt: "Locate the relevant code path.", task_id: "ses_missing" },
+    createToolContext(fixture.worktree),
+  ));
+
+  assert.equal(result.status, "completed");
+  assert.notEqual(result.session_id, "ses_missing");
+  assert.equal(result.task_id, result.session_id);
+  assert.ok(fixture.sessions.has(result.session_id));
+  assert.match(result.message, /done by coding-codebase-explorer/);
+});
+
+test("task creates a replacement child session when stored task_id is stale", async () => {
+  const fixture = createPluginInput();
+  const plugin = await OpenCodeCrewBeePlugin(fixture.input);
+  const config = { agent: {} };
+
+  await plugin.config?.(config);
+  await plugin["chat.message"]?.(
+    { sessionID: "ses-parent", agent: "coding-leader" },
+    { message: { role: "user", parts: [] }, parts: [] },
+  );
+
+  const first = parseJson(await plugin.tool.task.execute(
+    { subagent_type: "coding-codebase-explorer", prompt: "Locate the relevant code path." },
+    createToolContext(fixture.worktree),
+  ));
+  fixture.sessions.delete(first.session_id);
+
+  const second = parseJson(await plugin.tool.task.execute(
+    { subagent_type: "coding-codebase-explorer", prompt: "Continue locating the relevant code path.", task_id: first.session_id },
+    createToolContext(fixture.worktree),
+  ));
+
+  assert.equal(second.status, "completed");
+  assert.notEqual(second.session_id, first.session_id);
+  assert.ok(fixture.sessions.has(second.session_id));
+  assert.match(second.message, /done by coding-codebase-explorer/);
+});
+
 test("task background is finalized from session events and appears in compaction context", async () => {
   const fixture = createPluginInput();
   const plugin = await OpenCodeCrewBeePlugin(fixture.input);
