@@ -102,6 +102,12 @@ jobs:
       - name: Run compaction simulator
         run: npm run simulate:compact
 
+      - name: Install OpenCode CLI
+        run: npm install -g opencode-ai@latest
+
+      - name: Install local CrewBee package
+        run: npm run install:local:user
+
       - name: Run doctor
         run: npm run doctor
 
@@ -117,9 +123,6 @@ jobs:
             exit 1
           fi
           node ./scripts/smoke-packed-package.mjs "$TARBALL"
-
-      - name: Install OpenCode CLI
-        run: npm install -g opencode-ai@latest
 
       - name: Smoke test real OpenCode loading path
         run: |
@@ -171,6 +174,12 @@ jobs:
       - name: Run compaction simulator
         run: npm run simulate:compact
 
+      - name: Install OpenCode CLI
+        run: npm install -g opencode-ai@latest
+
+      - name: Install local CrewBee package
+        run: npm run install:local:user
+
       - name: Run doctor
         run: npm run doctor
 
@@ -186,9 +195,6 @@ jobs:
             exit 1
           fi
           node ./scripts/smoke-packed-package.mjs "$TARBALL"
-
-      - name: Install OpenCode CLI
-        run: npm install -g opencode-ai@latest
 
       - name: Smoke test real OpenCode loading path
         run: |

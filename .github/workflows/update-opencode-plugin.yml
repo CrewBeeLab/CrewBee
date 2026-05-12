@@ -58,6 +58,14 @@ jobs:
         if: steps.diff.outputs.changed == 'true'
         run: npm run simulate:compact
 
+      - name: Install OpenCode CLI
+        if: steps.diff.outputs.changed == 'true'
+        run: npm install -g opencode-ai@latest
+
+      - name: Install local CrewBee package
+        if: steps.diff.outputs.changed == 'true'
+        run: npm run install:local:user
+
       - name: Run doctor
         if: steps.diff.outputs.changed == 'true'
         run: npm run doctor
