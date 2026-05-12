@@ -267,9 +267,9 @@ Release CI gates：
 
 1. checkout 不可变 release tag。
 2. 校验 tag、`package.json`、`package-lock.json` 版本一致。
-3. 如果该 npm version 已经发布，则拒绝继续。
+3. 如果该 npm version 已经发布，跳过 `npm publish`，继续执行发布后 smoke、`latest` promotion、latest 验证和 GitHub Release 创建。这用于同一个 tag 在 post-publish 步骤失败后的续跑。
 4. 运行完整 release gates：`typecheck`、tests、build、simulators、doctor、pack、package smoke、真实 OpenCode loading smoke。
-5. 将已验证 tarball 发布到 staging dist-tag：
+5. 如果该 npm version 尚未发布，将已验证 tarball 发布到 staging dist-tag：
    - stable release 先发布到 `next`
    - prerelease 发布到对应 prerelease tag，例如 `beta`
 6. 从 npm registry 拉回刚发布的 package 并 smoke-test。
@@ -293,6 +293,39 @@ Release CI gates：
    - GitHub Release 存在
 
 Release commit 刻意保持 version-only。这样既保留发布安全边界，也避免每次功能迭代都手写第二个 PR。
+
+### 手动指定发布版本
+
+如果某次发布需要指定版本号，不要手改 `package.json`，也不要在 publish 失败后 bump 新版本。标准入口仍然是手动运行 `release-ci`，并填写 `version` 输入。
+
+GitHub UI 操作：
+
+1. 打开 Actions -> `release-ci` -> Run workflow。
+2. Branch 选择 `main`。
+3. `version` 填写目标版本，例如 `0.2.0` 或 `0.2.0-beta.1`。
+4. `bump` 会在填写 `version` 时被忽略，可以保留默认 `patch`。
+5. 运行后等待 `release-ci`、`release-tag`、`publish` 完成。
+
+如果让 Agent 执行，直接给出版本号即可，例如：
+
+```text
+请发布 CrewBee 0.2.0
+```
+
+Agent 应执行以下流程：
+
+1. 确认工作区没有未提交的发布相关改动；不要读取或提交 `.crewbee/`、`.crewbeectxt/`、`.local/`。
+2. 触发 `release-ci` 的 `workflow_dispatch`，参数为 `version=<目标版本>`，`bump=patch`。
+3. 等待 `release-ci` 创建 `Release v<目标版本>` commit。
+4. 等待 `release-tag.yml` 创建 `v<目标版本>` tag。
+5. 等待 `publish.yml` 完成 npm publish、`latest` promotion、GitHub Release 创建。
+6. 验证 `npm view crewbee version`、`npm view crewbee dist-tags --json` 和 GitHub Release。
+
+失败处理规则：
+
+- 如果失败发生在 `Publish npm package to staging dist-tag` 之前，修复 workflow 或环境后重跑同一个 tag / workflow，不增加版本号。
+- 如果失败发生在 `npm publish` 成功之后，但 `latest` promotion、latest 验证或 GitHub Release 创建之前，修复 workflow 或环境后重跑同一个 tag / workflow；`publish.yml` 会检测到该版本已存在并跳过 `npm publish`，继续补全后续步骤。
+- 只有已经决定发布一个新的产品版本时，才指定新的版本号。
 
 ---
 

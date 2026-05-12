@@ -267,9 +267,9 @@ Trigger:
 
 1. Checks out the immutable release tag.
 2. Validates that tag, `package.json`, and `package-lock.json` versions match.
-3. Rejects the release if that npm version is already published.
+3. If that npm version is already published, skips `npm publish` and continues with registry smoke, `latest` promotion, latest verification, and GitHub Release creation. This supports rerunning the same tag after a post-publish failure.
 4. Runs the full release gates: `typecheck`, tests, build, simulators, doctor, pack, package smoke, and real OpenCode loading smoke.
-5. Publishes the verified tarball to a staging dist-tag:
+5. If that npm version is not already published, publishes the verified tarball to a staging dist-tag:
    - stable releases first publish to `next`
    - prereleases publish to their prerelease tag, for example `beta`
 6. Fetches the just-published package back from npm and smoke-tests it.
@@ -293,6 +293,39 @@ Trigger:
    - GitHub release exists
 
 The release commit is intentionally version-only. This keeps the release safety boundary while avoiding a hand-written second PR for every feature iteration.
+
+### Manual Explicit Version Release
+
+If a release needs a specific version, do not edit `package.json` by hand, and do not bump to a new version after a publish failure. The standard entry point is still the manual `release-ci` workflow with the `version` input filled in.
+
+GitHub UI steps:
+
+1. Open Actions -> `release-ci` -> Run workflow.
+2. Select branch `main`.
+3. Set `version` to the target version, for example `0.2.0` or `0.2.0-beta.1`.
+4. Leave `bump` at the default `patch`; it is ignored when `version` is provided.
+5. Wait for `release-ci`, `release-tag`, and `publish` to complete.
+
+If an Agent should execute the release, give it the version directly, for example:
+
+```text
+Please release CrewBee 0.2.0
+```
+
+The Agent should run this procedure:
+
+1. Confirm the worktree has no uncommitted release-related changes; do not read or commit `.crewbee/`, `.crewbeectxt/`, or `.local/`.
+2. Trigger `release-ci` with `workflow_dispatch`, using `version=<target version>` and `bump=patch`.
+3. Wait for `release-ci` to create the `Release v<target version>` commit.
+4. Wait for `release-tag.yml` to create the `v<target version>` tag.
+5. Wait for `publish.yml` to complete npm publish, `latest` promotion, and GitHub Release creation.
+6. Verify `npm view crewbee version`, `npm view crewbee dist-tags --json`, and the GitHub Release.
+
+Failure handling rules:
+
+- If the failure happens before `Publish npm package to staging dist-tag`, fix the workflow or environment and rerun the same tag / workflow. Do not increase the version.
+- If `npm publish` succeeded but `latest` promotion, latest verification, or GitHub Release creation failed, fix the workflow or environment and rerun the same tag / workflow. `publish.yml` detects the existing version, skips `npm publish`, and resumes the remaining steps.
+- Only choose a new version when you intentionally want to publish a new product version.
 
 ---
 
