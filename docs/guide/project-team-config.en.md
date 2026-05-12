@@ -2,6 +2,8 @@
 
 Language: [中文](./project-team-config.md) | English
 
+Audience: **users and Team authors** configuring global and project-level Teams. Repository release and CI/CD workflows are covered in the [Release And CI/CD Guide](../developer/release.md).
+
 > Status: implemented and published in `crewbee@0.1.9`. This document describes the current project/global Team configuration model and the architectural constraints that keep both sources on the same assembly path.
 
 ## 1. Design conclusion

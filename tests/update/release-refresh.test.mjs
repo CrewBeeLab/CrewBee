@@ -6,9 +6,9 @@ import path from "node:path";
 
 import { findConfiguredCrewBeeReleaseIntent } from "../../dist/src/update/intent.js";
 import { runBackgroundReleaseRefresh, shouldEnableCrewBeeReleaseRefresh, startBackgroundReleaseRefresh } from "../../dist/src/update/refresh.js";
-import { readCrewBeeReleaseState } from "../../dist/src/update/state.js";
+import { readCrewBeeReleaseState, writeCrewBeeReleaseState } from "../../dist/src/update/state.js";
 
-function withEnv(overrides, fn) {
+async function withEnv(overrides, fn) {
   const previous = new Map();
   for (const [key, value] of Object.entries(overrides)) {
     previous.set(key, process.env[key]);
@@ -20,7 +20,7 @@ function withEnv(overrides, fn) {
   }
 
   try {
-    return fn();
+    return await fn();
   } finally {
     for (const [key, value] of previous.entries()) {
       if (value === undefined) {
@@ -54,7 +54,7 @@ test("findConfiguredCrewBeeReleaseIntent resolves plain crewbee to latest worksp
   const configRoot = path.join(workspace, ".config", "opencode");
   const cacheRoot = path.join(workspace, ".cache");
 
-  withEnv({ OPENCODE_CONFIG_DIR: configRoot, XDG_CACHE_HOME: cacheRoot }, () => {
+  return withEnv({ OPENCODE_CONFIG_DIR: configRoot, XDG_CACHE_HOME: cacheRoot }, () => {
     writeConfigRoot(configRoot, "crewbee");
     const intent = findConfiguredCrewBeeReleaseIntent();
     assert.equal(intent?.entry, "crewbee");
@@ -124,7 +124,7 @@ test("runBackgroundReleaseRefresh syncs workspace dependency intent and records 
 
 test("startBackgroundReleaseRefresh is disabled unless explicitly enabled", async () => {
   let called = false;
-  await withEnv({ CREWBEE_AUTO_UPDATE: undefined }, async () => {
+  await withEnv({ CREWBEE_AUTO_UPDATE: undefined, NODE_ENV: "test" }, async () => {
     startBackgroundReleaseRefresh(createPluginInput(), {
       async fetchJson() {
         called = true;
@@ -168,8 +168,10 @@ test("runBackgroundReleaseRefresh respects failure cooldown", async () => {
     writeFileSync(path.join(workspaceRoot, "node_modules", "crewbee", "package.json"), JSON.stringify({ name: "crewbee", version: "0.1.3" }, null, 2), "utf8");
 
     let installCalls = 0;
+    let fetchCalls = 0;
     const deps = {
       async fetchJson() {
+        fetchCalls += 1;
         return { "dist-tags": { latest: "0.1.5" } };
       },
       async runInstall() {
@@ -178,9 +180,81 @@ test("runBackgroundReleaseRefresh respects failure cooldown", async () => {
       },
     };
 
-    await runBackgroundReleaseRefresh(createPluginInput(), deps);
-    await runBackgroundReleaseRefresh(createPluginInput(), deps);
+    const first = await runBackgroundReleaseRefresh(createPluginInput(), deps);
+    const second = await runBackgroundReleaseRefresh(createPluginInput(), deps);
 
+    assert.equal(installCalls, 1);
+    assert.equal(fetchCalls, 2);
+    assert.equal(first.reason, "refresh-required");
+    assert.equal(second.reason, "refresh-required");
+    assert.equal(second.latestVersion, "0.1.5");
+  });
+});
+
+test("runBackgroundReleaseRefresh bypasses stale success state when registry has a newer latest", async () => {
+  const workspace = path.join(os.tmpdir(), `crewbee-update-success-stale-${Date.now()}`);
+  const configRoot = path.join(workspace, ".config", "opencode");
+  const cacheRoot = path.join(workspace, ".cache");
+
+  await withEnv({ OPENCODE_CONFIG_DIR: configRoot, XDG_CACHE_HOME: cacheRoot }, async () => {
+    writeConfigRoot(configRoot, "crewbee@latest");
+    const workspaceRoot = path.join(cacheRoot, "opencode", "packages", "crewbee@latest");
+    mkdirSync(path.join(workspaceRoot, "node_modules", "crewbee"), { recursive: true });
+    writeFileSync(path.join(workspaceRoot, "node_modules", "crewbee", "package.json"), JSON.stringify({ name: "crewbee", version: "0.1.16" }, null, 2), "utf8");
+    writeCrewBeeReleaseState({
+      lastCheckedAt: Date.now(),
+      lastKnownVersion: "0.1.16",
+      lastSucceededAt: Date.now(),
+    });
+
+    let installCalls = 0;
+    const result = await runBackgroundReleaseRefresh(createPluginInput(), {
+      async fetchJson() {
+        return { "dist-tags": { latest: "0.1.17" } };
+      },
+      async runInstall() {
+        installCalls += 1;
+        return true;
+      },
+    });
+
+    assert.equal(result.reason, "refresh-required");
+    assert.equal(result.latestVersion, "0.1.17");
+    assert.equal(installCalls, 1);
+  });
+});
+
+test("runBackgroundReleaseRefresh retries immediately when the latest target changes", async () => {
+  const workspace = path.join(os.tmpdir(), `crewbee-update-new-target-${Date.now()}`);
+  const configRoot = path.join(workspace, ".config", "opencode");
+  const cacheRoot = path.join(workspace, ".cache");
+
+  await withEnv({ OPENCODE_CONFIG_DIR: configRoot, XDG_CACHE_HOME: cacheRoot }, async () => {
+    writeConfigRoot(configRoot, "crewbee@latest");
+    const workspaceRoot = path.join(cacheRoot, "opencode", "packages", "crewbee@latest");
+    mkdirSync(path.join(workspaceRoot, "node_modules", "crewbee"), { recursive: true });
+    writeFileSync(path.join(workspaceRoot, "node_modules", "crewbee", "package.json"), JSON.stringify({ name: "crewbee", version: "0.1.3" }, null, 2), "utf8");
+    writeCrewBeeReleaseState({
+      lastCheckedAt: Date.now(),
+      lastAttemptedVersion: "0.1.5",
+      lastFailure: "Failed to install 0.1.5",
+      lastFailureAt: Date.now(),
+      lastKnownVersion: "0.1.3",
+    });
+
+    let installCalls = 0;
+    const result = await runBackgroundReleaseRefresh(createPluginInput(), {
+      async fetchJson() {
+        return { "dist-tags": { latest: "0.1.6" } };
+      },
+      async runInstall() {
+        installCalls += 1;
+        return true;
+      },
+    });
+
+    assert.equal(result.reason, "refresh-required");
+    assert.equal(result.latestVersion, "0.1.6");
     assert.equal(installCalls, 1);
   });
 });

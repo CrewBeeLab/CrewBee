@@ -54,10 +54,9 @@ CrewBee 让你把这些内容整理成可维护的 Agent Team 资产：定义 Te
 ## 快速入口
 
 * [CrewBeeLab 官网](https://crewbeelab.github.io)
-* [安装指南](docs/guide/installation.zh-CN.md)
-* [自定义 Agent Team 指南](docs/guide/custom-agent-team.md)
-* [项目级 Team 配置指南](docs/guide/project-team-config.md)
-* [发布指南](docs/guide/release.zh-CN.md)
+* [指南索引](docs/guide/README.zh-CN.md)
+* 用户指南：[安装](docs/guide/installation.zh-CN.md)、[自定义 Agent Team](docs/guide/custom-agent-team.md)、[项目级 Team 配置](docs/guide/project-team-config.md)
+* 开发者指南：[开发者索引](docs/developer/README.zh-CN.md)、[发布与 CI/CD](docs/developer/release.zh-CN.md)
 
 英文文档请从 [README.md](README.md) 进入，并优先阅读 `docs/guide` 下的英文指南文件。
 
@@ -732,7 +731,7 @@ crewbee
 发布手册：
 
 ```text
-docs/guide/release.zh-CN.md
+docs/developer/release.zh-CN.md
 ```
 
 Windows 下默认仍优先使用：

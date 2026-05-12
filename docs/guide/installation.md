@@ -2,6 +2,8 @@
 
 Language: English | [中文](./installation.zh-CN.md)
 
+Audience: **users** installing or operating CrewBee with OpenCode. Maintainer-only CI/CD and release work is covered in the [Release And CI/CD Guide](../developer/release.md).
+
 ## Quick Start
 
 Install CrewBee for OpenCode in one command:
@@ -196,7 +198,7 @@ npx crewbee@latest setup --with-opencode --dry-run
 
 ## Developer Local Install
 
-The local tarball path is for contributors and maintainers, not first-time users:
+The local tarball path is for contributors and maintainers, not first-time users. It is summarized here only to point developers to the correct workflow; full release and CI/CD details live in the [Release And CI/CD Guide](../developer/release.md).
 
 ```bash
 npm install

@@ -2,6 +2,8 @@
 
 Language: [中文](./custom-agent-team.md) | English
 
+Audience: **users and Team authors** defining Agent Team assets. Repository release and CI/CD workflows are covered in the [Release And CI/CD Guide](../developer/release.md).
+
 ## 0. The two things to decide first: where to put it, and how to register it
 
 When defining a custom Agent Team, the two operational decisions are:

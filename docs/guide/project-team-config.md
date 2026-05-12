@@ -2,6 +2,8 @@
 
 语言：中文 | [English](./project-team-config.en.md)
 
+适用对象：配置全局 Team 和项目级 Team 的**用户与 Team 作者**。仓库发布和 CI/CD 流程见[发布与 CI/CD 指南](../developer/release.zh-CN.md)。
+
 > Status: implemented and published in `crewbee@0.1.9`. This document describes the current project/global Team configuration model and the architectural constraints that keep both sources on the same assembly path.
 
 ## 1. 设计结论

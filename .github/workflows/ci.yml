@@ -99,6 +99,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build package
+        run: npm run build
+
+      - name: Install OpenCode CLI
+        run: npm install -g opencode-ai@latest
+
+      - name: Install local CrewBee package
+        run: npm run install:local:user
+
       - name: Run doctor
         run: npm run doctor
 
