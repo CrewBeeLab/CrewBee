@@ -128,7 +128,8 @@ jobs:
           set -euo pipefail
           mkdir -p .artifacts/registry-smoke
           for attempt in {1..12}; do
-            if npm pack "crewbee@${VERSION}" --pack-destination .artifacts/registry-smoke; then
+            CACHE_DIR=".artifacts/npm-registry-cache-${attempt}"
+            if npm pack "crewbee@${VERSION}" --pack-destination .artifacts/registry-smoke --prefer-online --cache "$CACHE_DIR"; then
               break
             fi
             if [ "$attempt" = "12" ]; then
