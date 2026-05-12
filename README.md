@@ -53,10 +53,9 @@ Simple tasks stay lightweight. Complex tasks get support, review, validation, an
 ## Quick Links
 
 * [CrewBeeLab Website](https://crewbeelab.github.io)
-* [Installation Guide](docs/guide/installation.md)
-* [Custom Agent Team Guide](docs/guide/custom-agent-team.en.md)
-* [Project-level Team Configuration Guide](docs/guide/project-team-config.en.md)
-* [Release Guide](docs/guide/release.md)
+* [Guide Index](docs/guide/README.md)
+* User guides: [Installation](docs/guide/installation.md), [Custom Agent Teams](docs/guide/custom-agent-team.en.md), [Project-level Team Configuration](docs/guide/project-team-config.en.md)
+* Developer guides: [Developer Index](docs/developer/README.md), [Release and CI/CD](docs/developer/release.md)
 
 For Chinese documentation, start from [README.zh-CN.md](README.zh-CN.md) and the Chinese guide files under `docs/guide`.
 
@@ -752,7 +751,7 @@ crewbee
 Release guide:
 
 ```text
-docs/guide/release.md
+docs/developer/release.md
 ```
 
 On Windows, CrewBee still prefers:

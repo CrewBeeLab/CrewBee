@@ -27,7 +27,7 @@ For most readers:
 1. `README.md`
 2. `docs/architecture.md`
 3. `docs/guide/installation.md`
-4. `docs/guide/release.md`
+4. `docs/developer/release.md`
 
 Only then use `docs/internal/` if you need deeper implementation background.
 
@@ -35,5 +35,5 @@ Only then use `docs/internal/` if you need deeper implementation background.
 
 - Keep this folder for high-value internal engineering material only
 - Prefer adding public-facing concepts to `README.md` or `docs/`
-- Prefer moving operational/user guidance to `docs/guide/`
+- Prefer moving user guidance to `docs/guide/` and maintainer workflows to `docs/developer/`
 - Avoid placing temporary investigation scratch files here

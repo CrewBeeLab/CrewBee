@@ -1,6 +1,12 @@
-# Release Guide
+# Release And CI/CD Guide
 
 Language: English | [中文](./release.zh-CN.md)
+
+Audience: **developers and maintainers** working on the CrewBee repository. If you only want to install or use CrewBee, start with the [Installation Guide](../guide/installation.md).
+
+## Scope
+
+This guide covers local maintainer workflows, GitHub Actions CI/CD, official releases, npm publishing, and post-release verification. It is not required for normal CrewBee users.
 
 ## Goals
 
@@ -146,9 +152,11 @@ This keeps the local manual path explicit and safe.
 
 ---
 
-## Option B: GitHub Actions Release PR Flow
+## Option B: GitHub Actions Release Flow
 
-This is the recommended **official** release path. Humans only create and merge a release PR; the tag and npm publish happen automatically after that PR lands on `main`.
+This is the recommended **official** release path. Humans merge normal feature/fix PRs into `main`, then manually run `release-ci` when a release should happen. After `release-ci` passes, the version bump, tag, npm publish, and GitHub Release happen automatically.
+
+This flow requires `CREWBEE_AUTOMATION_TOKEN` to be configured as a repository secret. The token must be allowed to push to `main` and push tags; using the default `GITHUB_TOKEN` is not enough because GitHub suppresses downstream workflows triggered by `GITHUB_TOKEN` pushes.
 
 ### CI workflow
 
@@ -170,6 +178,17 @@ It runs:
 - `npm run pack:release`
 - packed package smoke via `scripts/smoke-packed-package.mjs`
 
+### CI/CD workflow map
+
+| Workflow | Trigger | Role | Output |
+| --- | --- | --- | --- |
+| `.github/workflows/ci.yml` | push to `main`, any pull request | Validate ordinary development changes | Required validation checks |
+| `.github/workflows/release-ci.yml` | release PRs, or manual `workflow_dispatch` | Validate release candidates; on manual release, bump version after gates pass | `Release vX.Y.Z` commit on `main` |
+| `.github/workflows/release-tag.yml` | push to `main` | Detect version-only release commits and create immutable tags | `vX.Y.Z` tag |
+| `.github/workflows/publish.yml` | push of `vX.Y.Z` tag | Publish npm package and create GitHub Release | npm release and GitHub Release |
+
+Normal feature/fix PRs should not change package versions. Maintainers decide when to publish by manually running `release-ci`.
+
 ### Release CI workflow
 
 File:
@@ -178,10 +197,11 @@ File:
 .github/workflows/release-ci.yml
 ```
 
-Trigger:
+Triggers:
 
 - pull requests targeting `main` whose branch starts with `release/v`
 - or pull requests targeting `main` with the `release` label
+- manual `workflow_dispatch` to validate `main`, bump the package version, and push the release commit
 
 Release PR requirements:
 
@@ -203,6 +223,14 @@ Release CI gates:
 - install local tarball into the OpenCode user-level workspace
 - `opencode models --print-logs --log-level DEBUG`
 - `opencode agent list --print-logs --log-level DEBUG`
+
+Manual release behavior:
+
+- runs the same release gates on the current `main`
+- computes the next version from `patch`, `minor`, `major`, or an explicit version
+- updates only `package.json` and `package-lock.json`
+- commits `Release vX.Y.Z` directly to `main`
+- lets `release-tag.yml` create the release tag from that version bump
 
 ### Release tag workflow
 
@@ -251,19 +279,20 @@ Trigger:
 
 ### GitHub Actions release steps
 
-1. Create a branch named `release/vX.Y.Z` from `main`.
-2. Update only `package.json` and `package-lock.json` to `X.Y.Z`.
-3. Commit with subject `Release vX.Y.Z`.
-4. Open a PR from `release/vX.Y.Z` to `main`.
-5. Wait for `ci` and `release-ci` to pass.
-6. Merge the release PR.
-7. `release-tag.yml` detects the package version bump on `main` and creates `vX.Y.Z` automatically.
-8. `publish.yml` publishes the tag automatically.
-9. After success, verify:
+1. Merge normal feature or fix PRs into `main` as usual.
+2. When you are ready to publish, manually run the `release-ci` workflow.
+3. Choose `patch`, `minor`, `major`, or provide an explicit version.
+4. `release-ci` runs the full release gates on `main`.
+5. If the gates pass, `release-ci` commits `Release vX.Y.Z` to `main` with only `package.json` and `package-lock.json` changed.
+6. `release-tag.yml` detects the package version bump on `main` and creates `vX.Y.Z` automatically.
+7. `publish.yml` publishes the tag automatically.
+8. After success, verify:
    - npm has `crewbee@<version>`
    - `latest` points to the released stable version
    - tag `v<version>` exists
    - GitHub release exists
+
+The release commit is intentionally version-only. This keeps the release safety boundary while avoiding a hand-written second PR for every feature iteration.
 
 ---
 
@@ -327,10 +356,10 @@ node ./scripts/release-registry.mjs --dryRun
 
 ### For official releases
 
-Use the release PR flow:
+Use the manual `release-ci` flow:
 
 ```text
-release/vX.Y.Z -> Release PR -> merge -> automatic tag -> automatic publish
+workflow_dispatch release-ci -> Release vX.Y.Z commit -> automatic tag -> automatic publish
 ```
 
 This keeps a single human entry point while preserving an immutable tag as the publish boundary.

@@ -2,6 +2,8 @@
 
 语言：中文 | [English](./custom-agent-team.en.md)
 
+适用对象：定义 Agent Team 资产的**用户与 Team 作者**。仓库发布和 CI/CD 流程见[发布与 CI/CD 指南](../developer/release.zh-CN.md)。
+
 ## 0. 最先要做的两件事：放在哪，怎么注册
 
 定义一支自定义 Agent Team 时，最直接、最必然要接触的是这两件事：

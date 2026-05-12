@@ -2,6 +2,8 @@
 
 语言：[English](./installation.md) | 中文
 
+适用对象：希望在 OpenCode 中安装或使用 CrewBee 的**用户**。维护者专用的 CI/CD 与发布流程见[发布与 CI/CD 指南](../developer/release.zh-CN.md)。
+
 ## Quick Start
 
 用一条命令为 OpenCode 安装 CrewBee：
@@ -196,7 +198,7 @@ npx crewbee@latest setup --with-opencode --dry-run
 
 ## 开发者本地安装
 
-本地 tarball 路径只给贡献者和维护者，不是首次用户路径：
+本地 tarball 路径只给贡献者和维护者，不是首次用户路径。这里仅用于指向正确的开发者工作流；完整发布与 CI/CD 说明见[发布与 CI/CD 指南](../developer/release.zh-CN.md)。
 
 ```bash
 npm install

@@ -1,6 +1,12 @@
-# 发布指南
+# 发布与 CI/CD 指南
 
 语言：[English](./release.md) | 中文
+
+适用对象：参与 CrewBee 仓库开发、维护和发布的**开发者与维护者**。如果只是安装或使用 CrewBee，请从[安装指南](../guide/installation.zh-CN.md)开始。
+
+## 范围
+
+本文覆盖本地维护者流程、GitHub Actions CI/CD、官方发布、npm publish 和发布后验证。普通 CrewBee 用户不需要阅读本文。
 
 ## 目标
 
@@ -146,9 +152,11 @@ gh release create vX.Y.Z --generate-notes
 
 ---
 
-## 方案 B：GitHub Actions Release PR 发布流程
+## 方案 B：GitHub Actions 发布流程
 
-这是推荐的 **official** release path。人只需要创建并合并 Release PR；该 PR 合并到 `main` 后，tag 和 npm publish 会自动继续执行。
+这是推荐的 **official** release path。人正常将功能 / 修复 PR 合并到 `main`，需要发布时手动运行 `release-ci`。`release-ci` 通过后，版本号 bump、tag、npm publish 和 GitHub Release 会自动继续执行。
+
+该流程要求仓库 secret 中配置 `CREWBEE_AUTOMATION_TOKEN`。该 token 必须允许 push 到 `main` 并 push tag；默认 `GITHUB_TOKEN` 不够，因为 GitHub 会抑制由 `GITHUB_TOKEN` push 触发的后续 workflow。
 
 ### CI workflow
 
@@ -170,6 +178,17 @@ gh release create vX.Y.Z --generate-notes
 - `npm run pack:release`
 - 通过 `scripts/smoke-packed-package.mjs` 执行 packed package smoke
 
+### CI/CD workflow map
+
+| Workflow | 触发方式 | 职责 | 输出 |
+| --- | --- | --- | --- |
+| `.github/workflows/ci.yml` | push 到 `main`、任意 pull request | 验证普通开发改动 | 必要验证 checks |
+| `.github/workflows/release-ci.yml` | release PR，或手动 `workflow_dispatch` | 验证 release candidate；手动发布时 gates 通过后 bump version | `main` 上的 `Release vX.Y.Z` commit |
+| `.github/workflows/release-tag.yml` | push 到 `main` | 识别 version-only release commit，并创建不可变 tag | `vX.Y.Z` tag |
+| `.github/workflows/publish.yml` | push `vX.Y.Z` tag | 发布 npm package，并创建 GitHub Release | npm release 与 GitHub Release |
+
+普通功能 / 修复 PR 不应该修改 package version。维护者通过手动运行 `release-ci` 决定何时发布。
+
 ### Release CI workflow
 
 文件：
@@ -182,6 +201,7 @@ gh release create vX.Y.Z --generate-notes
 
 - 目标分支是 `main`，且来源分支以 `release/v` 开头的 PR
 - 或目标分支是 `main`，且带有 `release` label 的 PR
+- 手动 `workflow_dispatch`，用于验证 `main`、bump package version，并推送 release commit
 
 Release PR 要求：
 
@@ -203,6 +223,14 @@ Release CI gates：
 - 将本地 tarball 安装到 OpenCode 用户级 workspace
 - `opencode models --print-logs --log-level DEBUG`
 - `opencode agent list --print-logs --log-level DEBUG`
+
+手动发布行为：
+
+- 在当前 `main` 上运行同一套 release gates
+- 根据 `patch`、`minor`、`major` 或指定版本计算下一版本
+- 只更新 `package.json` 和 `package-lock.json`
+- 直接向 `main` 提交 `Release vX.Y.Z`
+- 让 `release-tag.yml` 根据该版本号变更创建 release tag
 
 ### Release tag workflow
 
@@ -251,19 +279,20 @@ Release CI gates：
 
 ### GitHub Actions 发布步骤
 
-1. 从 `main` 创建分支 `release/vX.Y.Z`。
-2. 只更新 `package.json` 和 `package-lock.json` 到 `X.Y.Z`。
-3. 提交 commit，subject 为 `Release vX.Y.Z`。
-4. 打开 `release/vX.Y.Z -> main` 的 PR。
-5. 等待 `ci` 和 `release-ci` 全部通过。
-6. 合并 Release PR。
-7. `release-tag.yml` 检测 `main` 上的 package version bump 并自动创建 `vX.Y.Z`。
-8. `publish.yml` 自动发布该 tag。
-9. 成功后验证：
+1. 正常将功能或修复 PR 合并到 `main`。
+2. 准备发布时，手动运行 `release-ci` workflow。
+3. 选择 `patch`、`minor`、`major`，或填写指定版本。
+4. `release-ci` 在 `main` 上运行完整 release gates。
+5. gates 全部通过后，`release-ci` 向 `main` 提交只修改 `package.json` 和 `package-lock.json` 的 `Release vX.Y.Z`。
+6. `release-tag.yml` 检测 `main` 上的 package version bump 并自动创建 `vX.Y.Z`。
+7. `publish.yml` 自动发布该 tag。
+8. 成功后验证：
    - npm 存在 `crewbee@<version>`
    - `latest` 指向该 stable version
    - tag `v<version>` 存在
    - GitHub Release 存在
+
+Release commit 刻意保持 version-only。这样既保留发布安全边界，也避免每次功能迭代都手写第二个 PR。
 
 ---
 
@@ -327,10 +356,10 @@ node ./scripts/release-registry.mjs --dryRun
 
 ### 正式发布
 
-使用 Release PR 流程：
+使用手动 `release-ci` 流程：
 
 ```text
-release/vX.Y.Z -> Release PR -> merge -> automatic tag -> automatic publish
+workflow_dispatch release-ci -> Release vX.Y.Z commit -> automatic tag -> automatic publish
 ```
 
 这保留了单一人工入口，同时使用不可变 tag 作为 publish 边界。

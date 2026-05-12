@@ -21,6 +21,7 @@ jobs:
       - name: Validate package version bump and create tag
         env:
           BEFORE_SHA: ${{ github.event.before }}
+          CREWBEE_AUTOMATION_TOKEN: ${{ secrets.CREWBEE_AUTOMATION_TOKEN }}
         run: |
           set -euo pipefail
 
@@ -61,5 +62,11 @@ jobs:
             exit 0
           fi
 
+          if [ -z "$CREWBEE_AUTOMATION_TOKEN" ]; then
+            echo "::error::CREWBEE_AUTOMATION_TOKEN is required so the release tag can trigger publish.yml."
+            exit 1
+          fi
+
+          git remote set-url origin "https://x-access-token:${CREWBEE_AUTOMATION_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git tag "v${VERSION}" "$GITHUB_SHA"
           git push origin "refs/tags/v${VERSION}"

@@ -1,12 +1,27 @@
 name: release-ci
 
 on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump to apply when version is not specified"
+        required: true
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      version:
+        description: "Explicit release version, for example 0.2.0. Leave empty to use bump."
+        required: false
+        type: string
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened, labeled, unlabeled, ready_for_review]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   release-ci:
@@ -112,3 +127,161 @@ jobs:
           npm run install:local:user
           opencode models --print-logs --log-level DEBUG
           opencode agent list --print-logs --log-level DEBUG
+
+  prepare-release:
+    if: github.repository == 'CrewBeeLab/CrewBee' && github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require automation token
+        env:
+          CREWBEE_AUTOMATION_TOKEN: ${{ secrets.CREWBEE_AUTOMATION_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "$CREWBEE_AUTOMATION_TOKEN" ]; then
+            echo "::error::CREWBEE_AUTOMATION_TOKEN is required so the release commit can trigger release-tag.yml."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.CREWBEE_AUTOMATION_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build package
+        run: npm run build
+
+      - name: Run OpenCode simulator
+        run: npm run simulate:opencode
+
+      - name: Run compaction simulator
+        run: npm run simulate:compact
+
+      - name: Run doctor
+        run: npm run doctor
+
+      - name: Pack release tarball
+        run: npm run pack:release
+
+      - name: Smoke test packed package
+        run: |
+          set -euo pipefail
+          TARBALL=$(find .artifacts/release -name 'crewbee-*.tgz' -print -quit)
+          if [ -z "$TARBALL" ]; then
+            echo "::error::release tarball was not generated."
+            exit 1
+          fi
+          node ./scripts/smoke-packed-package.mjs "$TARBALL"
+
+      - name: Install OpenCode CLI
+        run: npm install -g opencode-ai@latest
+
+      - name: Smoke test real OpenCode loading path
+        run: |
+          set -euo pipefail
+          npm run install:local:user
+          opencode models --print-logs --log-level DEBUG
+          opencode agent list --print-logs --log-level DEBUG
+
+      - name: Resolve next version
+        id: version
+        env:
+          INPUT_BUMP: ${{ inputs.bump }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+
+          export LOCAL_VERSION=$(node -p "require('./package.json').version")
+          export REGISTRY_VERSION=$(npm view crewbee version --silent 2>/dev/null || true)
+
+          node <<'NODE' > /tmp/crewbee-release-version.env
+          const fs = require('node:fs');
+
+          const localVersion = process.env.LOCAL_VERSION;
+          const registryVersion = process.env.REGISTRY_VERSION || undefined;
+          const explicitVersion = (process.env.INPUT_VERSION || '').trim();
+          const bump = process.env.INPUT_BUMP || 'patch';
+          const semver = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z]+(?:\.[0-9A-Za-z]+)*)?$/;
+
+          function parseStable(version) {
+            const stable = version.split('-')[0];
+            const parts = stable.split('.').map((part) => Number.parseInt(part, 10));
+            if (parts.length !== 3 || parts.some((part) => !Number.isInteger(part))) {
+              throw new Error(`Invalid version: ${version}`);
+            }
+            return parts;
+          }
+
+          function compareStable(a, b) {
+            const left = parseStable(a);
+            const right = parseStable(b);
+            for (let i = 0; i < 3; i += 1) {
+              if (left[i] !== right[i]) return left[i] - right[i];
+            }
+            return 0;
+          }
+
+          function bumpVersion(version, bump) {
+            const [major, minor, patch] = parseStable(version);
+            if (bump === 'major') return `${major + 1}.0.0`;
+            if (bump === 'minor') return `${major}.${minor + 1}.0`;
+            if (bump === 'patch') return `${major}.${minor}.${patch + 1}`;
+            throw new Error(`Unsupported bump: ${bump}`);
+          }
+
+          if (explicitVersion && !semver.test(explicitVersion)) {
+            throw new Error(`Invalid explicit version: ${explicitVersion}`);
+          }
+
+          const baseVersion = registryVersion && compareStable(registryVersion, localVersion) > 0
+            ? registryVersion
+            : localVersion;
+          const nextVersion = explicitVersion || bumpVersion(baseVersion, bump);
+          if (compareStable(nextVersion, baseVersion) <= 0) {
+            throw new Error(`Release version ${nextVersion} must be greater than base version ${baseVersion}.`);
+          }
+
+          fs.writeFileSync('/tmp/crewbee-release-version.env', `NEXT_VERSION=${nextVersion}\nBASE_VERSION=${baseVersion}\nLOCAL_VERSION=${localVersion}\nREGISTRY_VERSION=${registryVersion || ''}\n`);
+          NODE
+
+          cat /tmp/crewbee-release-version.env >> "$GITHUB_ENV"
+          cat /tmp/crewbee-release-version.env >> "$GITHUB_OUTPUT"
+
+      - name: Reject already published version
+        run: |
+          set -euo pipefail
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://registry.npmjs.org/crewbee/${NEXT_VERSION}")
+          if [ "$STATUS" = "200" ]; then
+            echo "::error::crewbee@${NEXT_VERSION} is already published."
+            exit 1
+          fi
+
+      - name: Commit release version bump
+        run: |
+          set -euo pipefail
+          node ./scripts/set-version.mjs "$NEXT_VERSION"
+
+          if git diff --quiet -- package.json package-lock.json; then
+            echo "::error::No package version changes were produced."
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "Release v${NEXT_VERSION}"
+          git push origin HEAD:main
