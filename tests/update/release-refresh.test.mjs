@@ -122,6 +122,46 @@ test("runBackgroundReleaseRefresh syncs workspace dependency intent and records 
   });
 });
 
+test("runBackgroundReleaseRefresh refreshes latest when installed version is unreadable", async () => {
+  const workspace = path.join(os.tmpdir(), `crewbee-update-unknown-installed-${Date.now()}`);
+  const configRoot = path.join(workspace, ".config", "opencode");
+  const cacheRoot = path.join(workspace, ".cache");
+
+  await withEnv({ OPENCODE_CONFIG_DIR: configRoot, XDG_CACHE_HOME: cacheRoot }, async () => {
+    writeConfigRoot(configRoot, "crewbee@latest");
+    const workspaceRoot = path.join(cacheRoot, "opencode", "packages", "crewbee@latest");
+    const installedRoot = path.join(workspaceRoot, "node_modules", "crewbee");
+    mkdirSync(installedRoot, { recursive: true });
+    writeCrewBeeReleaseState({
+      lastCheckedAt: Date.now(),
+      lastKnownVersion: "0.1.21",
+      lastSucceededAt: Date.now(),
+    });
+
+    let installCalled = false;
+    const result = await runBackgroundReleaseRefresh(createPluginInput(), {
+      async fetchJson() {
+        return { "dist-tags": { latest: "0.1.21" } };
+      },
+      async runInstall(dir) {
+        installCalled = true;
+        assert.equal(dir, workspaceRoot);
+        assert.equal(existsSync(installedRoot), false);
+        const pkg = JSON.parse(readFileSync(path.join(workspaceRoot, "package.json"), "utf8"));
+        assert.equal(pkg.dependencies.crewbee, "0.1.21");
+        return true;
+      },
+    });
+
+    const state = readCrewBeeReleaseState();
+    assert.equal(result.reason, "refresh-required");
+    assert.equal(result.currentVersion, undefined);
+    assert.equal(result.latestVersion, "0.1.21");
+    assert.equal(installCalled, true);
+    assert.equal(state.lastKnownVersion, "0.1.21");
+  });
+});
+
 test("startBackgroundReleaseRefresh is disabled unless explicitly enabled", async () => {
   let called = false;
   await withEnv({ CREWBEE_AUTO_UPDATE: undefined, NODE_ENV: "test" }, async () => {

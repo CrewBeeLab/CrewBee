@@ -55,7 +55,7 @@ export async function runBackgroundReleaseRefresh(ctx: PluginInput, deps: CrewBe
 
   const state = readCrewBeeReleaseState();
   const now = Date.now();
-  const currentVersion = readInstalledWorkspaceVersion(intent.workspaceRoot) ?? state.lastKnownVersion;
+  const currentVersion = readInstalledWorkspaceVersion(intent.workspaceRoot);
 
   const latestVersion = await fetchTargetVersion({ intent, fetchJson: deps.fetchJson });
   if (!latestVersion) {
