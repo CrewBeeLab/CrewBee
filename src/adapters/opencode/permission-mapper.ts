@@ -13,6 +13,14 @@ export interface OpenCodePermissionRule {
   pattern: string;
 }
 
+const ACTION_ONLY_PERMISSIONS = new Set([
+  "doom_loop",
+  "question",
+  "todowrite",
+  "webfetch",
+  "websearch",
+]);
+
 const TOOL_MAP: Record<string, string | undefined> = {
   write: "edit",
   patch: "edit",
@@ -75,6 +83,11 @@ export function createOpenCodePermissionConfig(permissionRules: OpenCodePermissi
   const permission: OpenCodePermissionConfig = {};
 
   for (const rule of permissionRules) {
+    if (ACTION_ONLY_PERMISSIONS.has(rule.permission)) {
+      permission[rule.permission] = rule.action;
+      continue;
+    }
+
     const current = permission[rule.permission];
 
     if (!current) {

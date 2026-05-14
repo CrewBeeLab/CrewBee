@@ -144,6 +144,7 @@ test("CrewBee projects CodingTeam executor edit/write permissions as allow by de
   assert.equal(config.agent["coding-leader"].permission.bash["*"], "allow");
   assert.equal(config.agent["coding-executor"].permission.bash["*"], "allow");
   assert.equal(config.agent["coding-executor"].permission.edit["*"], "allow");
+  assert.equal(config.agent["coding-executor"].permission.todowrite, "allow");
   assert.equal(config.agent["coding-coordination-leader"].permission.bash["*"], "allow");
 });
 
@@ -226,6 +227,8 @@ test("CrewBee upgrades web-researcher prompt and runtime for librarian-style res
   const agent = config.agent["coding-web-researcher"];
 
   assert.equal(agent.permission.bash["*"], "allow");
+  assert.equal(agent.permission.webfetch, "allow");
+  assert.equal(agent.permission.websearch, "allow");
   assert.match(agent.prompt, /### Date Awareness/);
   assert.match(agent.prompt, /### Documentation Discovery/);
   assert.match(agent.prompt, /### Evidence Policy/);
