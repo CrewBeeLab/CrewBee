@@ -4,8 +4,8 @@
 
 > [!NOTE]
 >
-> [![CrewBee - 把分散的智能体变成真正的团队。](./assets/web-home-cn.png?v=2)](https://crewbeelab.github.io)
-> > **CrewBee 把研发工作中的 prompts、agents、规则、review 流程和验收标准，整理成可维护的 Agent Team 资产。<br />访问官网：[crewbeelab.github.io](https://crewbeelab.github.io)。**
+> [![CrewBee - 把分散的智能体变成真正的团队。](./assets/web-home-cn.png?v=2)](https://www.crewbee.art)
+> > **CrewBee 把研发工作中的 prompts、agents、规则、review 流程和验收标准，整理成可维护的 Agent Team 资产。<br />访问官网：[www.crewbee.art](https://www.crewbee.art)。**
 
 
 CrewBee 是当前优先适配 OpenCode 的 **Agent Team 资产层**。
@@ -53,7 +53,7 @@ CrewBee 让你把这些内容整理成可维护的 Agent Team 资产：定义 Te
 
 ## 快速入口
 
-* [CrewBeeLab 官网](https://crewbeelab.github.io)
+* [CrewBeeLab 官网](https://www.crewbee.art)
 * [指南索引](docs/guide/README.zh-CN.md)
 * 用户指南：[安装](docs/guide/installation.zh-CN.md)、[自定义 Agent Team](docs/guide/custom-agent-team.md)、[项目级 Team 配置](docs/guide/project-team-config.md)
 * 开发者指南：[开发者索引](docs/developer/README.zh-CN.md)、[发布与 CI/CD](docs/developer/release.zh-CN.md)

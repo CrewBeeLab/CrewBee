@@ -4,8 +4,8 @@
 
 > [!NOTE]
 >
-> [![CrewBee - Turn scattered agents into real teams.](./assets/web-home-en.png?v=2)](https://crewbeelab.github.io)
-> > **CrewBee turns prompts, agents, rules, review flows, and completion criteria into maintainable Agent Team assets. <br />Visit the website [here](https://crewbeelab.github.io).**
+> [![CrewBee - Turn scattered agents into real teams.](./assets/web-home-en.png?v=2)](https://www.crewbee.art)
+> > **CrewBee turns prompts, agents, rules, review flows, and completion criteria into maintainable Agent Team assets. <br />Visit the website [here](https://www.crewbee.art).**
 
 
 CrewBee is an **Agent Team asset layer** with OpenCode as its first officially supported host.
@@ -52,7 +52,7 @@ Simple tasks stay lightweight. Complex tasks get support, review, validation, an
 
 ## Quick Links
 
-* [CrewBeeLab Website](https://crewbeelab.github.io)
+* [CrewBeeLab Website](https://www.crewbee.art)
 * [Guide Index](docs/guide/README.md)
 * User guides: [Installation](docs/guide/installation.md), [Custom Agent Teams](docs/guide/custom-agent-team.en.md), [Project-level Team Configuration](docs/guide/project-team-config.en.md)
 * Developer guides: [Developer Index](docs/developer/README.md), [Release and CI/CD](docs/developer/release.md)
