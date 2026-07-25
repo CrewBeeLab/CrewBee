@@ -1,4 +1,4 @@
-# CrewBee
+# CrewBee — 面向 OpenCode 的可复用 AI Agent Team
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
@@ -8,7 +8,7 @@
 > > **CrewBee 把研发工作中的 prompts、agents、规则、review 流程和验收标准，整理成可维护的 Agent Team 资产。<br />访问官网：[www.crewbee.art](https://www.crewbee.art)。**
 
 
-CrewBee 是当前优先适配 OpenCode 的 **Agent Team 资产层**。
+CrewBee 是面向 OpenCode、服务于多 Agent 编程工作流的开源 **AI Agent Team 框架与资产层**。
 
 它把研发工作中的 prompts、agents、规则、review 流程和验收标准，整理成可维护的 **Agent Team 资产**。
 

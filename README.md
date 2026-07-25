@@ -1,4 +1,4 @@
-# CrewBee
+# CrewBee — Reusable AI Agent Teams for OpenCode
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
@@ -8,9 +8,9 @@
 > > **CrewBee turns prompts, agents, rules, review flows, and completion criteria into maintainable Agent Team assets. <br />Visit the website [here](https://www.crewbee.art).**
 
 
-CrewBee is an **Agent Team asset layer** with OpenCode as its first officially supported host.
+CrewBee is an open-source **AI Agent Team framework and asset layer for OpenCode**, built for reusable multi-agent coding workflows.
 
-It turns prompts, agents, rules, review flows, and completion criteria in engineering work into maintainable **Agent Team assets**.
+It turns prompts, AI agents, rules, review flows, validation, and completion criteria in engineering work into maintainable **Agent Team assets**.
 
 CrewBee helps you build reusable Agent Teams for specialized workflows: not just agents, but tools / skills strategies, workflows, rules, review flows, and completion criteria.
 
