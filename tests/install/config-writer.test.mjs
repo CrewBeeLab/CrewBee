@@ -8,7 +8,7 @@ import { backupOpenCodeConfig, removeCrewBeePluginEntries, restoreOpenCodeConfig
 
 test("upsertCrewBeePluginEntry migrates project-local entries to the canonical user-level entry", () => {
   const config = {
-    plugin: [
+    plugins: [
       "foreign-plugin",
       "file:///tmp/project/node_modules/crewbee/opencode-plugin.mjs",
     ],
@@ -18,7 +18,7 @@ test("upsertCrewBeePluginEntry migrates project-local entries to the canonical u
 
   assert.equal(result.changed, true);
   assert.deepEqual(result.migratedEntries, ["file:///tmp/project/node_modules/crewbee/opencode-plugin.mjs"]);
-  assert.deepEqual(config.plugin, [
+  assert.deepEqual(config.plugins, [
     "foreign-plugin",
     "crewbee",
   ]);
@@ -26,7 +26,7 @@ test("upsertCrewBeePluginEntry migrates project-local entries to the canonical u
 
 test("removeCrewBeePluginEntries removes all CrewBee references and preserves foreign plugins", () => {
   const config = {
-    plugin: [
+    plugins: [
       "foreign-plugin",
       "crewbee",
       "file:///tmp/user/.cache/opencode/node_modules/crewbee/opencode-plugin.mjs",
@@ -40,13 +40,13 @@ test("removeCrewBeePluginEntries removes all CrewBee references and preserves fo
     "crewbee",
     "file:///tmp/user/.cache/opencode/node_modules/crewbee/opencode-plugin.mjs",
   ]);
-  assert.deepEqual(config.plugin, ["foreign-plugin"]);
+  assert.deepEqual(config.plugins, ["foreign-plugin"]);
 });
 
 test("upsertCrewBeePluginEntry preserves non-string plugin entries", () => {
   const customPlugin = { name: "foreign-object-plugin" };
   const config = {
-    plugin: [
+    plugins: [
       customPlugin,
       "file:///tmp/project/node_modules/crewbee/opencode-plugin.mjs",
     ],
@@ -54,7 +54,7 @@ test("upsertCrewBeePluginEntry preserves non-string plugin entries", () => {
 
   upsertCrewBeePluginEntry(config, "crewbee");
 
-  assert.deepEqual(config.plugin, [
+  assert.deepEqual(config.plugins, [
     customPlugin,
     "crewbee",
   ]);
@@ -62,7 +62,7 @@ test("upsertCrewBeePluginEntry preserves non-string plugin entries", () => {
 
 test("upsertCrewBeePluginEntry migrates package-internal js entries to the canonical package entry", () => {
   const config = {
-    plugin: [
+    plugins: [
       "file:///tmp/user/.cache/opencode/crewbee/node_modules/crewbee/opencode-plugin.js",
     ],
   };
@@ -71,12 +71,12 @@ test("upsertCrewBeePluginEntry migrates package-internal js entries to the canon
 
   assert.equal(result.changed, true);
   assert.deepEqual(result.migratedEntries, ["file:///tmp/user/.cache/opencode/crewbee/node_modules/crewbee/opencode-plugin.js"]);
-  assert.deepEqual(config.plugin, ["crewbee"]);
+  assert.deepEqual(config.plugins, ["crewbee"]);
 });
 
 test("upsertCrewBeePluginEntry migrates legacy standalone shim entries to the canonical package entry", () => {
   const config = {
-    plugin: [
+    plugins: [
       "file:///tmp/user/.cache/opencode/crewbee/entry/crewbee-opencode-entry.mjs",
     ],
   };
@@ -85,16 +85,16 @@ test("upsertCrewBeePluginEntry migrates legacy standalone shim entries to the ca
 
   assert.equal(result.changed, true);
   assert.deepEqual(result.migratedEntries, ["file:///tmp/user/.cache/opencode/crewbee/entry/crewbee-opencode-entry.mjs"]);
-  assert.deepEqual(config.plugin, ["crewbee"]);
+  assert.deepEqual(config.plugins, ["crewbee"]);
 });
 
 test("OpenCode config backup can restore an existing config", () => {
   const configPath = path.join(mkdtempSync(path.join(os.tmpdir(), "crewbee-config-backup-")), "opencode.json");
-  const original = JSON.stringify({ plugin: ["foreign-plugin"] }, null, 2) + "\n";
+  const original = JSON.stringify({ plugins: ["foreign-plugin"] }, null, 2) + "\n";
 
   writeFileSync(configPath, original, "utf8");
   const backup = backupOpenCodeConfig(configPath);
-  writeFileSync(configPath, JSON.stringify({ plugin: ["crewbee"] }, null, 2) + "\n", "utf8");
+  writeFileSync(configPath, JSON.stringify({ plugins: ["crewbee"] }, null, 2) + "\n", "utf8");
 
   restoreOpenCodeConfigBackup(backup);
 

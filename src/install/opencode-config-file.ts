@@ -92,12 +92,13 @@ export function upsertCrewBeePluginEntry(config: Record<string, unknown>, plugin
   let hasCanonicalEntry = false;
 
   for (const value of currentPlugins) {
-    if (typeof value !== "string") {
+    if (typeof value !== "string" && !isPluginEntryObject(value)) {
       nextPlugins.push(value);
       continue;
     }
 
-    if (value === pluginEntry) {
+    const reference = readPluginEntryReference(value);
+    if (reference === pluginEntry) {
       if (!hasCanonicalEntry) {
         nextPlugins.push(pluginEntry);
         hasCanonicalEntry = true;
@@ -105,8 +106,8 @@ export function upsertCrewBeePluginEntry(config: Record<string, unknown>, plugin
       continue;
     }
 
-    if (isCrewBeePluginReference(value)) {
-      migratedEntries.push(value);
+    if (reference && isCrewBeePluginReference(reference)) {
+      migratedEntries.push(reference);
       if (!hasCanonicalEntry) {
         nextPlugins.push(pluginEntry);
         hasCanonicalEntry = true;
@@ -123,18 +124,26 @@ export function upsertCrewBeePluginEntry(config: Record<string, unknown>, plugin
 
   const changed = !arePluginArraysEqual(currentPlugins, nextPlugins);
 
-  config.plugin = nextPlugins;
+  config.plugins = nextPlugins;
+  // Migrate away from the deprecated V1 `plugin` key.
+  delete config.plugin;
   return { changed, migratedEntries };
 }
 
 export function removeCrewBeePluginEntries(config: Record<string, unknown>): PluginRemovalResult {
   const currentPlugins = getRawPluginArray(config);
-  const removedEntries = currentPlugins.filter((value): value is string => typeof value === "string" && isCrewBeePluginReference(value));
-  const nextPlugins = currentPlugins.filter((value) => typeof value !== "string" || !isCrewBeePluginReference(value));
+  const removedEntries = currentPlugins
+    .map((value) => readPluginEntryReference(value))
+    .filter((value): value is string => typeof value === "string" && isCrewBeePluginReference(value));
+  const nextPlugins = currentPlugins.filter((value) => {
+    const reference = readPluginEntryReference(value);
+    return !(typeof reference === "string" && isCrewBeePluginReference(reference));
+  });
   const changed = removedEntries.length > 0;
 
   if (changed) {
-    config.plugin = nextPlugins;
+    config.plugins = nextPlugins;
+    delete config.plugin;
   }
 
   return {
@@ -144,13 +153,51 @@ export function removeCrewBeePluginEntries(config: Record<string, unknown>): Plu
 }
 
 export function findCrewBeePluginEntries(config: Record<string, unknown>): string[] {
-  return getRawPluginArray(config).filter((value): value is string => typeof value === "string" && isCrewBeePluginReference(value));
+  return getRawPluginArray(config)
+    .map((value) => readPluginEntryReference(value))
+    .filter((value): value is string => typeof value === "string" && isCrewBeePluginReference(value));
 }
 
 function getRawPluginArray(config: Record<string, unknown>): unknown[] {
-  return Array.isArray(config.plugin)
-    ? [...config.plugin]
-    : [];
+  const merged: unknown[] = [];
+
+  if (Array.isArray(config.plugins)) {
+    merged.push(...config.plugins.map(normalizePluginEntry));
+  }
+
+  // V1 legacy key: migrate its entries (normalizing V1 tuple form to V2 object form).
+  if (Array.isArray(config.plugin)) {
+    merged.push(...config.plugin.map(normalizePluginEntry));
+  }
+
+  return merged;
+}
+
+function normalizePluginEntry(entry: unknown): unknown {
+  if (Array.isArray(entry) && entry.length >= 1 && typeof entry[0] === "string") {
+    const [name, options] = entry;
+    if (options && typeof options === "object" && !Array.isArray(options)) {
+      return { package: name, options };
+    }
+    return name;
+  }
+  return entry;
+}
+
+function isPluginEntryObject(value: unknown): value is { package?: unknown; options?: unknown } {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function readPluginEntryReference(value: unknown): string | undefined {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (isPluginEntryObject(value) && typeof value.package === "string") {
+    return value.package;
+  }
+
+  return undefined;
 }
 
 function arePluginArraysEqual(left: unknown[], right: unknown[]): boolean {
