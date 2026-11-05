@@ -10,7 +10,8 @@ export type DelegateTaskErrorCode =
   | "agent_session_mismatch"
   | "unsupported_mode"
   | "nested_delegate_forbidden"
-  | "self_delegate_forbidden";
+  | "self_delegate_forbidden"
+  | "delegate_error";
 
 export interface DelegateTaskArgs {
   agent?: string;

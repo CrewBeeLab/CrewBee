@@ -5,6 +5,7 @@ import path from "node:path";
 import type { PluginInput } from "@opencode-ai/plugin";
 
 import { logCrewBee } from "../adapters/opencode/logging";
+import type { CrewBeeLogLevel } from "../runtime/logging";
 
 import { findConfiguredCrewBeeReleaseIntent } from "./intent";
 import { fetchTargetVersion } from "./registry";
@@ -20,32 +21,64 @@ import type { CrewBeeReleaseCheckResult, CrewBeeReleaseRefreshDependencies } fro
 
 const FAILURE_RECHECK_MS = 30 * 60 * 1000;
 
-export function startBackgroundReleaseRefresh(ctx: PluginInput, deps: CrewBeeReleaseRefreshDependencies = createDefaultDependencies()): void {
+export type CrewBeeReleaseLog = (
+  message: string,
+  extra?: Record<string, unknown>,
+  level?: CrewBeeLogLevel,
+) => Promise<void>;
+
+function createDefaultReleaseLog(
+  ctx: PluginInput | undefined,
+  log?: CrewBeeReleaseLog,
+): CrewBeeReleaseLog {
+  if (log) {
+    return log;
+  }
+
+  return async (message, extra, level) => {
+    if (!ctx) {
+      return;
+    }
+
+    await logCrewBee(ctx, message, extra, level);
+  };
+}
+
+export function startBackgroundReleaseRefresh(
+  ctx?: PluginInput,
+  deps: CrewBeeReleaseRefreshDependencies = createDefaultDependencies(),
+  log?: CrewBeeReleaseLog,
+): void {
   if (!shouldEnableCrewBeeReleaseRefresh()) {
     return;
   }
 
   queueMicrotask(() => {
-    void runBackgroundReleaseRefresh(ctx, deps).catch(() => undefined);
+    void runBackgroundReleaseRefresh(ctx, deps, log).catch(() => undefined);
   });
 }
 
-export async function runBackgroundReleaseRefresh(ctx: PluginInput, deps: CrewBeeReleaseRefreshDependencies): Promise<CrewBeeReleaseCheckResult> {
+export async function runBackgroundReleaseRefresh(
+  ctx: PluginInput | undefined,
+  deps: CrewBeeReleaseRefreshDependencies,
+  releaseLog?: CrewBeeReleaseLog,
+): Promise<CrewBeeReleaseCheckResult> {
+  const log = createDefaultReleaseLog(ctx, releaseLog);
   if (!acquireCrewBeeReleaseLock()) {
-    await logCrewBee(ctx, "CrewBee release refresh skipped because another refresh is already running", undefined, "debug");
+    await log("CrewBee release refresh skipped because another refresh is already running", undefined, "debug");
     return { needsRefresh: false, reason: "up-to-date" };
   }
 
   try {
   const intent = findConfiguredCrewBeeReleaseIntent();
   if (!intent) {
-    await logCrewBee(ctx, "CrewBee release refresh skipped because plugin is not configured", undefined, "debug");
+    await log("CrewBee release refresh skipped because plugin is not configured", undefined, "debug");
     return { needsRefresh: false, reason: "plugin-not-configured" };
   }
 
   if (intent.isPinned) {
     const currentVersion = readInstalledWorkspaceVersion(intent.workspaceRoot);
-    await logCrewBee(ctx, "CrewBee release refresh skipped for pinned version", {
+    await log("CrewBee release refresh skipped for pinned version", {
       entry: intent.entry,
       pinnedVersion: intent.requestedVersion,
       currentVersion,
@@ -63,7 +96,7 @@ export async function runBackgroundReleaseRefresh(ctx: PluginInput, deps: CrewBe
       ...state,
       lastCheckedAt: now,
     });
-    await logCrewBee(ctx, "CrewBee release refresh could not resolve latest version", {
+    await log("CrewBee release refresh could not resolve latest version", {
       entry: intent.entry,
       channel: intent.channel,
       currentVersion,
@@ -80,7 +113,7 @@ export async function runBackgroundReleaseRefresh(ctx: PluginInput, deps: CrewBe
       lastFailureAt: undefined,
       lastSucceededAt: now,
     });
-    await logCrewBee(ctx, "CrewBee release refresh found current version already up to date", {
+    await log("CrewBee release refresh found current version already up to date", {
       currentVersion,
       latestVersion,
       workspaceRoot: intent.workspaceRoot,
@@ -89,7 +122,7 @@ export async function runBackgroundReleaseRefresh(ctx: PluginInput, deps: CrewBe
   }
 
   if (shouldSkipFailedTargetByCooldown(state, now, latestVersion)) {
-    await logCrewBee(ctx, "CrewBee release refresh skipped by failure cooldown", {
+    await log("CrewBee release refresh skipped by failure cooldown", {
       currentVersion,
       latestVersion,
       lastCheckedAt: state.lastCheckedAt,
@@ -98,7 +131,7 @@ export async function runBackgroundReleaseRefresh(ctx: PluginInput, deps: CrewBe
     return { currentVersion, latestVersion, needsRefresh: true, reason: "refresh-required" };
   }
 
-  await logCrewBee(ctx, "CrewBee release refresh found newer version", {
+  await log("CrewBee release refresh found newer version", {
     currentVersion,
     latestVersion,
     workspaceRoot: intent.workspaceRoot,
@@ -118,7 +151,7 @@ export async function runBackgroundReleaseRefresh(ctx: PluginInput, deps: CrewBe
       lastFailureAt: now,
       lastKnownVersion: currentVersion,
     });
-    await logCrewBee(ctx, "CrewBee release refresh failed to install latest version", {
+    await log("CrewBee release refresh failed to install latest version", {
       currentVersion,
       latestVersion,
       workspaceRoot: intent.workspaceRoot,
@@ -134,7 +167,7 @@ export async function runBackgroundReleaseRefresh(ctx: PluginInput, deps: CrewBe
     lastFailureAt: undefined,
     lastSucceededAt: now,
   });
-  await logCrewBee(ctx, "CrewBee release refresh installed newer version", {
+  await log("CrewBee release refresh installed newer version", {
     currentVersion,
     latestVersion,
     workspaceRoot: intent.workspaceRoot,
