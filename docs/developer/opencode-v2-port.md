@@ -1,47 +1,48 @@
-# CrewBee → OpenCode V2 — Analisi e piano di porting
+# CrewBee → OpenCode V2 — Analysis and Porting Plan
 
-> Documento di lavoro del fork `crewbee-v2`.
-> Stato: **analisi completata, implementazione non ancora iniziata**.
-> Autore del porting: Alessandro Muzzi (fork locale `~/Projects/crewbee-v2`, branch `feat/opencode-v2-port`).
-
----
-
-## 1. Verdetto
-
-CrewBee **non** è caricabile da OpenCode V2. Il pacchetto pubblicato (`crewbee@0.1.24`) implementa
-l'API plugin di **OpenCode V1** (entrypoint = *funzione* plugin V1), mentre V2 richiede un
-default export **oggetto** con `id` + `setup(ctx)`.
-
-Il porting è fattibile: l'area interessata è circoscritta a `src/adapters/opencode/**` (5.162
-righe incluse le deleghe), `src/install/**` (chiave di config) e `src/update/refresh.ts`.
-Nessuna logica di dominio (Team library, projection, prompt building) deve essere riscritta:
- cambia solo il **contratto con l'host**.
-
-Rischio stimato: **medio**. La parte delicata è la delegation (`task`/`subagent`), perché in V2
-il tool si chiama `subagent`, l'evento di sessione ha una forma diversa e l'API `todo` non esiste più.
+> Working document of the `crewbee-v2` fork.
+> Status: **analysis completed, implementation not yet started**.
+> Port author: Alessandro Muzzi (local fork `~/Projects/crewbee-v2`, branch `feat/opencode-v2-port`).
 
 ---
 
-## 2. Ambiente di verifica
+## 1. Verdict
 
-| Componente | Versione | Nota |
+CrewBee **cannot** be loaded by OpenCode V2. The published package (`crewbee@0.1.24`) implements
+the **OpenCode V1** plugin API (entrypoint = V1 plugin *function*), while V2 requires a default
+export **object** with `id` + `setup(ctx)`.
+
+The port is feasible: the affected area is limited to `src/adapters/opencode/**` (5,162
+lines including delegation), `src/install/**` (config key) and `src/update/refresh.ts`.
+No domain logic (Team library, projection, prompt building) has to be rewritten: only the
+**contract with the host** changes.
+
+Estimated risk: **medium**. The delicate part is delegation (`task`/`subagent`), because in V2
+the tool is called `subagent`, the session event has a different shape and the `todo` API no
+longer exists.
+
+---
+
+## 2. Verification environment
+
+| Component | Version | Note |
 |---|---|---|
-| opencode (installato) | **2.1.3** | `/opt/homebrew/Cellar/opencode-v2/2.1.3/bin/opencode` (homebrew-core `opencode` = 2.1.2) |
-| `@opencode/plugin` (SDK V2) | **2.1.3** | analizzato per i tipi reali |
-| `@opencode/plugin` latest npm | 2.2.0 | non allineato al binario locale |
-| `@opencode-ai/plugin` (SDK V1) | 1.19.4 latest / 1.15.10 usato da CrewBee | linea V1 |
-| `crewbee` npm latest | **0.1.24** | dipende da `@opencode-ai/plugin@1.14.48` |
+| opencode (installed) | **2.1.3** | `/opt/homebrew/Cellar/opencode-v2/2.1.3/bin/opencode` (homebrew-core `opencode` = 2.1.2) |
+| `@opencode/plugin` (V2 SDK) | **2.1.3** | inspected for the real types |
+| `@opencode/plugin` latest on npm | 2.2.0 | not aligned with the local binary |
+| `@opencode-ai/plugin` (V1 SDK) | 1.19.4 latest / 1.15.10 used by CrewBee | V1 line |
+| `crewbee` npm latest | **0.1.24** | depends on `@opencode-ai/plugin@1.14.48` |
 | CrewBee upstream `main` | `3efe39b` (2026-07-25) | `package.json` → `@opencode-ai/plugin@1.15.10` |
-| node / npm | 20.20.2 / 10.8.2 | `bun` **non** installato (i test upstream usano `node --test`) |
+| node / npm | 20.20.2 / 10.8.2 | `bun` **not** installed (upstream tests use `node --test`) |
 
-Documentazione di riferimento usata: `https://opencode.ai/v2/docs/build/plugins`,
+Reference documentation used: `https://opencode.ai/v2/docs/build/plugins`,
 `.../build/plugins/migrate-v1`, `.../build/plugins/server`, `.../agents`, `.../tools`.
 
 ---
 
-## 3. Riproduzione del fallimento (V2)
+## 3. Reproducing the failure (V2)
 
-Installazione isolata in `HOME` temporanea, `crewbee@0.1.24` scaricato da npm, poi:
+Isolated install in a temporary `HOME`, `crewbee@0.1.24` downloaded from npm, then:
 
 ```
 $ opencode plugin add crewbee
@@ -51,7 +52,7 @@ ID  VERSION  SOURCE
 -   -        crewbee
 ```
 
-Log del server (`role=server`):
+Server log (`role=server`):
 
 ```
 msg="loading plugin" id=crewbee entrypoint=file://.../crewbee/dist/opencode-plugin.mjs
@@ -60,122 +61,122 @@ level=WARN message="failed to load plugin" target=crewbee
         (cause: SchemaError(Expected object at ["default"]))
 ```
 
-Conseguenze: nessun agente proiettato (`opencode debug agents` elenca solo `build`, `compaction`, …),
-nessun tool `task`/`delegate_status`/`delegate_cancel`, nessun binding di sessione.
+Consequences: no projected agents (`opencode debug agents` lists only `build`, `compaction`, …),
+no `task`/`delegate_status`/`delegate_cancel` tools, no session binding.
 
-**Contro-prova V1** (stesso pacchetto, `opencode-ai@1.19.4`): il plugin si carica e proietta
+**V1 counter-proof** (same package, `opencode-ai@1.19.4`): the plugin loads and projects
 `coding-coordination-leader`, `coding-executor`, `coding-codebase-explorer`, `coding-reviewer`, …
-⇒ il problema è esclusivamente il contratto plugin, non la logica CrewBee.
+⇒ the problem is exclusively the plugin contract, not the CrewBee logic.
 
 ---
 
-## 4. Superficie V1 oggi usata da CrewBee
+## 4. V1 surface currently used by CrewBee
 
-Riepilogo con file/linee (riferimenti a `main` @ `3efe39b`):
+Summary with files/lines (references to `main` @ `3efe39b`):
 
-| # | Superficie V1 | Uso CrewBee | File |
+| # | V1 surface | CrewBee usage | File |
 |---|---|---|---|
-| 1 | `PluginInput.client` (SDK V1) | sessioni, provider, log | `plugin.ts`, `logging.ts`, `delegation/*.ts` |
-| 2 | `PluginInput.directory` / `.worktree` (stringa) | radice progetto / stato deleghe | `plugin.ts:38`, `delegation/store.ts` |
-| 3 | `PluginInput.project` | — | non usato |
-| 4 | hook `config` | iniezione agenti + `default_agent` | `config-hook.ts:73-123` |
-| 5 | hook `tool` (map) | `task`, `delegate_status`, `delegate_cancel` | `plugin.ts:50-55`, `delegation/tools.ts` |
-| 6 | hook `event` | fine deleghe background | `event-hook.ts` |
-| 7 | hook `chat.message` | binding sessione↔team | `chat-message-hook.ts` |
-| 8 | hook `tool.definition` | no-op | `tool-hooks.ts:76-78` |
-| 9 | hook `tool.execute.before` | alias → config key di `subagent_type` | `tool-hooks.ts:80-99` |
-| 10 | hook `tool.execute.after` | normalizzazione output del task | `tool-hooks.ts:101-125` |
-| 11 | hook `experimental.chat.system.transform` | inietta contesto runtime CrewBee | `system-transform-hook.ts` |
-| 12 | hook `experimental.session.compacting` | snapshot todo + contesto continuità | `compaction-hook.ts` |
-| 13 | `client.session.create/prompt/promptAsync/messages/abort/todo` | motore di delegation | `delegation/tools.ts`, `output.ts`, `continuity.ts` |
-| 14 | `client.config.providers()` | filtro disponibilità modelli | `model-availability.ts:30` |
-| 15 | `client.app.log({body})` | logging strutturato | `logging.ts:14` |
-| 16 | `tool()` helper (zod) + `ToolResult` stringa | definizione tool | `delegation/tools.ts:25-33` |
-| 17 | formato agente V1 (`prompt`, `permission` map, `disable`, `tools`) | proiezione agenti | `projection.ts:254-344` |
-| 18 | config `plugin: [...]` (chiave V1) | installazione | `install/opencode-config-file.ts:126` |
-| 19 | `Plugin` type = funzione `(input, options) => Hooks` | entrypoint | `plugin.ts:19-86` |
+| 1 | `PluginInput.client` (V1 SDK) | sessions, providers, log | `plugin.ts`, `logging.ts`, `delegation/*.ts` |
+| 2 | `PluginInput.directory` / `.worktree` (string) | project root / delegation state | `plugin.ts:38`, `delegation/store.ts` |
+| 3 | `PluginInput.project` | — | unused |
+| 4 | `config` hook | agent injection + `default_agent` | `config-hook.ts:73-123` |
+| 5 | `tool` hook (map) | `task`, `delegate_status`, `delegate_cancel` | `plugin.ts:50-55`, `delegation/tools.ts` |
+| 6 | `event` hook | background delegation completion | `event-hook.ts` |
+| 7 | `chat.message` hook | session↔team binding | `chat-message-hook.ts` |
+| 8 | `tool.definition` hook | no-op | `tool-hooks.ts:76-78` |
+| 9 | `tool.execute.before` hook | alias → config key of `subagent_type` | `tool-hooks.ts:80-99` |
+| 10 | `tool.execute.after` hook | task output normalization | `tool-hooks.ts:101-125` |
+| 11 | `experimental.chat.system.transform` hook | injects CrewBee runtime context | `system-transform-hook.ts` |
+| 12 | `experimental.session.compacting` hook | todo snapshot + continuity context | `compaction-hook.ts` |
+| 13 | `client.session.create/prompt/promptAsync/messages/abort/todo` | delegation engine | `delegation/tools.ts`, `output.ts`, `continuity.ts` |
+| 14 | `client.config.providers()` | model availability filter | `model-availability.ts:30` |
+| 15 | `client.app.log({body})` | structured logging | `logging.ts:14` |
+| 16 | `tool()` helper (zod) + string `ToolResult` | tool definition | `delegation/tools.ts:25-33` |
+| 17 | V1 agent format (`prompt`, `permission` map, `disable`, `tools`) | agent projection | `projection.ts:254-344` |
+| 18 | `plugin: [...]` config key (V1 key) | installation | `install/opencode-config-file.ts:126` |
+| 19 | `Plugin` type = function `(input, options) => Hooks` | entrypoint | `plugin.ts:19-86` |
 
 ---
 
-## 5. Delta API V1 → V2 (verificato sui tipi `@opencode/plugin@2.1.3`)
+## 5. API delta V1 → V2 (verified against `@opencode/plugin@2.1.3` types)
 
-### 5.1 Entrypoint e lifecycle
+### 5.1 Entrypoint and lifecycle
 
 | V1 | V2 |
 |---|---|
 | `export const P: Plugin = async (ctx) => ({ ...hooks })` | `export default Plugin.define({ id: "crewbee", async setup(ctx) { ... } })` |
-| `ctx` = `PluginInput` | `ctx` = `Context` (domini per dominio) |
-| `options` (2° argomento) | `ctx.options` |
-| `dispose()` restituito | `return () => {...}` da `setup` |
-| hook `event` | `ctx.event.subscribe({ types, signal })` → `AsyncIterable` |
-| — | **`id` obbligatorio** (storage scoping, diagnostica) |
+| `ctx` = `PluginInput` | `ctx` = `Context` (domain by domain) |
+| `options` (2nd argument) | `ctx.options` |
+| `dispose()` returned | `return () => {...}` from `setup` |
+| `event` hook | `ctx.event.subscribe({ types, signal })` → `AsyncIterable` |
+| — | **`id` required** (storage scoping, diagnostics) |
 
 ### 5.2 Context
 
 | V1 | V2 |
 |---|---|
-| `ctx.client.app.log({body})` | ❌ non esiste → `console.log/warn` (finestra server) |
+| `ctx.client.app.log({body})` | ❌ does not exist → `console.log/warn` (server window) |
 | `ctx.directory` | `ctx.location.directory` |
-| `ctx.worktree` (stringa) | ❌ non è una stringa → usare `ctx.location.directory` |
+| `ctx.worktree` (string) | ❌ not a string → use `ctx.location.directory` |
 | `ctx.project` | `ctx.location.project` |
 | `ctx.client.config.providers()` | `ctx.provider.list()` / `ctx.model.list()` |
-| `ctx.client.session.*` | `ctx.session.*` (firme diverse) |
+| `ctx.client.session.*` | `ctx.session.*` (different signatures) |
 
-### 5.3 Hook → dominio
+### 5.3 Hooks → domains
 
-| V1 | V2 | Note |
+| V1 | V2 | Notes |
 |---|---|---|
-| `config` (mutazione `cfg.agent`, `cfg.default_agent`) | `ctx.agent.transform(editor)` | `editor.add/update/remove/list/get`, `editor.default(id)` |
+| `config` (mutating `cfg.agent`, `cfg.default_agent`) | `ctx.agent.transform(editor)` | `editor.add/update/remove/list/get`, `editor.default(id)` |
 | `tool` map | `ctx.tool.transform(editor)` | `editor.add({name, description, input: JSONSchema, execute})` |
-| `chat.message` | `ctx.session.hook("prompt", cb)` | evento: `{sessionID, messageID, prompt:{text,files,agents,skills}, metadata, delivery}` |
-| `tool.execute.before` | `ctx.tool.hook("execute.before", cb)` | evento: `{tool, sessionID, agent, messageID, id, input}` — `input` mutabile |
-| `tool.execute.after` | `ctx.tool.hook("execute.after", cb)` | evento: `{..., status, result}` — `result` = `Tool.Result` (`content`, `metadata`) |
-| `experimental.chat.system.transform` | `ctx.session.hook("context", cb)` | `event.system` = `SystemPart[]` (non `string[]`) → push `{type:"text", text}` |
-| `experimental.session.compacting` | `ctx.session.hook("compaction", cb)` | evento estende `SessionContext` (`system`, `messages`, `options`, `tools`) |
-| `event` | `ctx.event.subscribe({types, signal})` | eventi V2: `session.idle`, `session.status`, `session.deleted`, `session.execution.failed`, `session.compaction.ended` |
+| `chat.message` | `ctx.session.hook("prompt", cb)` | event: `{sessionID, messageID, prompt:{text,files,agents,skills}, metadata, delivery}` |
+| `tool.execute.before` | `ctx.tool.hook("execute.before", cb)` | event: `{tool, sessionID, agent, messageID, id, input}` — `input` is mutable |
+| `tool.execute.after` | `ctx.tool.hook("execute.after", cb)` | event: `{..., status, result}` — `result` = `Tool.Result` (`content`, `metadata`) |
+| `experimental.chat.system.transform` | `ctx.session.hook("context", cb)` | `event.system` = `SystemPart[]` (not `string[]`) → push `{type:"text", text}` |
+| `experimental.session.compacting` | `ctx.session.hook("compaction", cb)` | event extends `SessionContext` (`system`, `messages`, `options`, `tools`) |
+| `event` | `ctx.event.subscribe({types, signal})` | V2 events: `session.idle`, `session.status`, `session.deleted`, `session.execution.failed`, `session.compaction.ended` |
 
-### 5.4 Tool
+### 5.4 Tools
 
 | V1 | V2 |
 |---|---|
 | `tool({description, args: zodShape, execute})` | `editor.add({name, description, input: JSONSchema, execute})` |
-| `args` zod | `input` JSON Schema |
-| ritorno `string` | ritorno `{ content: string \| Content[], output?, metadata? }` |
+| zod `args` | JSON Schema `input` |
+| returns `string` | returns `{ content: string \| Content[], output?, metadata? }` |
 | `ctx.metadata({title, metadata})` | `context.progress({...})` + `result.metadata` |
 | `ctx.abort` (AbortSignal) | `context.signal` |
-| `ctx.ask(...)` | `ctx.permission.assert(...)` (non usato da CrewBee) |
-| nome tool delegazione: **`task`** | tool nativo V2: **`subagent`** (action permission `subagent`) |
+| `ctx.ask(...)` | `ctx.permission.assert(...)` (not used by CrewBee) |
+| delegation tool name: **`task`** | V2 native tool: **`subagent`** (permission action `subagent`) |
 
-### 5.5 Sessioni
+### 5.5 Sessions
 
 | V1 (`client.session.*`) | V2 (`ctx.session.*`) |
 |---|---|
 | `create({path:{id}, body:{parentID,title}})` | `create({ parentID, title })` |
 | `prompt({path:{id}, body:{agent,model,parts}})` | `prompt({ sessionID, text })` + `switchAgent({sessionID, agent})` + `switchModel({sessionID, model})` |
-| `promptAsync` (background) | ❌ non esiste → `prompt()` è già non-bloccante (ammissione inbox); `wait({sessionID})` attende |
-| `messages({path:{id}})` → `[{info, parts}]` | `context({sessionID})` → `SessionMessageInfo[]` (unione: `type:"assistant"`, `content:[{type:"text",text}]`) |
+| `promptAsync` (background) | ❌ does not exist → `prompt()` is already non-blocking (inbox admission); `wait({sessionID})` waits |
+| `messages({path:{id}})` → `[{info, parts}]` | `context({sessionID})` → `SessionMessageInfo[]` (union: `type:"assistant"`, `content:[{type:"text",text}]`) |
 | `abort({path:{id}})` | `interrupt({sessionID, resume:false})` |
-| `todo({path:{id}})` | ❌ **non esiste in V2** → degradazione (vedi §7.4) |
+| `todo({path:{id}})` | ❌ **does not exist in V2** → degradation (see §7.4) |
 
-### 5.6 Formato agente
+### 5.6 Agent format
 
 | V1 (`projection.ts:254-274`) | V2 |
 |---|---|
-| `name` | `id` (+ `name` display) |
+| `name` | `id` (+ display `name`) |
 | `prompt` | **`system`** |
-| `permission: {edit:{allow:[…]}, bash:"ask"}` | **`permissions: [{action, resource, effect}]`** (ultima regola vince) |
-| `model: "provider/model"` | `model: "provider/model#variant"` oppure `{providerID, model, variant}` |
-| `temperature` / `top_p` | ⚠️ deprecati in V2; `request.body` **non è ancora inviato** (2.1.3) → vedi §7.5 |
+| `permission: {edit:{allow:[…]}, bash:"ask"}` | **`permissions: [{action, resource, effect}]`** (last rule wins) |
+| `model: "provider/model"` | `model: "provider/model#variant"` or `{providerID, model, variant}` |
+| `temperature` / `top_p` | ⚠️ deprecated in V2; `request.body` **is not yet sent** (2.1.3) → see §7.5 |
 | `mode: "primary"\|"subagent"` | `mode: "primary"\|"subagent"\|"all"` |
 | `disable: true` | **`disabled: true`** |
-| `tools: {…}` | ❌ non esiste → filtri tool via `permissions` (deny per azione) |
+| `tools: {…}` | ❌ does not exist → tool filtering via `permissions` (deny per action) |
 | `hidden` | `hidden` ✔ |
-| `options.crewbee` (marker di ownership) | `request.body`? no → usare `metadata`/marker interno (vedi §7.6) |
+| `options.crewbee` (ownership marker) | `request.body`? no → use `metadata`/internal marker (see §7.6) |
 
-Azioni permission V2 (da `docs/agents`): `shell`, `edit`, `subagent`, `read`, `glob`, `grep`,
+V2 permission actions (from `docs/agents`): `shell`, `edit`, `subagent`, `read`, `glob`, `grep`,
 `webfetch`, `websearch`, `skill`, `question`, `external_directory`, `doom_loop`, `*`.
 
-### 5.7 Eventi (rinomina necessaria)
+### 5.7 Events (rename required)
 
 | V1 | V2 |
 |---|---|
@@ -187,346 +188,353 @@ Azioni permission V2 (da `docs/agents`): `shell`, `edit`, `subagent`, `read`, `g
 
 ---
 
-## 6. Piano di modifica — file per file
+## 6. Change plan — file by file
 
 ### 6.1 `package.json` + build
 
-- `dependencies`: `@opencode-ai/plugin@1.15.10` → **`@opencode/plugin@2.1.3`** (allineato al binario 2.1.3).
-- `exports`: mantenuto `{".": "./dist/opencode-plugin.mjs", "./server": …}` ✔ (V2 accetta `.`/`./server`).
-- `scripts/build-opencode-plugin.mjs`: invariato (esbuild bundla `src/adapters/opencode/plugin.ts`).
-  Verificare che il bundle **non** contenga più import residui da `@opencode-ai/plugin` (i `import type`
-  spariscono, ma `zod` resta necessario per gli schemi → in V2 useremo JSON Schema puro per i tool).
+- `dependencies`: `@opencode-ai/plugin@1.15.10` → **`@opencode/plugin@2.1.3`** (aligned with the 2.1.3 binary).
+- `exports`: kept `{".": "./dist/opencode-plugin.mjs", "./server": …}` ✔ (V2 accepts `.`/`./server`).
+- `scripts/build-opencode-plugin.mjs`: unchanged (esbuild bundles `src/adapters/opencode/plugin.ts`).
+  Verify that the bundle **no longer** contains residual imports from `@opencode-ai/plugin` (the `import type`
+  declarations disappear, but `zod` remains necessary for schemas → in V2 we will use pure JSON Schema for tools).
 - `types`: `dist/src/adapters/opencode/plugin.d.ts` → ok.
 
-### 6.2 `src/adapters/opencode/plugin.ts` — riscrittura principale
+### 6.2 `src/adapters/opencode/plugin.ts` — main rewrite
 
-Nuova struttura:
+New structure:
 
 ```ts
 import { Plugin } from "@opencode/plugin";
 export default Plugin.define({
   id: "crewbee",
   async setup(ctx) {
-    // 1. auto-repair config file (ctx.location.directory al posto di ctx.worktree)
+    // 1. auto-repair config file (ctx.location.directory instead of ctx.worktree)
     // 2. load + validate TeamLibrary
-    // 3. bootstrap (availableModels da ctx.model.list())
-    // 4. ctx.agent.transform(...)  → proietta agenti + default agent
-    // 5. ctx.tool.transform(...)   → registra task/subagent + delegate_status + delegate_cancel
-    // 6. ctx.session.hook("prompt") → binding sessione
-    // 7. ctx.session.hook("context")→ contesto runtime nel system prompt
-    // 8. ctx.session.hook("compaction") → continuità
-    // 9. ctx.tool.hook("execute.before"/"execute.after") → alias/risultato
-    // 10. ctx.event.subscribe() → fine deleghe background
+    // 3. bootstrap (availableModels from ctx.model.list())
+    // 4. ctx.agent.transform(...)  → project agents + default agent
+    // 5. ctx.tool.transform(...)   → register task/subagent + delegate_status + delegate_cancel
+    // 6. ctx.session.hook("prompt") → session binding
+    // 7. ctx.session.hook("context")→ runtime context in the system prompt
+    // 8. ctx.session.hook("compaction") → continuity
+    // 9. ctx.tool.hook("execute.before"/"execute.after") → alias/result
+    // 10. ctx.event.subscribe() → background delegation completion
     return () => controller.abort();   // cleanup
   },
 });
 ```
 
-Decisione: **un unico file di entrypoint V2** + un **adapter legacy V1** (`plugin.v1.ts`) che
-esporta l'attuale implementazione, così si può mantenere la compatibilità con OpenCode 1.x
-nello stesso pacchetto (shape duale: `default` V2 + `server` V1, come suggerito dalla guida
-"Support V1 and V2 from one package"). *Da decidere con l'utente: mantenere V1 o tagliare V1.*
+Decision: **a single V2 entrypoint file** + a **legacy V1 adapter** (`plugin.v1.ts`) that
+exports the current implementation, so OpenCode 1.x compatibility can be kept in the same
+package (dual shape: V2 `default` + V1 `server`, as suggested by the
+"Support V1 and V2 from one package" guide). *To decide with the user: keep V1 or cut V1.*
 
 ### 6.3 `config-hook.ts` → `agent-transform.ts`
 
-- Rimuovere l'hook `config` e la logica di merge su `cfg.agent` (`config-merge.ts` resta solo per
-  la logica di collisione/ownership, non più per mutare la config).
-- Nuovo: `ctx.agent.transform((editor) => { for (const agent of projected) editor.add(toV2Agent(agent)); editor.default(defaultKey) })`.
-- `editor.update(id, ...)` per aggiornare gli agenti già presenti (idempotenza al reload).
-- **Attenzione**: i transform sono replayable e sincroni → caricare i dati (model registry, Team library)
-  **prima** della registrazione e catturarli nella closure; per ricaricare: `ctx.agent.reload()`.
+- Remove the `config` hook and the merge logic over `cfg.agent` (`config-merge.ts` remains only for
+  collision/ownership logic, no longer for mutating the config).
+- New: `ctx.agent.transform((editor) => { for (const agent of projected) editor.add(toV2Agent(agent)); editor.default(defaultKey) })`.
+- `editor.update(id, ...)` to update already-present agents (idempotency on reload).
+- **Attention**: transforms are replayable and synchronous → load the data (model registry, Team library)
+  **before** registering and capture it in the closure; to reload: `ctx.agent.reload()`.
 
-### 6.4 `projection.ts` — formato agente V2
+### 6.4 `projection.ts` — V2 agent format
 
-- `createOpenCodeAgentDefinition()` → nuova `createV2AgentDefinition(agent)` che produce:
+- `createOpenCodeAgentDefinition()` → new `createV2AgentDefinition(agent)` producing:
   `{ id, name, description, mode, hidden, model, system, permissions, color?, steps? }`.
-- `prompt` → `system` (stesso testo prodotto da `createOpenCodeAgentPrompt`).
-- `model`: stringa `"provider/model#variant"` (stesso contenuto di oggi).
-- Marker di ownership: V2 `Agent.Info` non ha `options` ⇒ usare il campo `request.body`? no.
-  → usare un campo libero non consentito dallo schema ⇒ **decidere**: tenere il marker in una
-  `Map` in memoria del plugin (ownership = "agent creato da CrewBee" si può dedurre dal prefisso
-  `coding-*`/dal fatto che è stato registrato da questo plugin) e usare `ctx.agent.list()` per il check.
+- `prompt` → `system` (same text produced by `createOpenCodeAgentPrompt`).
+- `model`: string `"provider/model#variant"` (same content as today).
+- Ownership marker: V2 `Agent.Info` has no `options` ⇒ use the `request.body` field? no.
+  → use a free field not allowed by the schema ⇒ **decide**: keep the marker in an in-memory
+  `Map` in the plugin (ownership = "agent created by CrewBee" can be deduced from the `coding-*`
+  prefix / from the fact that it was registered by this plugin) and use `ctx.agent.list()` for the check.
 
-### 6.5 `permission-mapper.ts` — mappa V1 → V2
+### 6.5 `permission-mapper.ts` — V1 → V2 mapping
 
-Conversione meccanica:
+Mechanical conversion:
 - `{edit: {allow:["*.ts"], deny:[".env"]}}` → `[{action:"edit", resource:"*.ts", effect:"allow"}, {action:"edit", resource:".env", effect:"deny"}]`
 - `{bash:"ask"}` → `[{action:"shell", resource:"*", effect:"ask"}]`
-- action-only V1 (`doom_loop`, `question`, `todowrite`, `webfetch`, `websearch`) → action V2
-  (`doom_loop`, `question`, `webfetch`, `websearch`; `todowrite` non esiste in V2 → mappare su `skill`? no: **eliminare**).
-- `task` (V1) → **`subagent`** (V2), con `resource` = agent id del membro CrewBee consentito.
-- `write/patch/multiedit` → `edit`; `lsp_diagnostics` → n/a in V2 (rimuovere); `delegate_task` → `subagent`.
+- V1 action-only (`doom_loop`, `question`, `todowrite`, `webfetch`, `websearch`) → V2 actions
+  (`doom_loop`, `question`, `webfetch`, `websearch`; `todowrite` does not exist in V2 → map to `skill`? no: **drop it**).
+- `task` (V1) → **`subagent`** (V2), with `resource` = the allowed CrewBee member agent id.
+- `write/patch/multiedit` → `edit`; `lsp_diagnostics` → n/a in V2 (remove); `delegate_task` → `subagent`.
 
-### 6.6 `tool-hooks.ts` + `delegation/tools.ts` — cuore del porting
+### 6.6 `tool-hooks.ts` + `delegation/tools.ts` — heart of the port
 
-- Definizione tool V2: `input` come **JSON Schema** (niente zod).
-- Nome del tool: registrare **`subagent`** (override del builtin V2) mantenendo anche
-  `task` come alias deprecato, oppure **solo** `task`? *Da decidere*: raccomando `subagent`
-  (coerente col nativo V2) accettando `agent` **e** `subagent_type` come parametri.
-- `execute.before`: riscrivere `event.input.subagent_type`/`event.input.agent` (V2 `input` mutabile).
-- `execute.after`: il risultato è `Tool.Result`; normalizzare `result.content` (stringa) e `result.metadata`.
-- `ctx.metadata({title})` → `context.progress({...})` e `result.metadata`.
+- V2 tool definition: `input` as **JSON Schema** (no zod).
+- Tool name: register **`subagent`** (overriding the V2 builtin) while also keeping
+  `task` as a deprecated alias, or **only** `task`? *To decide*: I recommend `subagent`
+  (consistent with the V2 native tool), accepting both `agent` **and** `subagent_type` as parameters.
+- `execute.before`: rewrite `event.input.subagent_type`/`event.input.agent` (V2 `input` is mutable).
+- `execute.after`: the result is a `Tool.Result`; normalize `result.content` (string) and `result.metadata`.
+- `ctx.metadata({title})` → `context.progress({...})` and `result.metadata`.
 - `ctx.abort` → `context.signal`.
-- **Semantica delegazione** (V1 → V2):
+- **Delegation semantics** (V1 → V2):
   - foreground: `session.create({parentID,title})` → `session.switchAgent({sessionID, agent: configKey})`
     → `session.switchModel({sessionID, model})` → `session.prompt({sessionID, text: envelope})`
-    → `session.wait({sessionID})` → `session.context({sessionID})` per estrarre il testo assistant.
-  - background: stessa cosa **senza** `wait` (V2 `prompt` ammette e ritorna) + tracciamento stato
-    via eventi `session.idle` / `session.execution.failed`.
+    → `session.wait({sessionID})` → `session.context({sessionID})` to extract the assistant text.
+  - background: same thing **without** `wait` (V2 `prompt` admits and returns) + state tracking
+    via `session.idle` / `session.execution.failed` events.
   - `session.abort` → `session.interrupt({sessionID, resume:false})`.
-  - estrazione testo: adattare `delegation/output.ts` al nuovo formato `SessionMessageInfo`
-    (`type:"assistant"`, `content:[{type:"text",text}]`); l'anchor (indice messaggio) va ricalcolato
-    perché il conteggio messaggi cambia forma.
-  - gestione fallback modello "model not found": in V2 l'errore arriva come `SessionError` /
-    eccezione dal prompt → stesso pattern (retry senza `model`).
+  - text extraction: adapt `delegation/output.ts` to the new `SessionMessageInfo` format
+    (`type:"assistant"`, `content:[{type:"text",text}]`); the anchor (message index) must be recomputed
+    because the message count changes shape.
+  - "model not found" fallback handling: in V2 the error arrives as `SessionError` /
+    exception from the prompt → same pattern (retry without `model`).
 
-### 6.7 `chat-message-hook.ts` → hook `prompt`
+### 6.7 `chat-message-hook.ts` → `prompt` hook
 
-- V1 riceveva `{sessionID, agent, model}`; V2 `prompt` hook dà `{sessionID, messageID, prompt, delivery}`.
-- **Il problema**: il hook `prompt` non espone l'agente selezionato né il modello ⇒
-  l'agente va letto da `ctx.session.get({sessionID})` (la sessione ha `agent` e `model`).
-  Verificare in implementazione se `Session.Info` espone `agent` (V2 sì: `agent` e `model` in `SessionInfo`).
-- Alternativa più affidabile: usare l'evento `session.agent.selected` (V2) per il binding, e
-  `ctx.session.hook("prompt")` solo come fallback ⇒ **raccomandato**.
+- V1 received `{sessionID, agent, model}`; the V2 `prompt` hook gives `{sessionID, messageID, prompt, delivery}`.
+- **The problem**: the `prompt` hook does not expose the selected agent nor the model ⇒
+  the agent must be read from `ctx.session.get({sessionID})` (the session has `agent` and `model`).
+  Verify during implementation whether `Session.Info` exposes `agent` (V2 yes: `agent` and `model` in `SessionInfo`).
+- More reliable alternative: use the `session.agent.selected` (V2) event for the binding, and
+  `ctx.session.hook("prompt")` only as a fallback ⇒ **recommended**.
 
-### 6.8 `system-transform-hook.ts` → hook `context`
+### 6.8 `system-transform-hook.ts` → `context` hook
 
-- `output.system.push(stringa)` → `event.system.push({type:"text", text: stringa})`.
-- Applicare solo al flusso "primary" (l'hook `context` gira per il loop agent; per compaction/title
-  usare hook separati) — verificare `event.kind`/`agent` per non inquinare le richieste ausiliarie.
+- `output.system.push(string)` → `event.system.push({type:"text", text: string})`.
+- Apply only to the "primary" flow (the `context` hook runs for the agent loop; for compaction/title
+  use separate hooks) — verify `event.kind`/`agent` to avoid polluting auxiliary requests.
 
-### 6.9 `compaction-hook.ts` → hook `compaction`
+### 6.9 `compaction-hook.ts` → `compaction` hook
 
-- `output.context.push(...)` non esiste in V2 → `event.system.push({type:"text", text: contextContinuità})`.
-- `captureTodoSnapshot` usa `client.session.todo` (inesistente in V2) → **degradare** (§7.4).
+- `output.context.push(...)` does not exist in V2 → `event.system.push({type:"text", text: continuityContext})`.
+- `captureTodoSnapshot` uses `client.session.todo` (nonexistent in V2) → **degrade** (§7.4).
 
 ### 6.10 `event-hook.ts` → `ctx.event.subscribe()`
 
-- Sostituire i nomi evento V1 con quelli V2 (§5.7).
+- Replace V1 event names with V2 ones (§5.7).
 - `session.error` → `session.execution.failed`; `session.compacted` → `session.compaction.ended`.
-- Payload: gli eventi V2 hanno `{type, data}` (non `properties`) → adattare `resolveSessionID`.
-- Loop `for await (const event of ctx.event.subscribe({types:[...], signal}))` con `AbortController`
-  abortito nel cleanup restituito da `setup`.
+- Payload: V2 events have `{type, data}` (not `properties`) → adapt `resolveSessionID`.
+- Loop `for await (const event of ctx.event.subscribe({types:[...], signal}))` with an `AbortController`
+  aborted in the cleanup returned by `setup`.
 
 ### 6.11 `logging.ts`
 
-- `ctx.client.app.log({body})` non esiste in V2 → `console.log`/`console.warn` con prefisso `[crewbee]`.
-  Verificare che l'output finisca in `~/.local/share/opencode/log/opencode.log` (il server cattura
-  stdout/stderr dei plugin in-process) → **verifica empirica obbligatoria**.
+- `ctx.client.app.log({body})` does not exist in V2 → `console.log`/`console.warn` with a `[crewbee]` prefix.
+  Verify that the output ends up in `~/.local/share/opencode/log/opencode.log` (the server captures
+  plugin stdout/stderr in-process) → **mandatory empirical verification**.
 
 ### 6.12 `model-availability.ts`
 
-- `client.config.providers()` → `ctx.provider.list()` e/o `ctx.model.list()`.
-  In V2 `Provider.Info` ha `models` come **Map** (non oggetto) → adattare l'estrazione
-  `providerID/modelID` (attenzione: `Model.Info.id` vs `modelID`).
+- `client.config.providers()` → `ctx.provider.list()` and/or `ctx.model.list()`.
+  In V2 `Provider.Info` has `models` as a **Map** (not an object) → adapt the extraction of
+  `providerID/modelID` (attention: `Model.Info.id` vs `modelID`).
 
 ### 6.13 `delegation/continuity.ts`
 
-- `captureTodoSnapshot` → nessuna API todo in V2 ⇒ snapshot vuoto + nota.
-  Alternativa: leggere lo stato del tool `todowrite` dal transcript della sessione
-  (`ctx.session.context({sessionID})` → messaggi con tool part `todowrite`) — implementabile
-  se il transcript conserva l'input del tool (verificare).
+- `captureTodoSnapshot` → no todo API in V2 ⇒ empty snapshot + note.
+  Alternative: read the `todowrite` tool state from the session transcript
+  (`ctx.session.context({sessionID})` → messages with `todowrite` tool parts) — implementable
+  if the transcript retains the tool input (verify).
 
 ### 6.14 `update/refresh.ts`
 
-- Usa solo `ctx` per il logging ⇒ adattare la firma a `Context` (V2) o accettare un logger iniettato.
-- Il resto (npm registry, lock, state file) è indipendente dall'host ✔.
+- Uses `ctx` only for logging ⇒ adapt the signature to V2 `Context` or accept an injected logger.
+- The rest (npm registry, lock, state file) is host-independent ✔.
 
-### 6.15 `install/opencode-config-file.ts` — chiave di config
+### 6.15 `install/opencode-config-file.ts` — config key
 
-- Scrive `config.plugin = [...]` (chiave **V1**). In V2 la chiave è **`plugins`**.
-- Gestire la migrazione: leggere `plugin` (legacy, ancora accettata dallo schema V2 come campo
-  deprecato) e `plugins`; scrivere in `plugins`; mantenere `plugin` intatto se contiene altri plugin.
-- `removeCrewBeePluginEntries` deve ripulire entrambe le chiavi.
-- Formato entry: V2 accetta `"crewbee"`, `"crewbee@1.2.3"`, `"@scope/pkg"`, path assoluti e `file://`.
-  → per il fork locale usare un **path assoluto** al pacchetto installato
-  (es. `"plugins": ["/Users/…/Projects/crewbee-v2"]`) oppure pubblicare su npm.
+- Writes `config.plugin = [...]` (**V1** key). In V2 the key is **`plugins`**.
+- Handle the migration: read `plugin` (legacy, still accepted by the V2 schema as a deprecated
+  field) and `plugins`; write into `plugins`; keep `plugin` intact if it contains other plugins.
+- `removeCrewBeePluginEntries` must clean both keys.
+- Entry format: V2 accepts `"crewbee"`, `"crewbee@1.2.3"`, `"@scope/pkg"`, absolute paths and `file://`.
+  → for the local fork use an **absolute path** to the installed package
+  (e.g. `"plugins": ["/Users/…/Projects/crewbee-v2"]`) or publish to npm.
 
 ### 6.16 `install/doctor.ts` + `uninstall.ts`
 
-- `findCrewBeePluginEntries` deve leggere `plugins` (e `plugin` legacy).
-- Aggiungere al doctor un controllo della **versione OpenCode** (`opencode --version` → major 2 ⇒
-  plugin V2) e della **versione SDK** caricata.
+- `findCrewBeePluginEntries` must read `plugins` (and legacy `plugin`).
+- Add to the doctor a check of the **OpenCode version** (`opencode --version` → major 2 ⇒
+  V2 plugin) and of the loaded **SDK version**.
 
 ### 6.17 `src/runtime/registries/plugin-tools.ts`
 
-- I tool CrewBee registra sono `task`/`delegate_status`/`delegate_cancel` ⇒ in V2 il primo diventa
-  `subagent` (alias `task` accettato). Aggiornare il registro e i test.
+- The tools CrewBee registers are `task`/`delegate_status`/`delegate_cancel` ⇒ in V2 the first becomes
+  `subagent` (`task` accepted as alias). Update the registry and tests.
 
-### 6.18 Test esistenti da aggiornare
+### 6.18 Existing tests to update
 
-`tests/opencode/*` e `tests/install/*` assumono il contratto V1 (forme `cfg.agent`, `permission` map,
-`tool.execute.before(input, output)`, `chat.message`). Elenco:
+`tests/opencode/*` and `tests/install/*` assume the V1 contract (`cfg.agent` shapes, `permission` map,
+`tool.execute.before(input, output)`, `chat.message`). List:
 
-- `tests/opencode/agent-ordering.test.mjs` — forma agente: adattare alle expectations V2.
-- `tests/opencode/delegate-task.test.mjs` — `createDelegateTools` con client finto V1 → adattare.
-- `tests/opencode/plugin-task-alias.test.mjs` — alias `subagent_type` → nuovo formato.
+- `tests/opencode/agent-ordering.test.mjs` — agent shape: adapt to V2 expectations.
+- `tests/opencode/delegate-task.test.mjs` — `createDelegateTools` with a fake V1 client → adapt.
+- `tests/opencode/plugin-task-alias.test.mjs` — `subagent_type` alias → new format.
 - `tests/opencode/model-availability.test.mjs` — `client.config.providers()` → `ctx.model.list()`.
 - `tests/opencode/partial-team-load.test.mjs`
-- `tests/install/plugin-entry.test.mjs` — chiave `plugin` → `plugins`.
+- `tests/install/plugin-entry.test.mjs` — `plugin` key → `plugins`.
 - `tests/install/config-writer.test.mjs`, `doctor.test.mjs`, `install-user.test.mjs`, `uninstall.test.mjs`.
 
-Aggiungere nuovi test:
-- `tests/opencode/v2-agent-transform.test.mjs` — `Plugin.define` + `setup` con ctx finto ⇒ verifica
-  che `ctx.agent.transform` venga chiamato con le definizioni V2 corrette.
-- `tests/opencode/v2-tool-registration.test.mjs` — verifica `editor.add` con JSON Schema e `execute`.
-- `tests/opencode/v2-hook-mapping.test.mjs` — mapping degli hook (prompt/context/compaction/tool).
+New tests to add:
+- `tests/opencode/v2-agent-transform.test.mjs` — `Plugin.define` + `setup` with a fake ctx ⇒ verify
+  that `ctx.agent.transform` is called with the correct V2 definitions.
+- `tests/opencode/v2-tool-registration.test.mjs` — verify `editor.add` with JSON Schema and `execute`.
+- `tests/opencode/v2-hook-mapping.test.mjs` — hook mapping (prompt/context/compaction/tool).
 
 ---
 
-## 7. Decisioni di design (punti che non mappano 1:1)
+## 7. Design decisions (points that do not map 1:1)
 
-### 7.1 Tool delegazione: `task` vs `subagent`
-V2 chiama il tool nativo `subagent` con action permission `subagent`. CrewBee ne ridefinisce il
-comportamento (delegazione a membri del Team). **Proposta**: registrare `subagent` (override del
-builtin) accettando `agent` | `subagent_type`, `description`, `prompt`, `background`, `task_id`;
-mantenere `task` come alias secondario per compatibilità con prompt esistenti.
-*Alternativa*: non sovrascrivere il builtin e delegare al `subagent` nativo, ma perderebbe il
-controllo CrewBee su alias/permessi/nesting.
+### 7.1 Delegation tool: `task` vs `subagent`
+V2 calls the native tool `subagent` with permission action `subagent`. CrewBee redefines its
+behavior (delegation to Team members). **Proposal**: register `subagent` (overriding the
+builtin) accepting `agent` | `subagent_type`, `description`, `prompt`, `background`, `task_id`;
+keep `task` as a secondary alias for compatibility with existing prompts.
+*Alternative*: do not override the builtin and delegate to the native `subagent`, but CrewBee's
+control over alias/permissions/nesting would be lost.
 
-### 7.2 Binding sessione → agente
-In V1 `chat.message` forniva `agent` e `model`. In V2 l'hook `prompt` non li dà.
-**Proposta**: ascoltare l'evento `session.agent.selected` (+ `session.model.selected`) per il binding,
-e usare `ctx.session.get({sessionID})` come fallback.
+### 7.2 Session → agent binding
+In V1 `chat.message` provided `agent` and `model`. In V2 the `prompt` hook does not.
+**Proposal**: listen to the `session.agent.selected` (+ `session.model.selected`) event for the
+binding, and use `ctx.session.get({sessionID})` as a fallback.
 
-### 7.3 Attesa del risultato delegato
-V1 `session.prompt` era bloccante (attendeva la risposta). In V2 `prompt` ammette e ritorna subito.
-**Proposta**: foreground = `prompt` + `session.wait({sessionID})`; background = `prompt` senza wait.
+### 7.3 Waiting for the delegated result
+V1 `session.prompt` was blocking (waited for the reply). In V2 `prompt` admits and returns immediately.
+**Proposal**: foreground = `prompt` + `session.wait({sessionID})`; background = `prompt` without wait.
 
-### 7.4 Snapshot todo in compaction
-Nessuna API todo in V2. **Proposta**: snapshot vuoto con nota esplicita nel contesto di continuità;
-opzionalmente ricavare i todo dal transcript (`todowrite` tool parts).
+### 7.4 Todo snapshot in compaction
+No todo API in V2. **Proposal**: empty snapshot with an explicit note in the continuity context;
+optionally derive the todos from the transcript (`todowrite` tool parts).
 
-### 7.5 Temperature / top_p per agente
-In V2 `request.body` **non è ancora inviato** con le richieste modello (2.1.3, warning ufficiale).
-**Proposta**: non impostare `temperature` per-agente; se indispensabile, usare l'hook
-`ctx.session.hook("context", e => e.options.temperature = ...)` filtrato per `event.agent`.
+### 7.5 Temperature / top_p per agent
+In V2 `request.body` **is not yet sent** with model requests (2.1.3, official warning).
+**Proposal**: do not set per-agent `temperature`; if essential, use the hook
+`ctx.session.hook("context", e => e.options.temperature = ...)` filtered by `event.agent`.
 
-### 7.6 Marker di ownership degli agenti
-V2 `Agent.Info` non ha `options.crewbee`. **Proposta**: tenere un `Set<string>` in memoria con le
-configKey proiettate da CrewBee e usare `ctx.agent.list()` per il controllo "non mutare agenti altrui".
+### 7.6 Agent ownership marker
+V2 `Agent.Info` has no `options.crewbee`. **Proposal**: keep an in-memory `Set<string>` with the
+configKeys projected by CrewBee and use `ctx.agent.list()` for the "do not mutate other people's agents" check.
 
 ### 7.7 Tool availability (`tools` map)
-V2 non ha `tools` per agente. **Proposta**: tradurre `requestedTools` in regole permission
-(`deny` sull'azione corrispondente) + prompt che elenca gli strumenti consentiti.
+V2 has no per-agent `tools`. **Proposal**: translate `requestedTools` into permission rules
+(`deny` on the corresponding action) + a prompt listing the allowed tools.
 
-### 7.8 Compatibilità V1
-Mantenere l'implementazione V1 nello stesso pacchetto (`default` = V2, `server` = V1) per non
-rompere gli utenti OpenCode 1.x, oppure rilasciare solo V2 (più semplice, ma rompe la linea 1.x).
-*Da decidere con l'utente.*
-
----
-
-## 8. Strategia di installazione in V2
-
-V2 installa i plugin npm in `~/.cache/opencode/npm/<pkg>@<ver>/<ts>/node_modules/<pkg>` e li
-abilita con la chiave `plugins` nella config globale.
-
-Opzioni per il fork:
-1. **Path locale** (subito, senza publish): `"plugins": ["/Users/alessandro.muzzi/Projects/crewbee-v2"]`
-   nella `~/.config/opencode/opencode.json`. V2 accetta directory locali con `package.json` + `exports`.
-2. **npm privato/registry personale** (`npm login` + publish sotto il proprio scope): la via più pulita
-   se si vuole distribuire; richiede `npm publish` e un nome tipo `crewbee-v2`.
-3. **Tarball locale** installato in `~/.cache/opencode/npm/…` a mano: fragile.
-
-*Da decidere con l'utente.* Per lo sviluppo → opzione 1; per l'uso reale → opzione 2.
+### 7.8 V1 compatibility
+Keep the V1 implementation in the same package (`default` = V2, `server` = V1) so OpenCode 1.x
+users are not broken, or release V2 only (simpler, but breaks the 1.x line).
+*To decide with the user.*
 
 ---
 
-## 9. Piano di test
+## 8. Installation strategy in V2
 
-1. **Unità** — `npm test` (repo usa `node --test`; `build` richiede `tsc`): estendere i test esistenti
-   ai nuovi moduli V2.
-2. **Typecheck** — `npm run typecheck` con `@opencode/plugin@2.1.3`.
-3. **Simulator** — `npm run simulate:opencode` e `simulate:compact`: adattarli (simulano il runtime V1).
-4. **Integrazione reale su opencode 2.1.3** (script automatizzato in `scripts/`):
-   - `HOME` isolata + `opencode service set port <port>` (evita conflitti con il servizio reale)
-   - `opencode plugin add <path>` / config con `plugins`
-   - `opencode plugin list` → deve risultare **active**
-   - `opencode debug agents` → devono comparire gli agenti CrewBee (`coding-*`)
-   - `opencode debug config` → chiave `plugins` presente
-   - log server: nessun `failed to load plugin`; presenza dei log `[crewbee]`
-   - test funzionale: avvio sessione, `task` verso un membro del Team, verifica del risultato
-     e dello stato `delegate_status`.
-5. **Non regressione V1** (se si mantiene la compatibilità): stesso test con `opencode-ai@1.19.4`.
+V2 installs npm plugins in `~/.cache/opencode/npm/<pkg>@<ver>/<ts>/node_modules/<pkg>` and
+enables them with the `plugins` key in the global config.
+
+Options for the fork:
+1. **Local path** (immediate, no publish): `"plugins": ["/Users/alessandro.muzzi/Projects/crewbee-v2"]`
+   in `~/.config/opencode/opencode.json`. V2 accepts local directories with `package.json` + `exports`.
+2. **Private npm / personal registry** (`npm login` + publish under your own scope): the cleanest path
+   for distribution; requires `npm publish` and a name like `crewbee-v2`.
+3. **Local tarball** installed into `~/.cache/opencode/npm/…` by hand: fragile.
+
+*To decide with the user.* For development → option 1; for real use → option 2.
 
 ---
 
-## 10. Strategia fork & rilascio
+## 9. Test plan
+
+1. **Unit** — `npm test` (the repo uses `node --test`; `build` requires `tsc`): extend the existing tests
+   to the new V2 modules.
+2. **Typecheck** — `npm run typecheck` with `@opencode/plugin@2.1.3`.
+3. **Simulator** — `npm run simulate:opencode` and `simulate:compact`: adapt them (they simulate the V1 runtime).
+4. **Real integration on opencode 2.1.3** (automated script in `scripts/`):
+   - isolated `HOME` + `opencode service set port <port>` (avoids conflicts with the real service)
+   - `opencode plugin add <path>` / config with `plugins`
+   - `opencode plugin list` → must show **active**
+   - `opencode debug agents` → CrewBee agents (`coding-*`) must appear
+   - `opencode debug config` → `plugins` key present
+   - server log: no `failed to load plugin`; presence of `[crewbee]` logs
+   - functional test: start a session, `task` a Team member, verify the result and the
+     `delegate_status` state.
+5. **V1 non-regression** (if compatibility is kept): same test with `opencode-ai@1.19.4`.
+
+---
+
+## 10. Fork & release strategy
 
 - Upstream: `https://github.com/CrewBeeLab/CrewBee` (MIT).
-- Fork personale: da creare sull'account GitHub dell'utente (non è ancora presente `gh` CLI né
-  una chiave SSH GitHub personale valida: `ssh -T git@github.com` → *Permission denied*).
-  → serve `gh auth login` oppure un PAT, oppure il fork creato a mano da browser.
-- Workflow consigliato: branch `feat/opencode-v2-port` sul fork → PR verso upstream (o mantenere
-  privato se si preferisce).
-- Versioning: `0.2.0-v2.0.0` o `1.0.0`? Proposta: **0.2.0** con chiave `plugins` e supporto V2,
-  deprecatando V1.
+- Personal fork: created on the user's GitHub account (no `gh` CLI was present at the time nor
+  a valid personal GitHub SSH key: `ssh -T git@github.com` → *Permission denied*).
+  → required `gh auth login` or a PAT, or a fork created manually in the browser.
+- Recommended workflow: branch `feat/opencode-v2-port` on the fork → PR towards upstream (or keep
+  private if preferred).
+- Versioning: `0.2.0-v2.0.0` or `1.0.0`? Proposal: **0.2.0** with the `plugins` key and V2 support,
+  deprecating V1.
 
 ---
 
-## 11. Checklist ordinata (da seguire)
+## 11. Ordered checklist (to follow)
 
-- [ ] **F1** — Preparazione: fork GitHub (credenziali), working copy `~/Projects/crewbee-v2`, branch `feat/opencode-v2-port` ✔ (fatto)
-- [ ] **F2** — Aggiornare `package.json`: `@opencode/plugin@2.1.3`, rimuovere `@opencode-ai/plugin`; allineare `exports`
-- [ ] **F3** — Nuovo `src/adapters/opencode/plugin-v2.ts` con `Plugin.define({id:"crewbee", setup})`
-- [ ] **F4** — `agent-transform.ts`: `ctx.agent.transform` + `editor.default` (sostituisce `config-hook.ts`)
-- [ ] **F5** — `projection.ts`: nuovo formatter agente V2 (`system`, `permissions`, `model`, `disabled`)
-- [ ] **F6** — `permission-mapper.ts`: mappa V1 → array `permissions` V2 (`task` → `subagent`)
-- [ ] **F7** — `delegation/tools.ts`: tool V2 (`subagent`/`task` + `delegate_status` + `delegate_cancel`), JSON Schema, `result.content`
-- [ ] **F8** — `tool-hooks.ts`: `execute.before` (input mutabile) / `execute.after` (`Tool.Result`)
-- [ ] **F9** — `chat-message-hook.ts` → binding via `session.agent.selected` + fallback `session.get`
-- [ ] **F10** — `system-transform-hook.ts` → `ctx.session.hook("context")` con `SystemPart`
-- [ ] **F11** — `compaction-hook.ts` → `ctx.session.hook("compaction")` + degradazione todo
-- [ ] **F12** — `event-hook.ts` → `ctx.event.subscribe()` + rinomina eventi V2
-- [ ] **F13** — `logging.ts` → console con prefisso `[crewbee]`; verificare il flush nel log del server
+- [ ] **F1** — Preparation: GitHub fork (credentials), working copy `~/Projects/crewbee-v2`, branch `feat/opencode-v2-port` ✔ (done)
+- [ ] **F2** — Update `package.json`: `@opencode/plugin@2.1.3`, remove `@opencode-ai/plugin`; align `exports`
+- [ ] **F3** — New `src/adapters/opencode/plugin-v2.ts` with `Plugin.define({id:"crewbee", setup})`
+- [ ] **F4** — `agent-transform.ts`: `ctx.agent.transform` + `editor.default` (replaces `config-hook.ts`)
+- [ ] **F5** — `projection.ts`: new V2 agent formatter (`system`, `permissions`, `model`, `disabled`)
+- [ ] **F6** — `permission-mapper.ts`: map V1 → V2 `permissions` array (`task` → `subagent`)
+- [ ] **F7** — `delegation/tools.ts`: V2 tools (`subagent`/`task` + `delegate_status` + `delegate_cancel`), JSON Schema, `result.content`
+- [ ] **F8** — `tool-hooks.ts`: `execute.before` (mutable input) / `execute.after` (`Tool.Result`)
+- [ ] **F9** — `chat-message-hook.ts` → binding via `session.agent.selected` + `session.get` fallback
+- [ ] **F10** — `system-transform-hook.ts` → `ctx.session.hook("context")` with `SystemPart`
+- [ ] **F11** — `compaction-hook.ts` → `ctx.session.hook("compaction")` + todo degradation
+- [ ] **F12** — `event-hook.ts` → `ctx.event.subscribe()` + V2 event renames
+- [ ] **F13** — `logging.ts` → console with `[crewbee]` prefix; verify flush into the server log
 - [ ] **F14** — `model-availability.ts` → `ctx.model.list()` / `ctx.provider.list()`
-- [ ] **F15** — `update/refresh.ts` → firma `Context` V2
-- [ ] **F16** — `install/opencode-config-file.ts` → chiave `plugins` + migrazione da `plugin`
-- [ ] **F17** — `install/doctor.ts` / `uninstall.ts` → nuova chiave + check versione OpenCode
-- [ ] **F18** — Aggiornare `src/runtime/registries/plugin-tools.ts` (task → subagent)
-- [ ] **F19** — Aggiornare i test esistenti + aggiungere i test V2
-- [ ] **F20** — Aggiornare simulatori (`simulators/opencode-*.mjs`) al runtime V2
+- [ ] **F15** — `update/refresh.ts` → V2 `Context` signature
+- [ ] **F16** — `install/opencode-config-file.ts` → `plugins` key + migration from `plugin`
+- [ ] **F17** — `install/doctor.ts` / `uninstall.ts` → new key + OpenCode version check
+- [ ] **F18** — Update `src/runtime/registries/plugin-tools.ts` (task → subagent)
+- [ ] **F19** — Update existing tests + add V2 tests
+- [ ] **F20** — Update simulators (`simulators/opencode-*.mjs`) to the V2 runtime
 - [ ] **F21** — `npm run typecheck && npm test && npm run build`
-- [ ] **F22** — Script di verifica end-to-end su opencode 2.1.3 reale (HOME isolata, porta dedicata)
-- [ ] **F23** — Documentazione: `docs/guide/installation.md` (V2), README, `docs/developer/release.md`
-- [ ] **F24** — Pubblicazione (npm) o setup locale con path; verifica `opencode plugin list` → active
+- [ ] **F22** — End-to-end verification script on real opencode 2.1.3 (isolated HOME, dedicated port)
+- [ ] **F23** — Documentation: `docs/guide/installation.md` (V2), README, `docs/developer/release.md`
+- [ ] **F24** — Publish (npm) or local setup with path; verify `opencode plugin list` → active
 
 ---
 
-## 12. Rischi e rollback
+## 12. Risks and rollback
 
-| Rischio | Impatto | Mitigazione |
+| Risk | Impact | Mitigation |
 |---|---|---|
-| Tool `subagent` non sovrascrivibile | delegation CrewBee inutilizzabile | verificare in F7 con un test reale; in alternativa non sovrascrivere e usare il `subagent` nativo |
-| `prompt` non bloccante in V2 | foreground delegation che ritorna subito | `session.wait({sessionID})` |
-| `temperature` non applicabile | agenti meno deterministici | usare hook `context` (`options.temperature`) |
-| Marker ownership perso | sovrascrittura di agenti altrui | `Set` in memoria + `editor.list()` |
-| Tool `todowrite` assente in V2 | contesto di continuità più povero | snapshot vuoto + nota; opzionale parsing del transcript |
-| Divergenza con upstream | merge difficulty | commit atomici per area, changelog nel PR |
-| Rollback | — | il fork non tocca `main`; disinstallazione = rimuovere l'entry da `plugins` + `opencode plugin remove` |
+| `subagent` tool not overridable | CrewBee delegation unusable | verify in F7 with a real test; otherwise do not override and use the native `subagent` |
+| Non-blocking `prompt` in V2 | foreground delegation returns immediately | `session.wait({sessionID})` |
+| `temperature` not applicable | less deterministic agents | use the `context` hook (`options.temperature`) |
+| Ownership marker lost | overwriting other people's agents | in-memory `Set` + `editor.list()` |
+| `todowrite` tool absent in V2 | poorer continuity context | empty snapshot + note; optional transcript parsing |
+| Divergence from upstream | merge difficulty | atomic commits per area, changelog in the PR |
+| Rollback | — | the fork does not touch `main`; uninstall = remove the entry from `plugins` + `opencode plugin remove` |
 
 ---
 
-## 13. Domande aperte (da decidere prima di F2)
+## 13. Open questions (to decide before F2)
 
-1. **Fork GitHub**: creare il fork sull'account dell'utente? Quale username? Serve `gh auth login`
-   (interattivo) o un PAT, oppure il fork viene creato a mano e io pusho sul remote?
-2. **Supporto V1**: mantenere il doppio implementation (V1 + V2) nello stesso pacchetto, o tagliare V1?
-   (Raccomando: mantenere V1 per qualche release, con `default` = V2 e `server` = V1.)
-3. **Nome del pacchetto**: `crewbee` (fork locale) o `crewbee-v2` / `@scope/crewbee`?
-4. **Distribuzione**: publish su npm (pubblico o scope privato) vs solo path locale?
-5. **Tool**: sovrascrivere il builtin `subagent` (raccomandato) o registrare solo `task` come tool nuovo?
-6. **Temperature per agente**: rinunciare (raccomandato, dato il warning V2) o implementare via hook `context`?
+1. **GitHub fork**: create the fork on the user's account? Which username? Requires `gh auth login`
+   (interactive) or a PAT, or the fork is created manually and I push to the remote?
+2. **V1 support**: keep the dual implementation (V1 + V2) in the same package, or cut V1?
+   (Recommendation: keep V1 for a few releases, with `default` = V2 and `server` = V1.)
+3. **Package name**: `crewbee` (local fork) or `crewbee-v2` / `@scope/crewbee`?
+4. **Distribution**: publish to npm (public or private scope) vs local path only?
+5. **Tool**: override the builtin `subagent` (recommended) or register only `task` as a new tool?
+6. **Per-agent temperature**: give up (recommended, given the V2 warning) or implement via the `context` hook?
 
 ---
 
-## Risultato implementazione (port completato)
+## Implementation result (port completed)
 
-- **Branch locale**: `feat/opencode-v2-port` (nessun commit fatto; working tree sporco — commit solo su esplicita richiesta dell'utente).
-- **Build**: `npm run build` OK; bundle `dist/opencode-plugin.mjs` 1.9MB, solo builtins Node come dipendenze esterne.
-- **Test**: `npm test` → 107/107 pass.
-- **Verifica empirica su OpenCode 2.1.3** (HOME isolato): il plugin si carica, `ctx.agent.transform` proietta gli 8 agenti CrewBee (leader primario visibile, host agent `build/plan/general/explore` nascosti+demesi a subagent), `ctx.tool.transform` registra `subagent` (override del builtin) + `task` (alias) + `delegate_status` + `delegate_cancel`, `ctx.session.hook("prompt"/"context"/"compaction")` registrati, `event.subscribe` filtrato manualmente.
-- **Install locale (dev)**: usare la forma `{ "package": "file:/Users/alessandro.muzzi/Projects/crewbee-v2" }` in `plugins` di `~/.config/opencode/opencode.json`. Il loader installa il pacchetto in `~/.cache/opencode/npm/file:/...` e risolve l'entrypoint `dist/opencode-plugin.mjs`.
-- **Install produzione (dopo il fork)**: `opencode plugin add github:<user>/crewbee-v2` (Git package specifier).
-- **Dipendenze**: `@opencode/plugin@2.1.3` e `@opencode-ai/plugin@1.15.10` come devDeps (solo tipi); `zod@^4.1.8` + `yaml` come deps runtime.
+- **Local branch**: `feat/opencode-v2-port` (committed on explicit user request only).
+- **Build**: `npm run build` OK; bundle `dist/opencode-plugin.mjs` 1.9MB, only Node builtins as external dependencies.
+- **Tests**: `npm test` → 107/107 pass.
+- **Empirical verification on OpenCode 2.1.3** (isolated HOME): the plugin loads, `ctx.agent.transform`
+  projects the 8 CrewBee agents (primary leader visible, host agents `build/plan/general/explore`
+  hidden+demoted to subagent), `ctx.tool.transform` registers `subagent` (builtin override) +
+  `task` (alias) + `delegate_status` + `delegate_cancel`, `ctx.session.hook("prompt"/"context"/"compaction")`
+  registered, `event.subscribe` manually filtered.
+- **Local install (dev)**: use the form `{ "package": "file:/Users/alessandro.muzzi/Projects/crewbee-v2" }`
+  in the `plugins` array of `~/.config/opencode/opencode.json`. The loader installs the package into
+  `~/.cache/opencode/npm/file:/...` and resolves the `dist/opencode-plugin.mjs` entrypoint.
+- **Production install (after the fork)**: `opencode plugin add github:<user>/crewbee-v2` (Git package specifier).
+- **Dependencies**: `@opencode/plugin@2.1.3` and `@opencode-ai/plugin@1.15.10` as devDeps (types only);
+  `zod@^4.1.8` + `yaml` as runtime deps.
