@@ -305,14 +305,14 @@ test("invalid configured file-based teams are skipped without blocking valid tea
     assert.ok(!library.teams.some((team) => team.manifest.id === "broken-team"));
     assert.ok(!library.teams.some((team) => team.manifest.id === "hidden-leader-team"));
     assert.ok(!library.teams.some((team) => team.manifest.id === "legacy-team"));
-    assert.ok(issues.some((issue) => issue.message.includes("Skipped Team 'BrokenTeam'")));
+    assert.ok(issues.some((issue) => issue.message.includes("Skipped Team 'broken-team'")));
     assert.ok(issues.some((issue) => issue.message.includes("Leader agent 'hidden-leader' must be user-selectable.")));
     assert.ok(config.agent["coding-leader"]);
     assert.ok(config.agent["valid-leader"]);
     assert.ok(!config.agent["broken-leader"]);
     assert.ok(!config.agent["hidden-leader"]);
     assert.ok(!config.agent["legacy-leader"]);
-    assert.ok(logs.some((entry) => entry.message.includes("Skipped Team 'BrokenTeam'")));
+    assert.ok(logs.some((entry) => entry.message.includes("Skipped Team 'broken-team'")));
     assert.ok(logs.some((entry) => entry.message.includes("Leader agent 'hidden-leader' must be user-selectable.")));
   } finally {
     if (previousConfigDir === undefined) {
