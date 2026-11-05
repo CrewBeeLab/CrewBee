@@ -652,6 +652,36 @@ For coding tasks, CrewBee emphasizes:
 
 The Coding Team should prove one thing first: complex coding tasks can be organized as a reusable Team asset, instead of being handled by a single Coder agent that writes code and declares the task done.
 
+### Customizing the built-in Coding Team (partial override)
+
+A file-based Team whose `id` matches an embedded Team (for example `coding-team`) no longer has to redefine every artifact. The override merges **per artifact**: you define only what you want to change, and the embedded Team fills the rest.
+
+| Artifact in the file Team | Result |
+| ------------------------- | ------ |
+| `<agent>.agent.md` present | file version wins for that agent |
+| `<agent>` absent | embedded version is used |
+| `team.manifest.yaml` present | file version wins (whole file) |
+| `team.manifest.yaml` absent | embedded manifest is used |
+| `team.policy.yaml` present | file version wins (whole file) |
+| `team.policy.yaml` absent | embedded policy is used |
+
+Minimal example — customize only `reviewer`:
+
+```text
+~/.config/opencode/teams/coding-team/
+├── team.manifest.yaml      # copy of the embedded manifest (or your own, covering all members)
+└── reviewer.agent.md       # only the agent you want to change
+```
+
+No `team.policy.yaml`, no other `.agent.md`. Result: `reviewer` is yours; the other seven agents and the policy come from the embedded Team, so upstream updates to them keep flowing.
+
+Notes:
+
+* Precedence is unchanged: file Team > embedded Team. The difference is that the merge is now per artifact instead of per Team.
+* A file Team that defines every agent keeps working: it simply wins on every artifact.
+* `team.manifest.yaml` stays required (it declares the Team id, leader, and members). When you write your own manifest instead of copying the embedded one, it must include member guidance for every collaboration target referenced by the merged agents, otherwise the Team fails validation and the embedded Team is kept.
+* A pure file Team with no embedded counterpart and no `team.policy.yaml` is still a configuration error, exactly as before.
+
 ---
 
 ## Next: Project Context

@@ -1,9 +1,9 @@
 import path from "node:path";
 
-import type { AgentTeamDefinition, TeamLibrary } from "../core";
+import type { AgentProfileSpec, AgentTeamDefinition, TeamLibrary } from "../core";
 
 import type { TeamValidationIssue } from "./types";
-import { normalizeTeamAgentIds } from "./canonical-agent-id";
+import { createCanonicalAgentId, normalizeTeamAgentIds } from "./canonical-agent-id";
 import { BUILTIN_CODING_TEAM_ID } from "./constants";
 import { createEmbeddedCodingTeam } from "./embedded/coding-team";
 import {
@@ -29,6 +29,56 @@ function createSkippedTeamIssue(teamDir: string, message: string): TeamValidatio
 export interface LoadDefaultTeamLibraryOptions {
   globalConfigRoot?: string;
   projectWorktree?: string;
+}
+
+interface RegisteredTeam {
+  sourceScope: string;
+  configPath: string;
+  kind: "embedded" | "filesystem";
+  rawTeam: AgentTeamDefinition;
+  normalizedTeam: AgentTeamDefinition;
+  orderedIndex: number;
+}
+
+/**
+ * Per-artifact merge of two Team definitions with the same manifest id.
+ * `higher` wins on every artifact it defines; `lower` fills the gaps:
+ *
+ * - manifest: `higher` wins wholesale (required field).
+ * - policy: `higher.policy ?? lower.policy` (a partial file team may omit team.policy.yaml).
+ * - agents: `lower`'s agent list, with `higher`'s agents replacing them by canonical
+ *   id; agents only `higher` defines are appended. Keying by canonical id lets a file
+ *   team name agents either raw (`reviewer`) or already canonical (`coding-reviewer`).
+ * - documentation / modelConfigOverride: `higher` wins when present.
+ *
+ * Both inputs are raw (pre-normalization) definitions loaded from their sources.
+ */
+function mergeTeamDefinitions(higher: AgentTeamDefinition, lower: AgentTeamDefinition): AgentTeamDefinition {
+  const higherAgentsByCanonicalId = new Map<string, AgentProfileSpec>();
+  for (const agent of higher.agents) {
+    higherAgentsByCanonicalId.set(createCanonicalAgentId(higher.manifest.id, agent.metadata.id), agent);
+  }
+
+  const mergedAgents: AgentProfileSpec[] = [];
+  const mergedKeys = new Set<string>();
+  for (const agent of lower.agents) {
+    const key = createCanonicalAgentId(lower.manifest.id, agent.metadata.id);
+    mergedKeys.add(key);
+    mergedAgents.push(higherAgentsByCanonicalId.get(key) ?? agent);
+  }
+  for (const [key, agent] of higherAgentsByCanonicalId) {
+    if (!mergedKeys.has(key)) {
+      mergedAgents.push(agent);
+    }
+  }
+
+  return {
+    manifest: higher.manifest,
+    policy: higher.policy ?? lower.policy,
+    agents: mergedAgents,
+    documentation: higher.documentation ?? lower.documentation,
+    modelConfigOverride: higher.modelConfigOverride ?? lower.modelConfigOverride,
+  };
 }
 
 function loadValidatedTeamDefinition(input: {
@@ -102,6 +152,7 @@ export function loadDefaultTeamLibrary(input: string | LoadDefaultTeamLibraryOpt
   );
   const pendingTeams: Array<{
     loader: () => { team?: AgentTeamDefinition; issues: TeamValidationIssue[] };
+    kind: "embedded" | "filesystem";
     priority: number;
     order: number;
     sourcePrecedence: number;
@@ -129,6 +180,7 @@ export function loadDefaultTeamLibrary(input: string | LoadDefaultTeamLibraryOpt
             : undefined,
           issues: [],
         }),
+        kind: "embedded",
         priority: source.priority,
         order: source.order,
         sourcePrecedence: source.sourcePrecedence,
@@ -153,6 +205,7 @@ export function loadDefaultTeamLibrary(input: string | LoadDefaultTeamLibraryOpt
           };
         }
       },
+      kind: "filesystem",
       priority: source.priority,
       order: source.order,
       sourcePrecedence: source.sourcePrecedence,
@@ -176,7 +229,7 @@ export function loadDefaultTeamLibrary(input: string | LoadDefaultTeamLibraryOpt
   });
 
   const usedCanonicalIds = new Set<string>();
-  const usedTeamIds = new Map<string, { sourceScope: string; configPath: string }>();
+  const usedTeamIds = new Map<string, RegisteredTeam>();
   const orderedTeams: AgentTeamDefinition[] = [];
 
   for (const entry of pendingTeams) {
@@ -185,17 +238,86 @@ export function loadDefaultTeamLibrary(input: string | LoadDefaultTeamLibraryOpt
     if (loaded.team) {
       const existing = usedTeamIds.get(loaded.team.manifest.id);
       if (existing) {
-        configured.issues.push({
-          level: "warning",
-          filePath: entry.configPath,
-          code: "team_id_shadowed_or_duplicate",
-          sourceScope: entry.sourceScope === "project" || entry.sourceScope === "global" ? entry.sourceScope : undefined,
-          message: entry.sourceScope === "global" && existing.sourceScope === "project"
-            ? `Project Team '${loaded.team.manifest.id}' shadows global Team '${loaded.team.manifest.id}'.`
-            : `Skipped Team '${loaded.team.manifest.id}': duplicate Team id already loaded from ${existing.sourceScope} source.`,
-          suggestion: entry.sourceScope === "global" && existing.sourceScope === "project"
-            ? "This is expected when a project intentionally overrides a global Team id."
-            : "Rename one Team id or disable one Team entry.",
+        if (existing.kind === entry.kind) {
+          // Same-kind collision (two file teams, or two embedded sources): unchanged
+          // behavior — first source in sort order wins, the other one is skipped.
+          configured.issues.push({
+            level: "warning",
+            filePath: entry.configPath,
+            code: "team_id_shadowed_or_duplicate",
+            sourceScope: entry.sourceScope === "project" || entry.sourceScope === "global" ? entry.sourceScope : undefined,
+            message: entry.sourceScope === "global" && existing.sourceScope === "project"
+              ? `Project Team '${loaded.team.manifest.id}' shadows global Team '${loaded.team.manifest.id}'.`
+              : `Skipped Team '${loaded.team.manifest.id}': duplicate Team id already loaded from ${existing.sourceScope} source.`,
+            suggestion: entry.sourceScope === "global" && existing.sourceScope === "project"
+              ? "This is expected when a project intentionally overrides a global Team id."
+              : "Rename one Team id or disable one Team entry.",
+          });
+          continue;
+        }
+
+        // Cross-kind collision: a file team and the embedded team with the same id
+        // merge per artifact — the file team wins where it defines an artifact, the
+        // embedded team fills the gaps (agents, manifest, policy, docs). See the
+        // "Customizing the built-in Coding Team (partial override)" README section.
+        const teamId = loaded.team.manifest.id;
+        const higherRaw = entry.kind === "filesystem" ? loaded.team : existing.rawTeam;
+        const lowerRaw = entry.kind === "filesystem" ? existing.rawTeam : loaded.team;
+        const mergedRaw = mergeTeamDefinitions(higherRaw, lowerRaw);
+
+        // Free the canonical ids claimed by the registered team so the merged team
+        // can be normalized from scratch, keeping every other team's claims intact.
+        for (const agent of existing.normalizedTeam.agents) {
+          usedCanonicalIds.delete(agent.metadata.id);
+        }
+        const claimedBeforeMerge = new Set(usedCanonicalIds);
+        const restoreExistingClaims = () => {
+          usedCanonicalIds.clear();
+          for (const claimed of claimedBeforeMerge) {
+            usedCanonicalIds.add(claimed);
+          }
+          for (const agent of existing.normalizedTeam.agents) {
+            usedCanonicalIds.add(agent.metadata.id);
+          }
+        };
+
+        const normalizedMerge = normalizeTeamAgentIds({ team: mergedRaw, usedCanonicalIds });
+        if (!normalizedMerge.team) {
+          restoreExistingClaims();
+          configured.issues.push(...normalizedMerge.issues.map((issue) => ({
+            level: "warning" as const,
+            filePath: issue.filePath ?? entry.configPath,
+            code: issue.code ?? "team_merge_failed",
+            path: issue.path,
+            suggestion: issue.suggestion,
+            message: `Skipped merging ${entry.sourceScope} source into Team '${teamId}': ${issue.message}`,
+          })));
+          continue;
+        }
+
+        const mergeValidationIssues = validateTeamDefinition(normalizedMerge.team);
+        const mergeErrors = mergeValidationIssues.filter((issue) => issue.level === "error");
+        if (mergeErrors.length > 0) {
+          restoreExistingClaims();
+          configured.issues.push(...mergeErrors.map((issue) => ({
+            level: "warning" as const,
+            filePath: issue.filePath ?? entry.configPath,
+            code: issue.code ?? "team_merge_failed",
+            path: issue.path,
+            suggestion: issue.suggestion,
+            message: `Skipped merging ${entry.sourceScope} source into Team '${teamId}': ${issue.message}`,
+          })));
+          continue;
+        }
+
+        configured.issues.push(...normalizedMerge.issues);
+        configured.issues.push(...mergeValidationIssues.filter((issue) => issue.level === "warning"));
+        orderedTeams[existing.orderedIndex] = normalizedMerge.team;
+        usedTeamIds.set(teamId, {
+          ...existing,
+          kind: "filesystem",
+          rawTeam: mergedRaw,
+          normalizedTeam: normalizedMerge.team,
         });
         continue;
       }
@@ -229,6 +351,10 @@ export function loadDefaultTeamLibrary(input: string | LoadDefaultTeamLibraryOpt
         usedTeamIds.set(normalized.team.manifest.id, {
           sourceScope: entry.sourceScope,
           configPath: entry.configPath,
+          kind: entry.kind,
+          rawTeam: loaded.team,
+          normalizedTeam: normalized.team,
+          orderedIndex: orderedTeams.length - 1,
         });
       }
     }
