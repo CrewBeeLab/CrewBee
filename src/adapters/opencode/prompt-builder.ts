@@ -92,13 +92,21 @@ export function createOpenCodePromptFromRawDocuments(input: {
 }
 
 export function createOpenCodeAgentPrompt(agent: ProjectedAgent, _requestedTools?: readonly string[]): string {
+  const policy = agent.sourceTeam.policy;
+  if (!policy) {
+    // Teams reach projection only after validateTeamDefinition, which rejects teams
+    // without a policy (team_policy_missing). Reaching here means an unvalidated team
+    // slipped through; fail loudly instead of rendering a wrong prompt.
+    throw new Error(`Team '${agent.sourceTeam.manifest.id}' has no team policy.`);
+  }
+
   const teamDocument = buildTeamPromptDocument(
     {
       id: agent.sourceTeam.manifest.id,
       name: agent.sourceTeam.manifest.name,
-      promptProjection: agent.sourceTeam.policy.promptProjection,
+      promptProjection: policy.promptProjection,
     },
-    agent.sourceTeam.policy,
+    policy,
   );
   const teamPart = renderNormalizedPromptDocument(teamDocument);
   const normalizedAgent = buildAgentPromptDocumentWithOverrides(agent.sourceAgent, {
