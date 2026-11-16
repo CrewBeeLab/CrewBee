@@ -1,8 +1,24 @@
 # CrewBee → OpenCode V2 — Analysis and Porting Plan
 
 > Working document of the `crewbee-v2` fork.
-> Status: **analysis completed, implementation not yet started**.
+> Status: **implemented; maintainer follow-up and validation described below**.
 > Port author: Alessandro Muzzi (local fork `~/Projects/crewbee-v2`, branch `feat/opencode-v2-port`).
+
+---
+
+## Maintainer follow-up: supported contract
+
+- Supported hosts: OpenCode V1 **1.18.29+ (1.x)** and V2 **2.2.0+ (2.x)**. Older V1 loaders do not support the dual default definition; use an older CrewBee release with those hosts. The V2 SDK is pinned to 2.2.0. Do not infer support for all V1/V2 versions from the entrypoint shape.
+- The default export provides V1 `server` and V2 `setup`. Internal V2 setup functions are not exposed as standalone legacy plugin functions.
+- Setup/install detects the CLI major version and writes V1 `plugin` tuples or V2 `plugins` objects accordingly. Without a detectable CLI, it preserves the existing format (V1 for a new config). V2 can normalize legacy configuration. Key-only migrations count as changes and are persisted; plugin options are preserved. Uninstall removes CrewBee entries without migrating foreign plugin entries.
+- Doctor and release-intent detection read both formats, including tuple/object package references.
+- Each delegation invocation gets its own session facade and abort signal. Foreground admission waits for execution; background execution is launched without awaiting by the engine while its promise observes execution errors. Explicit background cancellation uses the child-session interrupt API.
+- V2 model selection persists on a session. A retry without an explicit model selects the host default instead of accidentally reusing the failed model.
+- V2 has no session todo API: checkpoint/delegation continuity is preserved, while todo snapshots are explicitly empty.
+- Regression tests cover configuration persistence, release detection, retained plugin options, agent/tool projection, foreground completion, background completion/failure/cancellation, concurrent cancellation isolation, model fallback, compaction, and cleanup. These deterministic host tests do not claim live model quality or full Desktop UX validation.
+- `scripts/smoke-opencode-host.mjs <executable> <1|2>` verifies real host loading in isolated config/data/cache directories without sending a model request. CI runs it against 1.18.29 and 2.2.0. Both versions also passed locally on Windows during the maintainer follow-up. The packed-package smoke verifies the installed artifact's V1 entry; V2 behavioral coverage uses the deterministic host fixture.
+
+The original contributor's investigation and implementation notes follow as historical context; the support contract above supersedes preliminary recommendations below.
 
 ---
 

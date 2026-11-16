@@ -100,6 +100,13 @@ async function applySessionTarget(
       sessionID,
       model: { providerID: body.model.providerID, id: body.model.modelID },
     });
+  } else {
+    // V2 model selection persists on the session. Omitting a V1 request model
+    // must actually restore the host default, especially after model-not-found.
+    const fallback = (await ctx.model.default()).data;
+    if (fallback) {
+      await ctx.session.switchModel({ sessionID, model: { providerID: fallback.providerID, id: fallback.id } });
+    }
   }
 }
 
@@ -141,6 +148,8 @@ async function waitForSession(
     signal?.removeEventListener("abort", onAbort);
   }
 
+  if (signal?.aborted) throw new Error("Delegated session aborted.");
+
   const info = await ctx.session.get({ sessionID }).catch(() => undefined) as { outcome?: string } | undefined;
   if (info?.outcome === "failed") {
     const messages = await ctx.session.context({ sessionID }).catch(() => []);
@@ -154,6 +163,7 @@ async function runPrompt(
   input: CrewBeeV2PromptInput,
   options: { wait: boolean; signal?: AbortSignal },
 ): Promise<unknown> {
+  options.signal?.throwIfAborted();
   await applySessionTarget(ctx, input.path.id, input.body);
 
   const text = extractPromptText(input.body);
@@ -161,6 +171,7 @@ async function runPrompt(
     return { id: input.path.id };
   }
 
+  options.signal?.throwIfAborted();
   await ctx.session.prompt({ sessionID: input.path.id, text });
 
   if (options.wait) {
@@ -175,13 +186,13 @@ async function runPrompt(
  *
  * V2 differences handled here:
  * - `prompt` only admits the message to the inbox: foreground delegation must `wait` for idle.
- * - `promptAsync` no longer exists: a non-awaited `prompt` has the same semantics.
+ * - `promptAsync` is launched without awaiting by the engine; observe completion/errors here.
  * - `todo` no longer exists: the continuity snapshot degrades to an empty list.
  * - messages are `SessionMessageInfo` records instead of `{info, parts}` pairs.
  */
 export function createV2SessionClient(
   ctx: Plugin.Context,
-  options: { getAbortSignal?: () => AbortSignal | undefined } = {},
+  options: { signal?: AbortSignal } = {},
 ): CrewBeeV2SessionClient {
   return {
     session: {
@@ -203,10 +214,13 @@ export function createV2SessionClient(
         return (messages as readonly V2MessageLike[]).map(normalizeMessage);
       },
       async prompt(input) {
-        return await runPrompt(ctx, input, { wait: true, signal: options.getAbortSignal?.() });
+        return await runPrompt(ctx, input, { wait: true, signal: options.signal });
       },
       async promptAsync(input) {
-        return await runPrompt(ctx, input, { wait: false, signal: options.getAbortSignal?.() });
+        // The delegation engine launches this promise without awaiting it. Waiting
+        // here observes asynchronous execution failures for its retry/status path.
+        options.signal?.throwIfAborted();
+        return await runPrompt(ctx, input, { wait: true });
       },
       async todo() {
         await logCrewBeeV2(

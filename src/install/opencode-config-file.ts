@@ -85,7 +85,32 @@ function resolveOpenCodeConfigBackupPath(configPath: string): string {
   return path.join(parsed.dir, `${parsed.base}.backup-${timestamp}`);
 }
 
-export function upsertCrewBeePluginEntry(config: Record<string, unknown>, pluginEntry: string): PluginUpdateResult {
+export type OpenCodePluginFormat = "v1" | "v2";
+
+export function resolveOpenCodePluginFormat(config: Record<string, unknown>, version?: string): OpenCodePluginFormat {
+  const major = version?.match(/\bv?([12])\.\d+\.\d+\b/)?.[1];
+  if (major === "2") return "v2";
+  if (major === "1") return "v1";
+  return Array.isArray(config.plugins) ? "v2" : "v1";
+}
+
+function writePluginEntries(config: Record<string, unknown>, entries: unknown[], format: OpenCodePluginFormat): void {
+  if (format === "v2") {
+    config.plugins = entries;
+    delete config.plugin;
+  } else {
+    config.plugin = entries.map((entry) => isPluginEntryObject(entry) && typeof entry.package === "string"
+      ? (entry.options ? [entry.package, entry.options] : entry.package)
+      : entry);
+    delete config.plugins;
+  }
+}
+
+export function upsertCrewBeePluginEntry(
+  config: Record<string, unknown>, pluginEntry: string,
+  format: OpenCodePluginFormat = resolveOpenCodePluginFormat(config),
+): PluginUpdateResult {
+  const before = JSON.stringify(config);
   const currentPlugins = getRawPluginArray(config);
   const nextPlugins: unknown[] = [];
   const migratedEntries: string[] = [];
@@ -100,7 +125,7 @@ export function upsertCrewBeePluginEntry(config: Record<string, unknown>, plugin
     const reference = readPluginEntryReference(value);
     if (reference === pluginEntry) {
       if (!hasCanonicalEntry) {
-        nextPlugins.push(pluginEntry);
+        nextPlugins.push(isPluginEntryObject(value) ? { ...value, package: pluginEntry } : pluginEntry);
         hasCanonicalEntry = true;
       }
       continue;
@@ -109,7 +134,7 @@ export function upsertCrewBeePluginEntry(config: Record<string, unknown>, plugin
     if (reference && isCrewBeePluginReference(reference)) {
       migratedEntries.push(reference);
       if (!hasCanonicalEntry) {
-        nextPlugins.push(pluginEntry);
+        nextPlugins.push(isPluginEntryObject(value) ? { ...value, package: pluginEntry } : pluginEntry);
         hasCanonicalEntry = true;
       }
       continue;
@@ -122,12 +147,8 @@ export function upsertCrewBeePluginEntry(config: Record<string, unknown>, plugin
     nextPlugins.push(pluginEntry);
   }
 
-  const changed = !arePluginArraysEqual(currentPlugins, nextPlugins);
-
-  config.plugins = nextPlugins;
-  // Migrate away from the deprecated V1 `plugin` key.
-  delete config.plugin;
-  return { changed, migratedEntries };
+  writePluginEntries(config, nextPlugins, format);
+  return { changed: JSON.stringify(config) !== before, migratedEntries };
 }
 
 export function removeCrewBeePluginEntries(config: Record<string, unknown>): PluginRemovalResult {
@@ -135,15 +156,18 @@ export function removeCrewBeePluginEntries(config: Record<string, unknown>): Plu
   const removedEntries = currentPlugins
     .map((value) => readPluginEntryReference(value))
     .filter((value): value is string => typeof value === "string" && isCrewBeePluginReference(value));
-  const nextPlugins = currentPlugins.filter((value) => {
-    const reference = readPluginEntryReference(value);
-    return !(typeof reference === "string" && isCrewBeePluginReference(reference));
-  });
   const changed = removedEntries.length > 0;
 
   if (changed) {
-    config.plugins = nextPlugins;
-    delete config.plugin;
+    // Uninstall must not migrate foreign plugin configuration or discard options.
+    for (const key of ["plugin", "plugins"]) {
+      if (Array.isArray(config[key])) {
+        config[key] = config[key].filter((entry: unknown) => {
+          const reference = readPluginEntryReference(normalizePluginEntry(entry));
+          return !reference || !isCrewBeePluginReference(reference);
+        });
+      }
+    }
   }
 
   return {
@@ -198,10 +222,6 @@ function readPluginEntryReference(value: unknown): string | undefined {
   }
 
   return undefined;
-}
-
-function arePluginArraysEqual(left: unknown[], right: unknown[]): boolean {
-  return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
 function isCrewBeePluginReference(value: string): boolean {

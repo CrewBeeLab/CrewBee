@@ -173,8 +173,8 @@ export interface CreateV2DelegateToolsInput {
   getAliasIndex(): Map<string, OpenCodeAgentAliasEntry>;
   bindings: Map<string, SessionRuntimeBinding>;
   directory: string;
-  /** Lets the session facade observe the tool abort signal for the lifetime of one call. */
-  onExecuteStart?(context: V2ToolContext): void;
+  /** A session facade scoped to this invocation, including its cancellation signal. */
+  createClient?(signal: AbortSignal): CrewBeeV2SessionClient;
 }
 
 type DelegateToolBundle = ReturnType<typeof createDelegateTools>;
@@ -197,11 +197,13 @@ export function createV2DelegateToolDefinitions(input: CreateV2DelegateToolsInpu
     input: SUBAGENT_INPUT_SCHEMA,
     options: { codemode: false, permission: "subagent" },
     async execute(rawInput, context) {
-      input.onExecuteStart?.(context);
+      const scopedTools = input.createClient ? createDelegateTools({
+        ...input, client: input.createClient(context.signal),
+      }) : tools;
       const metadata: Record<string, unknown> = {};
       try {
         const args = normalizeTaskArgs(rawInput) as Parameters<typeof tools.task.execute>[0];
-        const output = await tools.task.execute(args, createToolContext({
+        const output = await scopedTools.task.execute(args, createToolContext({
           context,
           directory: input.directory,
           metadata,

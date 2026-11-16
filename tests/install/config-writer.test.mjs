@@ -5,6 +5,43 @@ import os from "node:os";
 import path from "node:path";
 
 import { backupOpenCodeConfig, removeCrewBeePluginEntries, restoreOpenCodeConfigBackup, upsertCrewBeePluginEntry } from "../../dist/src/install/index.js";
+import { resolveOpenCodePluginFormat, writeOpenCodeConfig } from "../../dist/src/install/opencode-config-file.js";
+import { findConfiguredCrewBeeReleaseIntent } from "../../dist/src/update/intent.js";
+
+test("V2 key-only migration is persisted and remains discoverable for updates", () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), "crewbee-v2-migration-"));
+  const file = path.join(root, "opencode.json");
+  const config = { plugin: ["foreign-plugin", "crewbee"] };
+  const result = upsertCrewBeePluginEntry(config, "crewbee", "v2");
+  assert.equal(result.changed, true);
+  if (result.changed) writeOpenCodeConfig(file, config);
+  assert.deepEqual(JSON.parse(readFileSync(file, "utf8")), { plugins: ["foreign-plugin", "crewbee"] });
+  assert.equal(upsertCrewBeePluginEntry(config, "crewbee", "v2").changed, false);
+  const previous = process.env.OPENCODE_CONFIG_DIR;
+  process.env.OPENCODE_CONFIG_DIR = root;
+  try {
+    assert.equal(findConfiguredCrewBeeReleaseIntent()?.entry, "crewbee");
+    writeOpenCodeConfig(file, { plugins: [{ package: "crewbee@0.1.24", options: { enabled: true } }] });
+    assert.equal(findConfiguredCrewBeeReleaseIntent()?.isPinned, true);
+  } finally {
+    if (previous === undefined) delete process.env.OPENCODE_CONFIG_DIR;
+    else process.env.OPENCODE_CONFIG_DIR = previous;
+  }
+});
+
+test("host-specific config formats retain plugin options and uninstall preserves foreign entries", () => {
+  const config = { plugin: [["foreign", { enabled: false }], ["crewbee", { custom: true }]] };
+  assert.equal(resolveOpenCodePluginFormat(config, "1.18.29"), "v1");
+  assert.equal(resolveOpenCodePluginFormat(config, "2.2.0"), "v2");
+  assert.equal(resolveOpenCodePluginFormat(config, "opencode v2.2.0"), "v2");
+  assert.equal(upsertCrewBeePluginEntry(config, "crewbee", "v1").changed, false);
+  assert.equal(upsertCrewBeePluginEntry(config, "crewbee", "v2").changed, true);
+  assert.deepEqual(config.plugins, [{ package: "foreign", options: { enabled: false } }, { package: "crewbee", options: { custom: true } }]);
+  assert.equal(upsertCrewBeePluginEntry(config, "crewbee", "v2").changed, false);
+  upsertCrewBeePluginEntry(config, "crewbee", "v1");
+  removeCrewBeePluginEntries(config);
+  assert.deepEqual(config, { plugin: [["foreign", { enabled: false }]] });
+});
 
 test("upsertCrewBeePluginEntry migrates project-local entries to the canonical user-level entry", () => {
   const config = {

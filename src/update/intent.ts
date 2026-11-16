@@ -2,6 +2,8 @@ import path from "node:path";
 
 import { readOpenCodeConfig, resolveInstallRoot, resolveOpenCodeConfigPath } from "../install";
 
+import { findCrewBeePluginEntries } from "../install/opencode-config-file";
+
 import type { CrewBeeReleaseIntent } from "./types";
 
 const EXACT_SEMVER_REGEX = /^\d+\.\d+\.\d+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$/;
@@ -10,7 +12,7 @@ const CREWBEE_PACKAGE_NAME = "crewbee";
 export function findConfiguredCrewBeeReleaseIntent(): CrewBeeReleaseIntent | undefined {
   const configPath = resolveOpenCodeConfigPath();
   const config = readOpenCodeConfig(configPath).config;
-  const plugins = Array.isArray(config.plugin) ? config.plugin : [];
+  const plugins = findCrewBeePluginEntries(config);
 
   for (const entry of plugins) {
     if (typeof entry !== "string") {

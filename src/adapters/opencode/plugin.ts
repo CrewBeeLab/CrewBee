@@ -1,8 +1,7 @@
 import { OpenCodeCrewBeePlugin } from "./plugin-v1";
-import { crewBeePluginV2, setupCrewBeeV2 } from "./v2/plugin";
+import { crewBeePluginV2 } from "./v2/plugin";
 
 export { OpenCodeCrewBeePlugin };
-export { crewBeePluginV2, setupCrewBeeV2 };
 export { CREWBEE_PLUGIN_ID } from "./v2/plugin";
 
 /**
@@ -18,9 +17,5 @@ const plugin = {
   ...crewBeePluginV2,
   server: OpenCodeCrewBeePlugin,
 };
-
-export const id = plugin.id;
-export const setup = plugin.setup;
-export const server = plugin.server;
 
 export default plugin;

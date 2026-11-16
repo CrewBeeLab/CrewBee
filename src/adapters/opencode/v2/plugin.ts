@@ -153,8 +153,7 @@ export async function setupCrewBeeV2(ctx: Plugin.Context): Promise<() => void> {
   const bindings = new Map<string, SessionRuntimeBinding>();
   const store = new DelegateStateStore(directory);
   const abortController = new AbortController();
-  const execution = { signal: undefined as AbortSignal | undefined };
-  const client = createV2SessionClient(ctx, { getAbortSignal: () => execution.signal });
+  const client = createV2SessionClient(ctx);
 
   await logCrewBeeV2("CrewBee plugin initialized", {
     directory,
@@ -220,9 +219,7 @@ export async function setupCrewBeeV2(ctx: Plugin.Context): Promise<() => void> {
       getAliasIndex: () => aliasIndex,
       bindings,
       directory,
-      onExecuteStart: (context) => {
-        execution.signal = context.signal;
-      },
+      createClient: (signal) => createV2SessionClient(ctx, { signal }),
     });
 
     registerV2DelegateTools(editor as unknown as V2ToolEditor, tools);

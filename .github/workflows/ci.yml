@@ -6,6 +6,28 @@ on:
   pull_request:
 
 jobs:
+  host-compatibility:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - package: opencode-ai@1.18.29
+            major: 1
+          - package: '@opencode/cli@2.2.0'
+            major: 2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Install supported host
+        run: npm install --prefix .artifacts/host '${{ matrix.package }}' --no-audit --no-fund
+      - name: Verify real host loading
+        run: node scripts/smoke-opencode-host.mjs .artifacts/host/node_modules/.bin/opencode '${{ matrix.major }}'
+
   test:
     runs-on: ubuntu-latest
     steps:
