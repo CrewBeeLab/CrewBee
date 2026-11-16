@@ -316,8 +316,7 @@ export interface TeamDocumentationRefs {
 
 export interface AgentTeamDefinition {
   manifest: TeamManifest;
-  /** Optional while loading: a partial file team may omit team.policy.yaml and inherit it from a lower-precedence source (e.g. the embedded team) via merge. Validated teams always have a policy. */
-  policy?: TeamPolicySpec;
+  policy: TeamPolicySpec;
   agents: AgentProfileSpec[];
   documentation?: TeamDocumentationRefs;
   modelConfigOverride?: TeamModelConfigOverride;

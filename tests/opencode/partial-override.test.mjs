@@ -8,6 +8,7 @@ import { stringify } from "yaml";
 import { loadDefaultTeamLibrary } from "../../dist/src/agent-teams/library.js";
 import { validateTeamLibrary } from "../../dist/src/agent-teams/validation.js";
 import { createEmbeddedCodingTeam } from "../../dist/src/agent-teams/embedded/coding-team.js";
+import { createOpenCodeBootstrap } from "../../dist/src/adapters/opencode/bootstrap.js";
 import { runDoctor } from "../../dist/src/install/doctor.js";
 
 function writeFile(filePath, content) {
@@ -326,4 +327,54 @@ test("doctor reports zero team issues for a partial override", withConfigRoot(as
   assert.deepEqual(result.teamIssues, [], "doctor must report Team issues: 0 for a partial team");
   assert.equal(result.blockingTeamIssueCount, 0, "no blocking team issues");
   assert.equal(result.teamHealthy, true, "team health check must pass");
+}));
+
+for (const scenario of ["project", "global-priority", "canonical-id"]) {
+  test(`partial override preserves composition and delegation: ${scenario}`, withConfigRoot(async ({ workspace, configRoot }) => {
+    const localRoot = scenario === "project" ? path.join(workspace, ".crewbee") : configRoot;
+    const teamDir = path.join(localRoot, "teams", "coding-team");
+    writeFile(path.join(configRoot, "crewbee.json"), JSON.stringify({ teams: [{ id: "coding-team", enabled: true }] }));
+    writeFile(path.join(localRoot, "crewbee.json"), JSON.stringify({ teams: [{
+      path: "@teams/coding-team", enabled: true, ...(scenario === "global-priority" ? { priority: -1 } : {}),
+    }] }));
+    writeFile(path.join(teamDir, "team.manifest.yaml"), createEmbeddedManifestYaml({ name: "Override" }));
+    writeFile(path.join(teamDir, "reviewer.agent.md"), createAgentProfile(
+      scenario === "canonical-id" ? "coding-reviewer" : "reviewer", "FILE-MARKER", "user-selectable", "review",
+    ));
+    const library = loadDefaultTeamLibrary({ globalConfigRoot: configRoot, projectWorktree: workspace });
+    const team = library.teams.find((entry) => entry.manifest.id === "coding-team");
+    assert.equal(team.agents.find((agent) => agent.metadata.id === "coding-reviewer").entryPoint?.selectionDescription, "FILE-MARKER selection.");
+    assert.deepEqual(validateTeamLibrary(library), []);
+    const boot = createOpenCodeBootstrap({ teamLibrary: library, defaults: { defaultMode: "single-executor" } });
+    const leader = boot.projectedAgents.find((agent) => agent.canonicalAgentId === "coding-leader");
+    assert.ok(leader.delegation.allowedTargets.some((target) => target.canonicalAgentId === "coding-reviewer"));
+    assert.ok(team.manifest.members["coding-reviewer"]);
+    assert.ok(team.manifest.agentRuntime["coding-reviewer"]);
+  }));
+}
+
+test("disabled embedded source permits a standalone reduced replacement", withConfigRoot(async ({ workspace, configRoot }) => {
+  const teamDir = path.join(configRoot, "teams", "coding-team");
+  writeFile(path.join(configRoot, "crewbee.json"), JSON.stringify({ teams: [
+    { id: "coding-team", enabled: false }, { path: "@teams/coding-team", enabled: true },
+  ] }));
+  writeFile(path.join(teamDir, "team.manifest.yaml"), createTeamManifest("coding-team", "Reduced", "leader", "executor"));
+  writeFile(path.join(teamDir, "team.policy.yaml"), createTeamPolicy());
+  writeFile(path.join(teamDir, "leader.agent.md"), createAgentProfile("leader", "Leader", "user-selectable", "leader"));
+  writeFile(path.join(teamDir, "executor.agent.md"), createAgentProfile("executor", "Executor", "internal-only", "executor"));
+  const library = loadDefaultTeamLibrary({ globalConfigRoot: configRoot, projectWorktree: workspace });
+  assert.equal(library.teams.length, 1);
+  assert.equal(library.teams[0].agents.length, 2);
+  assert.deepEqual(validateTeamLibrary(library), []);
+}));
+
+test("invalid partial override falls back without consuming canonical IDs", withConfigRoot(async ({ workspace, configRoot }) => {
+  const teamDir = path.join(workspace, ".crewbee", "teams", "coding-team");
+  writeFile(path.join(configRoot, "crewbee.json"), JSON.stringify({ teams: [{ id: "coding-team", enabled: true }] }));
+  writeFile(path.join(workspace, ".crewbee", "crewbee.json"), JSON.stringify({ teams: [{ path: "@teams/coding-team", enabled: true }] }));
+  writeFile(path.join(teamDir, "team.manifest.yaml"), createEmbeddedManifestYaml({ leader: { agentRef: "missing", responsibilities: ["Lead"] } }));
+  const library = loadDefaultTeamLibrary({ globalConfigRoot: configRoot, projectWorktree: workspace });
+  assert.equal(library.teams[0].manifest.name, "CodingTeam");
+  assert.equal(library.teams[0].manifest.leader.agentRef, "coding-leader");
+  assert.ok(library.loadIssues.some((issue) => issue.code === "team_leader_missing"));
 }));

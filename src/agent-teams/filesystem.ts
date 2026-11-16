@@ -5,7 +5,7 @@ import path from "node:path";
 import type { AgentTeamDefinition } from "../core";
 import { resolveOpenCodeConfigRoot } from "../install/install-root";
 
-import type { TeamValidationIssue } from "./types";
+import type { TeamSourceDefinition, TeamValidationIssue } from "./types";
 import {
   BUILTIN_CODING_TEAM_FALLBACK_TO_HOST_DEFAULT,
   BUILTIN_CODING_TEAM_ID,
@@ -921,7 +921,11 @@ export function loadTeamDefinitionFromDirectory(
   teamDir: string,
   workspaceRoot: string = process.cwd(),
 ): AgentTeamDefinition {
-  return loadTeamDefinitionFromDirectoryWithIssues(teamDir, workspaceRoot).team;
+  const team = loadTeamDefinitionFromDirectoryWithIssues(teamDir, workspaceRoot).team;
+  if (!team.policy) {
+    throw new Error(`${teamDir} is missing ${TEAM_POLICY_FILE}.`);
+  }
+  return { ...team, policy: team.policy };
 }
 
 function createSkippedAgentIssue(filePath: string, message: string): TeamValidationIssue {
@@ -938,7 +942,7 @@ function createSkippedAgentIssue(filePath: string, message: string): TeamValidat
 export function loadTeamDefinitionFromDirectoryWithIssues(
   teamDir: string,
   workspaceRoot: string = process.cwd(),
-): { team: AgentTeamDefinition; issues: TeamValidationIssue[] } {
+): { team: TeamSourceDefinition; issues: TeamValidationIssue[] } {
   const manifest = mapTeamManifest(path.join(teamDir, TEAM_MANIFEST_FILE));
   const policyPath = path.join(teamDir, TEAM_POLICY_FILE);
   // A partial override may omit team.policy.yaml; the merge in loadDefaultTeamLibrary

@@ -661,7 +661,7 @@ A file-based Team whose `id` matches an embedded Team (for example `coding-team`
 | `<agent>.agent.md` present | file version wins for that agent |
 | `<agent>` absent | embedded version is used |
 | `team.manifest.yaml` present | file version wins (whole file) |
-| `team.manifest.yaml` absent | embedded manifest is used |
+| `team.manifest.yaml` absent | configuration error; the manifest is required |
 | `team.policy.yaml` present | file version wins (whole file) |
 | `team.policy.yaml` absent | embedded policy is used |
 
@@ -677,9 +677,11 @@ No `team.policy.yaml`, no other `.agent.md`. Result: `reviewer` is yours; the ot
 
 Notes:
 
-* Precedence is unchanged: file Team > embedded Team. The difference is that the merge is now per artifact instead of per Team.
-* A file Team that defines every agent keeps working: it simply wins on every artifact.
+* An enabled file Team overlays an enabled embedded Team with the same id, regardless of their load order. Among file sources, project scope wins over global scope, then lower priority and declaration order apply. File sources do not inherit from other file sources.
+* Each supplied Agent profile replaces the whole Agent, not individual fields. Upstream changes flow only into inherited artifacts.
+* To replace the Team completely (for example, to remove built-in members), explicitly disable the embedded `coding-team` entry in every configuration source that enables it, and provide a complete file Team with its own policy and agents. Alternatively, use a distinct Team id. With an enabled embedded base, omitted agents are inherited.
 * `team.manifest.yaml` stays required (it declares the Team id, leader, and members). When you write your own manifest instead of copying the embedded one, it must include member guidance for every collaboration target referenced by the merged agents, otherwise the Team fails validation and the embedded Team is kept.
+* The winning file source controls Team ordering and default selection. An invalid override emits diagnostics and falls back to the next valid source.
 * A pure file Team with no embedded counterpart and no `team.policy.yaml` is still a configuration error, exactly as before.
 
 ---
