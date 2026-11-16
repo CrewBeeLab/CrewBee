@@ -77,6 +77,35 @@ export function createToolDefinitionHook(_getAgents: () => OpenCodeAgentConfig[]
   return async () => {};
 }
 
+/**
+ * Post-processes a serialized CrewBee delegation result: adds resume hints, retry guidance and the
+ * empty-output warning, and derives the tool metadata CrewBee wants surfaced to the host.
+ *
+ * Shared by the V1 `tool.execute.after` hook and the V2 tool `execute` wrapper.
+ */
+export function normalizeDelegateTaskOutput(output: string): {
+  output: string;
+  metadata: Record<string, unknown>;
+} | undefined {
+  const parsed = parseDelegateTaskResult(output);
+  if (!parsed) {
+    return undefined;
+  }
+
+  const result = withResumeHint(withRetryGuidance(withEmptyWarning(parsed)));
+  const metadata: Record<string, unknown> = {};
+
+  if (result.status !== "failed" && result.session_id) {
+    metadata.sessionId = result.session_id;
+    metadata.taskId = result.task_id ?? result.session_id;
+    if (result.task_ref) {
+      metadata.taskRef = result.task_ref;
+    }
+  }
+
+  return { output: stringifyDelegateTaskResult(result), metadata };
+}
+
 export function createToolExecuteBeforeHook(input: {
   bindings: Map<string, { selectedAgentId: string }>;
   getAliasIndex(): Map<string, OpenCodeAgentAliasEntry>;
@@ -104,21 +133,18 @@ export function createToolExecuteAfterHook() {
       return;
     }
 
-    const parsed = parseDelegateTaskResult(output.output);
-    if (!parsed) {
+    const normalized = normalizeDelegateTaskOutput(output.output);
+    if (!normalized) {
       return;
     }
 
-    const result = withResumeHint(withRetryGuidance(withEmptyWarning(parsed)));
-    output.output = stringifyDelegateTaskResult(result);
+    output.output = normalized.output;
 
-    if (result.status !== "failed" && result.session_id) {
+    if (Object.keys(normalized.metadata).length > 0) {
       output.title = output.title || "CrewBee task";
       output.metadata = {
         ...output.metadata,
-        sessionId: result.session_id,
-        taskId: result.task_id ?? result.session_id,
-        taskRef: result.task_ref,
+        ...normalized.metadata,
       };
     }
   };

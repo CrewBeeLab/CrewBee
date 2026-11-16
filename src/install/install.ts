@@ -2,7 +2,8 @@ import path from "node:path";
 
 import { ensureCrewBeeConfigFile } from "../agent-teams";
 
-import { backupOpenCodeConfig, readOpenCodeConfig, restoreOpenCodeConfigBackup, upsertCrewBeePluginEntry, writeOpenCodeConfig } from "./opencode-config-file";
+import { backupOpenCodeConfig, readOpenCodeConfig, resolveOpenCodePluginFormat, restoreOpenCodeConfigBackup, upsertCrewBeePluginEntry, writeOpenCodeConfig } from "./opencode-config-file";
+import { detectOpenCodeCli } from "./opencode-cli";
 import { resolveOpenCodeConfigPath, resolveInstallRoot } from "./install-root";
 import { resolveLocalTarballPath } from "./local-tarball";
 import { cleanupLegacyCrewBeePackage, installLocalTarball, installRegistryPackage } from "./package-installation";
@@ -52,7 +53,7 @@ export async function installCrewBee(input: {
 
   const pluginEntry = createCanonicalPluginEntry(installRoot);
   const configDocument = readOpenCodeConfig(configPath);
-  const pluginUpdate = upsertCrewBeePluginEntry(configDocument.config, pluginEntry);
+  const pluginUpdate = upsertCrewBeePluginEntry(configDocument.config, pluginEntry, resolveOpenCodePluginFormat(configDocument.config, detectOpenCodeCli().version));
   const configBackup = !input.options.dryRun && pluginUpdate.changed
     ? backupOpenCodeConfig(configPath)
     : undefined;

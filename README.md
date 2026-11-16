@@ -20,6 +20,8 @@ Not a prompt pack.
 Not a flat agent list.  
 Not another all-in-one multi-agent runtime.
 
+Supported hosts: **OpenCode 1.18.29+ (1.x) and 2.2.0+ (2.x)**. See the [V2 adapter and compatibility notes](docs/developer/opencode-v2-port.md).
+
 **Available for OpenCode today.** OpenCode is CrewBee’s first officially supported host; Project Context, the Team template ecosystem, and more Agent Harness adapters are next-stage directions.
 
 ---

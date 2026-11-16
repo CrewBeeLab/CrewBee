@@ -70,7 +70,7 @@ try {
   };
 
   const mod = await import(pathToFileURL(pluginEntry).href);
-  const plugin = await mod.default({
+  const plugin = await mod.default.server({
     client: {
       app: { log: async () => {} },
       config: configApi,

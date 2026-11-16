@@ -15,7 +15,8 @@ export {
   type OpenCodeBootstrapInput,
   type OpenCodeBootstrapOutput,
 } from "./bootstrap";
-export { OpenCodeCrewBeePlugin } from "./plugin";
+export { OpenCodeCrewBeePlugin } from "./plugin-v1";
+export { crewBeePluginV2, setupCrewBeeV2, CREWBEE_PLUGIN_ID } from "./v2/plugin";
 export { createChatMessageHook } from "./chat-message-hook";
 export {
   createOpenCodeAgentConfig,

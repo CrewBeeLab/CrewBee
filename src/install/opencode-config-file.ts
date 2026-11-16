@@ -85,30 +85,56 @@ function resolveOpenCodeConfigBackupPath(configPath: string): string {
   return path.join(parsed.dir, `${parsed.base}.backup-${timestamp}`);
 }
 
-export function upsertCrewBeePluginEntry(config: Record<string, unknown>, pluginEntry: string): PluginUpdateResult {
+export type OpenCodePluginFormat = "v1" | "v2";
+
+export function resolveOpenCodePluginFormat(config: Record<string, unknown>, version?: string): OpenCodePluginFormat {
+  const major = version?.match(/\bv?([12])\.\d+\.\d+\b/)?.[1];
+  if (major === "2") return "v2";
+  if (major === "1") return "v1";
+  return Array.isArray(config.plugins) ? "v2" : "v1";
+}
+
+function writePluginEntries(config: Record<string, unknown>, entries: unknown[], format: OpenCodePluginFormat): void {
+  if (format === "v2") {
+    config.plugins = entries;
+    delete config.plugin;
+  } else {
+    config.plugin = entries.map((entry) => isPluginEntryObject(entry) && typeof entry.package === "string"
+      ? (entry.options ? [entry.package, entry.options] : entry.package)
+      : entry);
+    delete config.plugins;
+  }
+}
+
+export function upsertCrewBeePluginEntry(
+  config: Record<string, unknown>, pluginEntry: string,
+  format: OpenCodePluginFormat = resolveOpenCodePluginFormat(config),
+): PluginUpdateResult {
+  const before = JSON.stringify(config);
   const currentPlugins = getRawPluginArray(config);
   const nextPlugins: unknown[] = [];
   const migratedEntries: string[] = [];
   let hasCanonicalEntry = false;
 
   for (const value of currentPlugins) {
-    if (typeof value !== "string") {
+    if (typeof value !== "string" && !isPluginEntryObject(value)) {
       nextPlugins.push(value);
       continue;
     }
 
-    if (value === pluginEntry) {
+    const reference = readPluginEntryReference(value);
+    if (reference === pluginEntry) {
       if (!hasCanonicalEntry) {
-        nextPlugins.push(pluginEntry);
+        nextPlugins.push(isPluginEntryObject(value) ? { ...value, package: pluginEntry } : pluginEntry);
         hasCanonicalEntry = true;
       }
       continue;
     }
 
-    if (isCrewBeePluginReference(value)) {
-      migratedEntries.push(value);
+    if (reference && isCrewBeePluginReference(reference)) {
+      migratedEntries.push(reference);
       if (!hasCanonicalEntry) {
-        nextPlugins.push(pluginEntry);
+        nextPlugins.push(isPluginEntryObject(value) ? { ...value, package: pluginEntry } : pluginEntry);
         hasCanonicalEntry = true;
       }
       continue;
@@ -121,20 +147,27 @@ export function upsertCrewBeePluginEntry(config: Record<string, unknown>, plugin
     nextPlugins.push(pluginEntry);
   }
 
-  const changed = !arePluginArraysEqual(currentPlugins, nextPlugins);
-
-  config.plugin = nextPlugins;
-  return { changed, migratedEntries };
+  writePluginEntries(config, nextPlugins, format);
+  return { changed: JSON.stringify(config) !== before, migratedEntries };
 }
 
 export function removeCrewBeePluginEntries(config: Record<string, unknown>): PluginRemovalResult {
   const currentPlugins = getRawPluginArray(config);
-  const removedEntries = currentPlugins.filter((value): value is string => typeof value === "string" && isCrewBeePluginReference(value));
-  const nextPlugins = currentPlugins.filter((value) => typeof value !== "string" || !isCrewBeePluginReference(value));
+  const removedEntries = currentPlugins
+    .map((value) => readPluginEntryReference(value))
+    .filter((value): value is string => typeof value === "string" && isCrewBeePluginReference(value));
   const changed = removedEntries.length > 0;
 
   if (changed) {
-    config.plugin = nextPlugins;
+    // Uninstall must not migrate foreign plugin configuration or discard options.
+    for (const key of ["plugin", "plugins"]) {
+      if (Array.isArray(config[key])) {
+        config[key] = config[key].filter((entry: unknown) => {
+          const reference = readPluginEntryReference(normalizePluginEntry(entry));
+          return !reference || !isCrewBeePluginReference(reference);
+        });
+      }
+    }
   }
 
   return {
@@ -144,17 +177,51 @@ export function removeCrewBeePluginEntries(config: Record<string, unknown>): Plu
 }
 
 export function findCrewBeePluginEntries(config: Record<string, unknown>): string[] {
-  return getRawPluginArray(config).filter((value): value is string => typeof value === "string" && isCrewBeePluginReference(value));
+  return getRawPluginArray(config)
+    .map((value) => readPluginEntryReference(value))
+    .filter((value): value is string => typeof value === "string" && isCrewBeePluginReference(value));
 }
 
 function getRawPluginArray(config: Record<string, unknown>): unknown[] {
-  return Array.isArray(config.plugin)
-    ? [...config.plugin]
-    : [];
+  const merged: unknown[] = [];
+
+  if (Array.isArray(config.plugins)) {
+    merged.push(...config.plugins.map(normalizePluginEntry));
+  }
+
+  // V1 legacy key: migrate its entries (normalizing V1 tuple form to V2 object form).
+  if (Array.isArray(config.plugin)) {
+    merged.push(...config.plugin.map(normalizePluginEntry));
+  }
+
+  return merged;
 }
 
-function arePluginArraysEqual(left: unknown[], right: unknown[]): boolean {
-  return left.length === right.length && left.every((value, index) => value === right[index]);
+function normalizePluginEntry(entry: unknown): unknown {
+  if (Array.isArray(entry) && entry.length >= 1 && typeof entry[0] === "string") {
+    const [name, options] = entry;
+    if (options && typeof options === "object" && !Array.isArray(options)) {
+      return { package: name, options };
+    }
+    return name;
+  }
+  return entry;
+}
+
+function isPluginEntryObject(value: unknown): value is { package?: unknown; options?: unknown } {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function readPluginEntryReference(value: unknown): string | undefined {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (isPluginEntryObject(value) && typeof value.package === "string") {
+    return value.package;
+  }
+
+  return undefined;
 }
 
 function isCrewBeePluginReference(value: string): boolean {

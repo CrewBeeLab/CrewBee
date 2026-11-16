@@ -437,7 +437,8 @@ test("bundled plugin startup creates crewbee.json from packaged template", async
 
     process.env.OPENCODE_CONFIG_DIR = configRoot;
 
-    const plugin = await BundledOpenCodeCrewBeePlugin(createPluginInput(workspace, logs));
+    const bundled = await BundledOpenCodeCrewBeePlugin;
+    const plugin = await bundled.server(createPluginInput(workspace, logs));
     const config = { agent: {} };
 
     await plugin.config?.(config);

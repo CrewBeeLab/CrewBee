@@ -123,7 +123,8 @@ async function loadHooks() {
   const hooks = []
   const loaded = []
 
-  for (const [name, fn] of Object.entries(mod)) {
+  for (const [name, entry] of Object.entries(mod)) {
+    const fn = typeof entry === "object" && entry !== null ? entry.server : entry
     if (typeof fn !== "function") continue
     if (seen.has(fn)) continue
     seen.add(fn)
