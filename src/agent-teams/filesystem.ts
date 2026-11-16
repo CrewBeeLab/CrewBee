@@ -5,7 +5,7 @@ import path from "node:path";
 import type { AgentTeamDefinition } from "../core";
 import { resolveOpenCodeConfigRoot } from "../install/install-root";
 
-import type { TeamValidationIssue } from "./types";
+import type { TeamSourceDefinition, TeamValidationIssue } from "./types";
 import {
   BUILTIN_CODING_TEAM_FALLBACK_TO_HOST_DEFAULT,
   BUILTIN_CODING_TEAM_ID,
@@ -921,7 +921,11 @@ export function loadTeamDefinitionFromDirectory(
   teamDir: string,
   workspaceRoot: string = process.cwd(),
 ): AgentTeamDefinition {
-  return loadTeamDefinitionFromDirectoryWithIssues(teamDir, workspaceRoot).team;
+  const team = loadTeamDefinitionFromDirectoryWithIssues(teamDir, workspaceRoot).team;
+  if (!team.policy) {
+    throw new Error(`${teamDir} is missing ${TEAM_POLICY_FILE}.`);
+  }
+  return { ...team, policy: team.policy };
 }
 
 function createSkippedAgentIssue(filePath: string, message: string): TeamValidationIssue {
@@ -938,13 +942,13 @@ function createSkippedAgentIssue(filePath: string, message: string): TeamValidat
 export function loadTeamDefinitionFromDirectoryWithIssues(
   teamDir: string,
   workspaceRoot: string = process.cwd(),
-): { team: AgentTeamDefinition; issues: TeamValidationIssue[] } {
+): { team: TeamSourceDefinition; issues: TeamValidationIssue[] } {
   const manifest = mapTeamManifest(path.join(teamDir, TEAM_MANIFEST_FILE));
   const policyPath = path.join(teamDir, TEAM_POLICY_FILE);
-
-  if (!existsSync(policyPath)) {
-    throw new Error(`${teamDir} is missing ${TEAM_POLICY_FILE}.`);
-  }
+  // A partial override may omit team.policy.yaml; the merge in loadDefaultTeamLibrary
+  // falls back to the lower-precedence (embedded) policy. A team that ends up with no
+  // policy at all is rejected later by validateTeamDefinition (team_policy_missing).
+  const policy = existsSync(policyPath) ? mapTeamPolicy(policyPath) : undefined;
 
   const agentFiles = readdirSync(teamDir)
     .filter((entry) => entry.endsWith(".agent.md"))
@@ -963,14 +967,13 @@ export function loadTeamDefinitionFromDirectoryWithIssues(
     }
   });
 
-  if (agents.length === 0) {
-    throw new Error(`${teamDir} must contain at least one *.agent.md file at the team root.`);
-  }
-
+  // An empty agents array is allowed: a manifest-only override inherits every agent
+  // from the lower-precedence source. A team that ends up with no agents at all is
+  // rejected later by validateTeamDefinition (team_leader_missing).
   return {
     team: {
       manifest,
-      policy: mapTeamPolicy(policyPath),
+      policy,
       agents,
       documentation: resolveTeamDocumentation(teamDir, workspaceRoot),
     },

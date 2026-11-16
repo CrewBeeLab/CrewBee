@@ -637,6 +637,16 @@ CrewBee 认为：
 
 ---
 
+### 局部定制内置 Coding Team
+
+文件型 Team 与已启用的内置 Team 使用相同 `id` 时，可以只提供需要替换的 Agent Profile。`team.manifest.yaml` 仍然必需；省略的 Agent 和 `team.policy.yaml` 从内置 Team 继承。每个提供的 Agent、manifest、policy 都是整份替换，不进行字段级合并；被替换的资产不会自动获得该资产的后续上游更新。
+
+例如，在 `crewbee.json` 中启用 `@teams/coding-team`，该目录只需包含完整的 `team.manifest.yaml` 和定制的 `reviewer.agent.md`。Agent ID 可以使用 `reviewer` 或 `coding-reviewer`，协作引用会统一归一化。
+
+合成不依赖加载先后。同 ID 的多个文件来源仍按 project > global、priority 数字从小到大、声明顺序选择，不互相继承。有效文件来源决定 Team 的排序和默认入口；无效覆盖产生诊断并回退到下一个有效来源。
+
+如果要完整替换 Team（例如移除内置成员），应在所有启用该内置 Team 的配置来源中显式设置 `{ "id": "coding-team", "enabled": false }`，并提供包含 policy 和 Agent 的完整文件 Team；也可以使用不同的 Team ID。内置来源启用时，省略成员表示继承，不表示删除。
+
 ## 下一步：Project Context
 
 Project Context 是 CrewBee 下一阶段的重要产品力方向，不是当前 README 中应被写成成熟优势的能力。

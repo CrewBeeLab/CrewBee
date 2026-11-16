@@ -35,14 +35,14 @@ export function createFallbackCanonicalAgentId(teamId: string, agentId: string):
   return `${sanitizeSegment(teamId)}-${resolveAgentSlug(agentId)}`;
 }
 
-function rewriteBinding(binding: CollaborationBindingInput, agentIdMap: Map<string, string>): CollaborationBindingInput {
+function rewriteBinding(binding: CollaborationBindingInput, resolveRef: (ref: string) => string): CollaborationBindingInput {
   if (typeof binding === "string") {
-    return agentIdMap.get(binding) ?? binding;
+    return resolveRef(binding);
   }
 
   return {
     ...binding,
-    agentRef: agentIdMap.get(binding.agentRef) ?? binding.agentRef,
+    agentRef: resolveRef(binding.agentRef),
   };
 }
 
@@ -81,24 +81,37 @@ export function normalizeTeamAgentIds(input: {
     nextUsedIds.add(assigned);
   }
 
+  // Resolve both raw and already-canonical references after artifact replacement.
+  // Exact source IDs take precedence when a Team contains ambiguous aliases.
+  const canonicalAliases = new Map<string, string[]>();
+  for (const [sourceId, assigned] of agentIdMap) {
+    const canonical = createCanonicalAgentId(input.team.manifest.id, sourceId);
+    canonicalAliases.set(canonical, [...(canonicalAliases.get(canonical) ?? []), assigned]);
+  }
+  const resolveRef = (ref: string): string => {
+    if (agentIdMap.has(ref)) return agentIdMap.get(ref)!;
+    const aliases = canonicalAliases.get(createCanonicalAgentId(input.team.manifest.id, ref));
+    return aliases?.length === 1 ? aliases[0]! : ref;
+  };
+
   const normalizedTeam: AgentTeamDefinition = {
     ...input.team,
     manifest: {
       ...input.team.manifest,
       leader: {
         ...input.team.manifest.leader,
-        agentRef: agentIdMap.get(input.team.manifest.leader.agentRef) ?? input.team.manifest.leader.agentRef,
+        agentRef: resolveRef(input.team.manifest.leader.agentRef),
       },
       members: Object.fromEntries(
         Object.entries(input.team.manifest.members).map(([agentId, guidance]) => [
-          agentIdMap.get(agentId) ?? agentId,
+          resolveRef(agentId),
           guidance,
         ]),
       ),
       agentRuntime: input.team.manifest.agentRuntime
         ? Object.fromEntries(
             Object.entries(input.team.manifest.agentRuntime).map(([agentId, runtime]) => [
-              agentIdMap.get(agentId) ?? agentId,
+              resolveRef(agentId),
               runtime,
             ]),
           )
@@ -110,7 +123,7 @@ export function normalizeTeamAgentIds(input: {
           agents: input.team.modelConfigOverride.agents
             ? Object.fromEntries(
                 Object.entries(input.team.modelConfigOverride.agents).map(([agentId, override]) => [
-                  agentIdMap.get(agentId) ?? agentId,
+                  resolveRef(agentId),
                   override,
                 ]),
               )
@@ -129,8 +142,8 @@ export function normalizeTeamAgentIds(input: {
           name: canonicalAgentId,
         },
         collaboration: {
-          defaultConsults: agent.collaboration.defaultConsults.map((binding) => rewriteBinding(binding, agentIdMap)),
-          defaultHandoffs: agent.collaboration.defaultHandoffs.map((binding) => rewriteBinding(binding, agentIdMap)),
+          defaultConsults: agent.collaboration.defaultConsults.map((binding) => rewriteBinding(binding, resolveRef)),
+          defaultHandoffs: agent.collaboration.defaultHandoffs.map((binding) => rewriteBinding(binding, resolveRef)),
         },
         entryPoint: agent.entryPoint
           ? {

@@ -1,9 +1,9 @@
 import path from "node:path";
 
-import type { AgentTeamDefinition, TeamLibrary } from "../core";
+import type { AgentProfileSpec, AgentTeamDefinition, TeamLibrary } from "../core";
 
-import type { TeamValidationIssue } from "./types";
-import { normalizeTeamAgentIds } from "./canonical-agent-id";
+import type { TeamSourceDefinition, TeamValidationIssue } from "./types";
+import { createCanonicalAgentId, normalizeTeamAgentIds } from "./canonical-agent-id";
 import { BUILTIN_CODING_TEAM_ID } from "./constants";
 import { createEmbeddedCodingTeam } from "./embedded/coding-team";
 import {
@@ -31,6 +31,58 @@ export interface LoadDefaultTeamLibraryOptions {
   projectWorktree?: string;
 }
 
+/**
+ * Per-artifact merge of two Team definitions with the same manifest id.
+ * `higher` wins on every artifact it defines; `lower` fills the gaps:
+ *
+ * - manifest: `higher` wins wholesale (required field).
+ * - policy: `higher.policy ?? lower.policy` (a partial file team may omit team.policy.yaml).
+ * - agents: `lower`'s agent list, with `higher`'s agents replacing them by canonical
+ *   id; agents only `higher` defines are appended. Keying by canonical id lets a file
+ *   team name agents either raw (`reviewer`) or already canonical (`coding-reviewer`).
+ * - documentation / modelConfigOverride: `higher` wins when present.
+ *
+ * Both inputs are raw (pre-normalization) definitions loaded from their sources.
+ */
+function mergeTeamDefinitions(higher: TeamSourceDefinition, lower: TeamSourceDefinition): TeamSourceDefinition {
+  const higherAgentsByCanonicalId = new Map<string, AgentProfileSpec>();
+  for (const agent of higher.agents) {
+    const key = createCanonicalAgentId(higher.manifest.id, agent.metadata.id);
+    if (higherAgentsByCanonicalId.has(key)) {
+      throw new Error(`Duplicate override for canonical Agent '${key}'.`);
+    }
+    higherAgentsByCanonicalId.set(key, agent);
+  }
+
+  const mergedAgents: AgentProfileSpec[] = [];
+  const mergedKeys = new Set<string>();
+  for (const agent of lower.agents) {
+    const key = createCanonicalAgentId(lower.manifest.id, agent.metadata.id);
+    mergedKeys.add(key);
+    mergedAgents.push(higherAgentsByCanonicalId.get(key) ?? agent);
+  }
+  for (const [key, agent] of higherAgentsByCanonicalId) {
+    if (!mergedKeys.has(key)) {
+      mergedAgents.push(agent);
+    }
+  }
+
+  return {
+    manifest: higher.manifest,
+    policy: higher.policy ?? lower.policy,
+    agents: mergedAgents,
+    documentation: higher.documentation ?? lower.documentation,
+    modelConfigOverride: higher.modelConfigOverride ?? lower.modelConfigOverride,
+  };
+}
+
+function requireTeamPolicy(team: TeamSourceDefinition): AgentTeamDefinition {
+  if (!team.policy) {
+    throw new Error(`Team '${team.manifest.id}' must define team.policy.yaml or inherit an enabled embedded policy.`);
+  }
+  return { ...team, policy: team.policy };
+}
+
 function loadValidatedTeamDefinition(input: {
   teamDir: string;
   workspaceRoot: string;
@@ -38,8 +90,9 @@ function loadValidatedTeamDefinition(input: {
 }): { team?: AgentTeamDefinition; issues: TeamValidationIssue[] } {
   try {
     const loaded = loadTeamDefinitionFromDirectoryWithIssues(input.teamDir, input.workspaceRoot);
-    const loadedTeam = loaded.team;
-    const normalized = normalizeTeamAgentIds({ team: loadedTeam, usedCanonicalIds: input.usedCanonicalIds });
+    const loadedTeam = requireTeamPolicy(loaded.team);
+    const claims = new Set(input.usedCanonicalIds);
+    const normalized = normalizeTeamAgentIds({ team: loadedTeam, usedCanonicalIds: claims });
     if (!normalized.team) {
       return {
         issues: [
@@ -61,6 +114,7 @@ function loadValidatedTeamDefinition(input: {
       };
     }
 
+    for (const id of claims) input.usedCanonicalIds.add(id);
     return {
       team: normalized.team,
       issues: [...loaded.issues, ...issues.filter((issue) => issue.level === "warning")],
@@ -101,7 +155,8 @@ export function loadDefaultTeamLibrary(input: string | LoadDefaultTeamLibraryOpt
       : { globalConfigRoot: input.globalConfigRoot, projectWorktree: input.projectWorktree },
   );
   const pendingTeams: Array<{
-    loader: () => { team?: AgentTeamDefinition; issues: TeamValidationIssue[] };
+    loader: () => { team?: TeamSourceDefinition; issues: TeamValidationIssue[] };
+    kind: "embedded" | "filesystem";
     priority: number;
     order: number;
     sourcePrecedence: number;
@@ -129,6 +184,7 @@ export function loadDefaultTeamLibrary(input: string | LoadDefaultTeamLibraryOpt
             : undefined,
           issues: [],
         }),
+        kind: "embedded",
         priority: source.priority,
         order: source.order,
         sourcePrecedence: source.sourcePrecedence,
@@ -153,6 +209,7 @@ export function loadDefaultTeamLibrary(input: string | LoadDefaultTeamLibraryOpt
           };
         }
       },
+      kind: "filesystem",
       priority: source.priority,
       order: source.order,
       sourcePrecedence: source.sourcePrecedence,
@@ -175,64 +232,77 @@ export function loadDefaultTeamLibrary(input: string | LoadDefaultTeamLibraryOpt
     return left.order - right.order;
   });
 
-  const usedCanonicalIds = new Set<string>();
-  const usedTeamIds = new Map<string, { sourceScope: string; configPath: string }>();
-  const orderedTeams: AgentTeamDefinition[] = [];
-
-  for (const entry of pendingTeams) {
+  // Read every source before validating: a partial project source can precede
+  // its embedded base. Source order still controls file/file shadowing.
+  const loadedEntries = pendingTeams.flatMap((entry, index) => {
     const loaded = entry.loader();
     configured.issues.push(...loaded.issues);
-    if (loaded.team) {
-      const existing = usedTeamIds.get(loaded.team.manifest.id);
-      if (existing) {
-        configured.issues.push({
-          level: "warning",
-          filePath: entry.configPath,
-          code: "team_id_shadowed_or_duplicate",
-          sourceScope: entry.sourceScope === "project" || entry.sourceScope === "global" ? entry.sourceScope : undefined,
-          message: entry.sourceScope === "global" && existing.sourceScope === "project"
-            ? `Project Team '${loaded.team.manifest.id}' shadows global Team '${loaded.team.manifest.id}'.`
-            : `Skipped Team '${loaded.team.manifest.id}': duplicate Team id already loaded from ${existing.sourceScope} source.`,
-          suggestion: entry.sourceScope === "global" && existing.sourceScope === "project"
-            ? "This is expected when a project intentionally overrides a global Team id."
-            : "Rename one Team id or disable one Team entry.",
-        });
-        continue;
-      }
-
-      const usedCanonicalIdsBeforeNormalize = new Set(usedCanonicalIds);
-      const normalized = normalizeTeamAgentIds({
-        team: loaded.team,
-        usedCanonicalIds,
-      });
-      configured.issues.push(...normalized.issues);
-      if (normalized.team) {
-        const validationIssues = validateTeamDefinition(normalized.team);
-        const errors = validationIssues.filter((issue) => issue.level === "error");
-        if (errors.length > 0) {
-          usedCanonicalIds.clear();
-          for (const usedId of usedCanonicalIdsBeforeNormalize) {
-            usedCanonicalIds.add(usedId);
-          }
-          configured.issues.push(...errors.map((issue) => ({
-            level: "warning" as const,
-            filePath: issue.filePath,
-            code: issue.code ?? "team_validation_failed",
-            path: issue.path,
-            suggestion: issue.suggestion,
-            message: `Skipped Team '${normalized.team?.manifest.id ?? "unknown"}': ${issue.message}`,
-          })));
-          continue;
-        }
-        configured.issues.push(...validationIssues.filter((issue) => issue.level === "warning"));
-        orderedTeams.push(normalized.team);
-        usedTeamIds.set(normalized.team.manifest.id, {
-          sourceScope: entry.sourceScope,
-          configPath: entry.configPath,
-        });
-      }
+    return loaded.team ? [{ ...entry, index, team: loaded.team }] : [];
+  });
+  const embeddedById = new Map<string, (typeof loadedEntries)[number]>();
+  for (const entry of loadedEntries) {
+    if (entry.kind === "embedded" && !embeddedById.has(entry.team.manifest.id)) {
+      embeddedById.set(entry.team.manifest.id, entry);
     }
   }
+
+  const usedCanonicalIds = new Set<string>();
+  const usedTeamIds = new Map<string, (typeof loadedEntries)[number]>();
+  const resolvedTeams: Array<{ index: number; team: AgentTeamDefinition }> = [];
+  // File candidates are composed first; embedded definitions remain fallbacks.
+  // The winning source's original index determines final Team ordering.
+  const groups = new Map<string, typeof loadedEntries>();
+  for (const entry of loadedEntries) {
+    const id = entry.team.manifest.id;
+    groups.set(id, [...(groups.get(id) ?? []), entry]);
+  }
+  const orderedGroups = [...groups.values()].map((entries) => [
+    ...entries.filter((entry) => entry.kind === "filesystem"),
+    ...entries.filter((entry) => entry.kind === "embedded"),
+  ]).sort((left, right) => left[0]!.index - right[0]!.index);
+  const candidates = orderedGroups.flat();
+  for (const entry of candidates) {
+    const teamId = entry.team.manifest.id;
+    const existing = usedTeamIds.get(teamId);
+    if (existing) {
+      if (entry.kind !== existing.kind) continue;
+      configured.issues.push({
+        level: "warning",
+        code: "team_id_shadowed_or_duplicate",
+        filePath: entry.configPath,
+        sourceScope: entry.sourceScope === "project" ? "project" : "global",
+        message: entry.sourceScope === "global" && existing.sourceScope === "project"
+          ? `Project Team '${teamId}' shadows global Team '${teamId}'.`
+          : `Skipped Team '${teamId}': duplicate Team id already loaded from ${existing.sourceScope} source.`,
+        suggestion: "Rename one Team id or disable one Team entry unless this override is intentional.",
+      });
+      continue;
+    }
+    const base = entry.kind === "filesystem" ? embeddedById.get(teamId) : undefined;
+    const claims = new Set(usedCanonicalIds);
+    try {
+      const raw = base ? mergeTeamDefinitions(entry.team, base.team) : entry.team;
+      const complete = requireTeamPolicy(raw);
+      const normalized = normalizeTeamAgentIds({ team: complete, usedCanonicalIds: claims });
+      const issues = [...normalized.issues, ...(normalized.team ? validateTeamDefinition(normalized.team) : [])];
+      if (!normalized.team || issues.some((issue) => issue.level === "error")) {
+        configured.issues.push(...issues.map((issue) => ({
+          ...issue,
+          level: "warning" as const,
+          filePath: issue.filePath ?? entry.configPath,
+          message: `Skipped Team '${teamId}': ${issue.message}`,
+        })));
+        continue;
+      }
+      configured.issues.push(...issues);
+      for (const id of claims) usedCanonicalIds.add(id);
+      resolvedTeams.push({ index: entry.index, team: normalized.team });
+      usedTeamIds.set(teamId, entry);
+    } catch (error) {
+      configured.issues.push(createSkippedTeamIssue(teamId, error instanceof Error ? error.message : String(error)));
+    }
+  }
+  const orderedTeams = resolvedTeams.sort((left, right) => left.index - right.index).map((entry) => entry.team);
 
   return {
     version: "config-driven-v1",
